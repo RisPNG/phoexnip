@@ -1,4 +1,4 @@
-<div class="mx-auto  flex bg-[#353535] text-[#f0f0f0]">
+<div class="mx-auto  flex bg-page text-foreground">
   <div class="relative max-w-[12%]">
     <nav>
       <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0">
@@ -6,14 +6,14 @@
           <li>
             <.link
               patch={~p"/" <> mp.sitemap_url}
-              class={"w-full block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == mp.sitemap_name, do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+              class={"w-full block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == mp.sitemap_name, do: "bg-themePrimary border-borderStrong", else: "border-transparent hover:bg-neutral-900"}"}
               phx-click="change_section"
               phx-value-section={mp.sitemap_name}
             >
               {mp.sitemap_name}
-              <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == mp.sitemap_name, do: "bg-amber-600"}"}>
+              <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == mp.sitemap_name, do: "bg-themePrimary"}"}>
               </div>
-              <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == mp.sitemap_name, do: "bg-[#353535]"}"}>
+              <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == mp.sitemap_name, do: "bg-page"}"}>
               </div>
             </.link>
           </li>
@@ -21,7 +21,7 @@
       </ul>
     </nav>
   </div>
-  <div class="max-w-[88%] flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+  <div class="max-w-[88%] flex-1 p-8 border-[1px] border-borderStrong rounded-lg shadow-lg shadow-neutral-600">
     <.header class="title">Search</.header>
     <.form
       :let={f}
@@ -397,7 +397,7 @@
         <ul>
           <%= if @total_online == 0 do %>
             <li class="mt-4">
-              <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-[#f0f0f0] pt-2 pb-2">
+              <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-borderStrong pt-2 pb-2">
                 <strong>Currently no one online</strong>
               </div>
             </li>
@@ -405,12 +405,12 @@
             <%= for {_, dept_entry} <- @streams.currently_online do %>
               <!-- Extract second value of tuple -->
               <li class="mt-4">
-                <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-[#f0f0f0] pt-2 pb-2">
+                <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-borderStrong pt-2 pb-2">
                   <strong>Currently online in {dept_entry.group}</strong>
                 </div>
                 <ul class="flex flex-wrap justify-center gap-4 mt-4">
                   <%= for user <- dept_entry.users do %>
-                    <div class="flex items-center bg-green-700 w-[18rem] justify-center text-white p-2 rounded-l-[2rem] rounded-r-2xl shadow-md  shadow-green-900">
+                    <div class="flex items-center bg-success w-[18rem] justify-center text-white p-2 rounded-l-[2rem] rounded-r-2xl shadow-md">
                       <img
                         class="h-[3.5rem] w-[3.5rem] me-2 rounded-full border-2 justify-self-start"
                         src={Phoexnip.ImageUtils.image_for(user)}

@@ -29,7 +29,7 @@ defmodule PhoexnipWeb.UserResetPasswordLive do
         <:actions>
           <.button phx-disable-with="Resetting..." class="w-[49%] mt-2">Reset Password</.button>
           <.link
-            class="w-[49%] flex mt-2 justify-center rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+            class="w-[49%] flex mt-2 justify-center rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary"
             href={~p"/log_in"}
           >
             Log in

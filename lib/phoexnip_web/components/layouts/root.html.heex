@@ -13,7 +13,7 @@
   </head>
   <body class="">
     <header class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between border-b border-zinc-100 text-sm">
+      <div class="flex items-center justify-between border-b border-border text-sm">
         <div class="flex items-center gap-4">
           <.link patch="/">
             <img src={~p"/images/logo.svg"} width="75" class="p-2" />
@@ -27,7 +27,7 @@
                   <div class="group">
                     <button
                       type="button"
-                      class="dropdown-toggle inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-amber-600 hover:underline"
+                      class="dropdown-toggle inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-themePrimary hover:underline"
                       data-dropdown-target={"menu-" <> to_string(permission.sitemap_code)}
                       onclick="toggleDropdown(event)"
                     >
@@ -51,11 +51,11 @@
                       <div
                         id={"menu-" <> to_string(permission.sitemap_code)}
                         onclick="hideAllMenu(event)"
-                        class="dropdown-menu dropdown-menu-child absolute z-50 md:right-[-4rem] w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-neutral-800 pl-2 border-white border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300"
+                        class="dropdown-menu dropdown-menu-child absolute z-50 md:right-[-4rem] w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300"
                       >
                         <%= for child <- permission.children do %>
                           <%= if child.permission > 0 do %>
-                            <div class="py-2 w-full inline-flex justify-start pl-2 items-center hover:text-amber-600 hover:underline">
+                            <div class="py-2 w-full inline-flex justify-start pl-2 items-center hover:text-themePrimary hover:underline">
                               <.link patch={~p"/" <> child.sitemap_url} class="w-full">
                                 {child.sitemap_name}
                               </.link>
@@ -70,12 +70,12 @@
             <% end %>
 
             <%!-- User Icon plus user account action --%>
-            <div class="border-r-2 border-f0f0f0" style="height:28px"></div>
+            <div class="border-r-2 border-borderStrong" style="height:28px"></div>
             <div class="relative inline-block text-left">
               <div class="group">
                 <button
                   type="button"
-                  class="inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-amber-600  hover:underline "
+                  class="inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-themePrimary  hover:underline "
                 >
                   <img
                     src={Phoexnip.ImageUtils.image_for(@current_user)}
@@ -92,8 +92,8 @@
                   </svg>
                 </button>
                 <!-- Dropdown menu -->
-                <div class="absolute right-[-4rem] md:right-0 z-50 w-[11rem] origin-top-right p-2 bg-neutral-800 pl-2 border-white border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300">
-                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                <div class="absolute right-[-4rem] md:right-0 z-50 w-[11rem] origin-top-right p-2 bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300">
+                  <div class="py-1 inline-flex justify-center items-center hover:text-themePrimary  hover:underline ">
                     <div class="pr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -112,7 +112,7 @@
                     </div>
                     <.link href={~p"/users/#{@current_user}"} class="">Profile</.link>
                   </div>
-                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                  <div class="py-1 inline-flex justify-center items-center hover:text-themePrimary  hover:underline ">
                     <div class="pr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -131,7 +131,7 @@
                     </div>
                     <.link href={~p"/account/settings"} class="">Change Password</.link>
                   </div>
-                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                  <div class="py-1 inline-flex justify-center items-center hover:text-themePrimary  hover:underline ">
                     <div class="pr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -154,10 +154,10 @@
               </div>
             </div>
           <% else %>
-            <.link href={~p"/"} class="hover:text-amber-600  hover:underline ">
+            <.link href={~p"/"} class="hover:text-themePrimary  hover:underline ">
               Home
             </.link>
-            <.link href={~p"/log_in"} class="hover:text-amber-600  hover:underline ">
+            <.link href={~p"/log_in"} class="hover:text-themePrimary  hover:underline ">
               Login
             </.link>
           <% end %>

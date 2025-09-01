@@ -13,7 +13,7 @@
   </head>
   <body class="">
     <header class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between border-b border-zinc-100 text-sm">
+      <div class="flex items-center justify-between border-b border-border text-sm">
         <div class="flex items-center gap-4">
           <.link patch="/">
             <img src={~p"/images/logo.svg"} width="75" class="p-2" />
@@ -32,14 +32,14 @@
         /*/
         ////////////////// scene */
          .text {
-        	 left: 50%;
-        	 position: absolute;
-        	 top: 50%;
-        	 transform: translate(-50%, -50%);
-        	 color: #f0f0f0;
-        	 font-size: 30em;
-        	 text-align: center;
-        	 top: 40%;
+	 left: 50%;
+	 position: absolute;
+	 top: 50%;
+	 transform: translate(-50%, -50%);
+	 color: rgb(var(--color-foreground));
+	 font-size: 30em;
+	 text-align: center;
+	 top: 40%;
         }
          .container {
         	 left: 50%;
@@ -102,10 +102,10 @@
         	 transform: rotate(-20deg);
         }
          .head .eye {
-        	 left: 50%;
-        	 position: absolute;
-        	 transform: translateX(-50%);
-        	 background-color: #eab08c;
+	 left: 50%;
+	 position: absolute;
+	 transform: translateX(-50%);
+	 background-color: #eab08c;
         	 border-radius: 50px;
         	 height: 16px;
         	 left: 45%;
@@ -478,7 +478,7 @@
         Me no see page, me no likey, me hit big stick!
       </div>
       <div class="404-message w-full">
-        <.link href="/" class="text-amber-600 underline"> Back to safety! </.link>
+        <.link href="/" class="text-themePrimary underline"> Back to safety! </.link>
       </div>
     </div>
   </body>

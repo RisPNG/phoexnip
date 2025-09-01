@@ -13,7 +13,7 @@
   </head>
   <body class="">
     <header class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between border-b border-zinc-100 text-sm">
+      <div class="flex items-center justify-between border-b border-border text-sm">
         <div class="flex items-center gap-4">
           <.link patch="/">
             <img src={~p"/images/logo.svg"} width="75" class="p-2" />
@@ -50,7 +50,7 @@
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           font-family: 'VT323';
-          color: #f0f0f0;
+          color: rgb(var(--color-foreground));
           text-shadow: 1px 1px 1px rgba(255, 255, 255, .3);
         }
 
@@ -175,7 +175,7 @@
         <plate></plate>
       </spaghetti>
     </div>
-    <div class="go-home text-amber-600"><.link href="/">way back.</.link></div>
+    <div class="go-home text-themePrimary"><.link href="/">way back.</.link></div>
     <script>
       	const error = document.querySelector(".error-500");
       let i = 0, data = "", text = error.getAttribute("data-text");

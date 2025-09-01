@@ -23,10 +23,10 @@ defmodule PhoexnipWeb.AuditLogLive.FormComponent do
             <thead>
               <tr>
                 <th class="text-left w-[30%] p-2 border-b-[1px] border-b-white">Key</th>
-                <th class="text-left w-[35%] p-2 border-b-[1px] border-b-white text-red-400">
+                <th class="text-left w-[35%] p-2 border-b-[1px] border-b-white text-danger">
                   Old Value
                 </th>
-                <th class="text-left w-[35%] p-2 border-b-[1px] border-b-white text-green-400">
+                <th class="text-left w-[35%] p-2 border-b-[1px] border-b-white text-success">
                   New Value
                 </th>
               </tr>
@@ -48,10 +48,10 @@ defmodule PhoexnipWeb.AuditLogLive.FormComponent do
                       end}
                       {if key = Map.get(change, :key), do: "Field: #{key} "}
                     </td>
-                    <td class="p-2 border-b-[1px] text-red-400 border-b-white">
+                    <td class="p-2 border-b-[1px] text-danger border-b-white">
                       {Map.get(change, :old_value)}
                     </td>
-                    <td class="p-2 border-b-[1px] text-green-400 border-b-white">
+                    <td class="p-2 border-b-[1px] text-success border-b-white">
                       {Map.get(change, :new_value)}
                     </td>
                   </tr>

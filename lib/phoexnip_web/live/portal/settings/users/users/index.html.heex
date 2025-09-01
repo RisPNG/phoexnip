@@ -1,4 +1,4 @@
-<div class="border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600 mb-8">
+<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600 mb-8">
   <.header class="mb-2 title">Search</.header>
   <.form
     :let={f}
@@ -70,7 +70,7 @@
   </.form>
 </div>
 
-<div class="border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600">
   <.header class="title pb-2">
     Users
     <:actions>
@@ -228,11 +228,11 @@
       <:col :let={{_id, users}} label="Name">
         <div class="w-full flex items-center relative">
           <%= if PhoexnipWeb.Presence.user_active?(@presences, users.id) do %>
-            <div class="h-5 w-5 rounded-full me-[0.7rem] absolute left-[1.8rem] bottom-[-0.2rem] flex items-center justify-center pt-[0.1rem] bg-green-600 border-2 border-[#353535]">
+            <div class="h-5 w-5 rounded-full me-[0.7rem] absolute left-[1.8rem] bottom-[-0.2rem] flex items-center justify-center pt-[0.1rem] bg-success border-2 border-page">
               <.icon name="hero-check-solid" class="w-[0.8rem] h-[0.8rem] text-black" />
             </div>
           <% else %>
-            <div class="h-5 w-5 rounded-full me-[0.7rem] absolute left-[1.8rem] bottom-[-0.2rem] pt-[0.1rem] flex items-center justify-center bg-gray-500 border-2 border-[#353535]">
+            <div class="h-5 w-5 rounded-full me-[0.7rem] absolute left-[1.8rem] bottom-[-0.2rem] pt-[0.1rem] flex items-center justify-center bg-muted border-2 border-page">
               <.icon name="hero-x-mark-solid" class="w-[0.8rem] h-[0.8rem] text-black" />
             </div>
           <% end %>
@@ -283,7 +283,7 @@
               type="button"
               phx-click={JS.push("delete", value: %{id: users.id}) |> hide("##{id}")}
               data-confirm="Are you sure?"
-              class="bg-red-600 hover:bg-red-900 focus:bg-red-900"
+              class="bg-danger hover:bg-dangerDark focus:bg-dangerDark"
             >
               <.icon name="hero-trash" class="w-5 h-5" />
             </.button>

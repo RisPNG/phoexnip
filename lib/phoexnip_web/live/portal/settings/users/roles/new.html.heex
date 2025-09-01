@@ -1,4 +1,4 @@
-<div class="mx-auto border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+<div class="mx-auto border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600">
   <.simple_form :let={f} for={@form} phx-submit="save" phx-change="validate" class="mt-10 w-full">
     <:top_actions>
       <.button class="flex">
@@ -16,7 +16,7 @@
       </.button>
       <.link
         patch={~p"/roles"}
-        class="flex font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600 rounded-lg py-2 px-3"
+        class="flex font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary rounded-lg py-2 px-3"
       >
         <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
       </.link>
@@ -33,7 +33,7 @@
       <%= if item_f[:sitemap_level].value  == 0 do %>
         <%!-- LVL 0 --%>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
-          <div class="w-[100%] flex items-center mt-5 flex-wrap pb-2 border-b-2 border-gray-500/50">
+          <div class="w-[100%] flex items-center mt-5 flex-wrap pb-2 border-b-2 border-muted/50">
             <%!-- <.input class="w-[70%]" type="text" field={item_f[:sitemap_name]} value={tem_f[:sitemap_name].value} /> --%>
             <.input class="hidden" field={item_f[:sitemap_code]} type="text" />
             <.input class="hidden" field={item_f[:sitemap_level]} type="number" />
@@ -60,7 +60,7 @@
             />
           </div>
         <% else %>
-          <div class="w-[100%] items-center mt-5 flex-wrap pb-2 border-b-2 border-gray-500/50 hidden">
+          <div class="w-[100%] items-center mt-5 flex-wrap pb-2 border-b-2 border-muted/50 hidden">
             <%!-- <.input class="w-[70%]" type="text" field={item_f[:sitemap_name]} value={tem_f[:sitemap_name].value} /> --%>
             <.input class="hidden" field={item_f[:sitemap_code]} type="text" />
             <.input class="hidden" field={item_f[:sitemap_level]} type="number" />
@@ -91,7 +91,7 @@
       <%= if item_f[:sitemap_level].value  == 1 do %>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
           <%!-- LVL 1 --%>
-          <div class="w-[100%] flex items-center border-b-2 border-gray-500/50 pb-2">
+          <div class="w-[100%] flex items-center border-b-2 border-muted/50 pb-2">
             <div class="w-[5%]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -135,7 +135,7 @@
             />
           </div>
         <% else %>
-          <div class="w-[100%] hidden items-center border-b-2 border-gray-500/50 pb-2">
+          <div class="w-[100%] hidden items-center border-b-2 border-muted/50 pb-2">
             <div class="w-[5%]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -182,7 +182,7 @@
       <%= if item_f[:sitemap_level].value  == 2 do %>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
           <%!-- LVL 2 --%>
-          <div class="w-[100%] flex items-center border-b-2 border-gray-500/50 pb-2">
+          <div class="w-[100%] flex items-center border-b-2 border-muted/50 pb-2">
             <div class="w-[5%]">
               <%!-- spacer --%>
             </div>
@@ -230,7 +230,7 @@
           </div>
         <% else %>
           <%!-- LVL 2 --%>
-          <div class="w-[100%] hidden items-center border-b-2 border-gray-500/50 pb-2">
+          <div class="w-[100%] hidden items-center border-b-2 border-muted/50 pb-2">
             <div class="w-[5%]">
               <%!-- spacer --%>
             </div>
@@ -295,7 +295,7 @@
       </.button>
       <.link
         patch={~p"/roles"}
-        class="flex font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600 rounded-lg py-2 px-3"
+        class="flex font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary rounded-lg py-2 px-3"
       >
         <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
       </.link>

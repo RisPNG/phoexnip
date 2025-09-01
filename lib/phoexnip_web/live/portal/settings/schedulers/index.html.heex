@@ -1,4 +1,4 @@
-<div class="border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600">
   <.header class="title pb-2">
     System Scheduled Jobs
   </.header>
@@ -22,7 +22,7 @@
           <%!-- Show start button --%>
           <button
             type="button"
-            class="border px-2 pt-[0.23rem] pb-[0.445em] bg-green-600  rounded-lg hover:bg-green-700 focus:bg-green-700 relative"
+            class="border px-2 pt-[0.23rem] pb-[0.445em] bg-success rounded-lg hover:bg-successDark focus:bg-successDark relative"
             phx-click="start-job"
             phx-value-name={jobs.name}
           >
@@ -30,7 +30,7 @@
           </button>
           <button
             type="button"
-            class="border px-2 pt-[0.23rem] pb-[0.445em] rounded-lg hover:bg-amber-600 focus:bg-amber-600 relative opacity-0 cursor-auto"
+            class="border px-2 pt-[0.23rem] pb-[0.445em] rounded-lg hover:bg-themePrimary focus:bg-themePrimary relative opacity-0 cursor-auto"
           >
             <.icon name="hero-arrow-right-circle" class="w-5 h-5" />
           </button>
@@ -38,7 +38,7 @@
           <%!-- Show Stop button --%>
           <button
             type="button"
-            class="border px-2 pt-[0.23rem] pb-[0.445em] bg-red-600  rounded-lg hover:bg-red-900 focus:bg-red-900 relative"
+            class="border px-2 pt-[0.23rem] pb-[0.445em] bg-danger rounded-lg hover:bg-dangerDark focus:bg-dangerDark relative"
             phx-click="stop-job"
             phx-value-name={jobs.name}
           >
@@ -47,7 +47,7 @@
 
           <button
             type="button"
-            class="border px-2 pt-[0.23rem] pb-[0.445em] rounded-lg hover:bg-amber-600 focus:bg-amber-600 relative"
+            class="border px-2 pt-[0.23rem] pb-[0.445em] rounded-lg hover:bg-themePrimary focus:bg-themePrimary relative"
             phx-click="run_job_manually"
             phx-value-job_to_run={jobs.name}
           >

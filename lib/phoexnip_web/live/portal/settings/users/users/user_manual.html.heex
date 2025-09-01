@@ -1,53 +1,53 @@
-<div class="mx-auto max-w-9xl flex bg-[#353535] text-[#f0f0f0]">
+<div class="mx-auto max-w-9xl flex bg-page text-foreground">
   <div class="relative">
     <nav>
       <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0 pl-8">
         <li>
           <a
             href="#"
-            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "search", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "search", do: "bg-themePrimary border-borderStrong", else: "border-transparent hover:bg-neutral-900"}"}
             phx-click="change_section"
             phx-value-section="search"
           >
             Search User
-            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "search", do: "bg-amber-600"}"}>
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "search", do: "bg-themePrimary"}"}>
             </div>
-            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "search", do: "bg-[#353535]"}"}>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "search", do: "bg-page"}"}>
             </div>
           </a>
         </li>
         <li>
           <a
             href="#"
-            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "create", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "create", do: "bg-themePrimary border-borderStrong", else: "border-transparent hover:bg-neutral-900"}"}
             phx-click="change_section"
             phx-value-section="create"
           >
             Create User
-            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "create", do: "bg-amber-600"}"}>
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "create", do: "bg-themePrimary"}"}>
             </div>
-            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "create", do: "bg-[#353535]"}"}>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "create", do: "bg-page"}"}>
             </div>
           </a>
         </li>
         <li>
           <a
             href="#"
-            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "update", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-800"}"}
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "update", do: "bg-themePrimary border-borderStrong", else: "border-transparent hover:bg-neutral-800"}"}
             phx-click="change_section"
             phx-value-section="update"
           >
             Update User
-            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "update", do: "bg-amber-600"}"}>
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "update", do: "bg-themePrimary"}"}>
             </div>
-            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "update", do: "bg-[#353535]"}"}>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "update", do: "bg-page"}"}>
             </div>
           </a>
         </li>
       </ul>
     </nav>
   </div>
-  <div class="flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+  <div class="flex-1 p-8 border-[1px] border-borderStrong rounded-lg shadow-lg shadow-neutral-600">
     <section>
       <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "search", do: "hidden"}"}>
         <h1 class="scribe-title">Search User</h1>

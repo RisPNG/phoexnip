@@ -59,7 +59,7 @@ defmodule PhoexnipWeb.CoreComponents do
     >
       <div
         id={"#{@id}-bg"}
-        class="fixed inset-0 transition-opacity bg-[#000] opacity-30"
+        class="fixed inset-0 transition-opacity bg-overlay opacity-30"
         aria-hidden="true"
       />
       <div
@@ -80,7 +80,7 @@ defmodule PhoexnipWeb.CoreComponents do
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
               class={[
-                "relative hidden rounded-2xl p-14 shadow-lg ring-1 ring-amber-600 transition bg-[#353535]",
+                "relative hidden rounded-2xl p-14 shadow-lg ring-1 ring-themePrimary transition bg-page",
                 @class
               ]}
             >
@@ -128,7 +128,7 @@ defmodule PhoexnipWeb.CoreComponents do
     >
       <div
         id={"#{@id}-bg"}
-        class="fixed inset-0 transition-opacity bg-[#000] opacity-30"
+        class="fixed inset-0 transition-opacity bg-overlay opacity-30"
         aria-hidden="true"
       />
       <div
@@ -148,7 +148,7 @@ defmodule PhoexnipWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="relative hidden rounded-2xl p-14 shadow-lg ring-1 ring-amber-600 transition bg-[#353535]"
+              class="relative hidden rounded-2xl p-14 shadow-lg ring-1 ring-themePrimary transition bg-page"
             >
               <div class="absolute top-6 right-5">
                 <button
@@ -196,7 +196,7 @@ defmodule PhoexnipWeb.CoreComponents do
     >
       <div
         id={"#{@id}-bg"}
-        class="fixed inset-0 transition-opacity bg-[#000] opacity-30"
+        class="fixed inset-0 transition-opacity bg-overlay opacity-30"
         aria-hidden="true"
       />
       <div
@@ -213,7 +213,7 @@ defmodule PhoexnipWeb.CoreComponents do
           <div class={"max-w-8xl p-4 sm:p-6 lg:py-8 " <> @class}>
             <.focus_wrap
               id={"#{@id}-container"}
-              class="relative rounded-2xl p-14 shadow-lg ring-1 ring-amber-600 transition bg-[#353535]"
+              class="relative rounded-2xl p-14 shadow-lg ring-1 ring-themePrimary transition bg-page"
             >
               <!-- Modal close button (X) -->
               <div class="absolute top-6 right-5">
@@ -235,7 +235,7 @@ defmodule PhoexnipWeb.CoreComponents do
                 <div class="mt-6 right-5 flex justify-end">
                   <.link
                     phx-click={@onclose}
-                    class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-zinc-200 hover:bg-amber-600 focus:bg-amber-600"
+                    class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-border hover:bg-themePrimary focus:bg-themePrimary"
                   >
                     <.icon name="hero-x-mark-solid" class="w-6 h-6 me-1" /> Close
                   </.link>
@@ -332,10 +332,10 @@ defmodule PhoexnipWeb.CoreComponents do
       role="alert"
       class={[
         "flash fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 shadow-lg",
-        @kind == :info && "bg-emerald-50 text-emerald-800 ring-emerald-500",
-        @kind == :error && "bg-rose-50 text-rose-900 ring-rose-500",
-        @kind == :warning && "bg-yellow-100 text-yellow-700 ring-yellow-500",
-        @kind not in [:warning, :error, :info] && "bg-emerald-50 text-emerald-800 ring-emerald-500"
+        @kind == :info && "bg-infoBg text-infoFg ring-infoBorder",
+        @kind == :error && "bg-errorBg text-errorFg ring-errorBorder",
+        @kind == :warning && "bg-warnBg text-warnFg ring-warnBorder",
+        @kind not in [:warning, :error, :info] && "bg-infoBg text-infoFg ring-infoBorder"
       ]}
       {@rest}
     >
@@ -509,7 +509,7 @@ defmodule PhoexnipWeb.CoreComponents do
     <button
       type={@type}
       class={[
-        "phx-submit-loading:opacity-75 rounded-lg py-2 px-2 min-h-[2.75rem] min-w-[2.75rem] font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600",
+        "phx-submit-loading:opacity-75 rounded-lg py-2 px-2 min-h-[2.75rem] min-w-[2.75rem] font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary",
         @class
       ]}
       {@rest}
@@ -584,7 +584,7 @@ defmodule PhoexnipWeb.CoreComponents do
           disabled={@disabled}
           value="true"
           checked={@checked}
-          class="rounded text-amber-600 accent-amber-600 focus:ring-0 hover:cursor-pointer"
+          class="rounded text-themePrimary accent-themePrimary focus:ring-0 hover:cursor-pointer"
           {@rest}
         />
         {@label}
@@ -604,7 +604,7 @@ defmodule PhoexnipWeb.CoreComponents do
         name={@name}
         disabled={@disabled}
         parent={@parent}
-        class="mt-2 max-h-[2.75rem] w-full rounded-lg border-2 text-neutral-50 bg-neutral-800 focus:border-amber-600"
+        class="mt-2 max-h-[2.75rem] w-full rounded-lg border-2 text-foreground bg-surface focus:border-themePrimary border-muted"
         multiple={@multiple}
         {@rest}
       >
@@ -628,10 +628,10 @@ defmodule PhoexnipWeb.CoreComponents do
         phx-hook="AutoResize"
         phx-debounce="blur"
         class={[
-          "mt-2 min-h-[2.75rem] block w-full rounded-lg border-2 text-neutral-50 bg-neutral-800 focus:ring-0 sm: sm:leading-6",
-          "phx-no-feedback:border-gray-500 phx-no-feedback:focus:border-amber-600",
-          @errors == [] && "border-gray-500 focus:border-amber-600",
-          @errors != [] && "border-rose-400 focus:border-rose-400"
+          "mt-2 min-h-[2.75rem] block w-full rounded-lg border-2 text-foreground bg-surface focus:ring-0 sm: sm:leading-6",
+          "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
+          @errors == [] && "border-muted focus:border-themePrimary",
+          @errors != [] && "border-danger focus:border-danger"
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
@@ -655,10 +655,10 @@ defmodule PhoexnipWeb.CoreComponents do
         autocomplete="off"
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
         class={[
-          "text-right mt-2 max-h-[2.75rem] block w-full rounded-lg text-neutral-50 bg-neutral-800 focus:ring-0 sm: sm:leading-6 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-          "phx-no-feedback:border-gray-500 phx-no-feedback:focus:border-amber-600 ",
-          @errors == [] && "border-gray-500 focus:border-amber-600",
-          @errors != [] && "border-rose-400 focus:border-rose-400"
+          "text-right mt-2 max-h-[2.75rem] block w-full rounded-lg text-foreground bg-surface focus:ring-0 sm: sm:leading-6 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary ",
+          @errors == [] && "border-muted focus:border-themePrimary",
+          @errors != [] && "border-danger focus:border-danger"
         ]}
         {@rest}
       />
@@ -681,12 +681,12 @@ defmodule PhoexnipWeb.CoreComponents do
             value={option_value}
             checked={@value == option_value}
             disabled={@disabled}
-            class="h-4 w-4 rounded-full border-gray-300 text-amber-600 accent-amber-600 focus:ring-0 hover:cursor-pointer"
+            class="h-4 w-4 rounded-full border-border text-themePrimary accent-themePrimary focus:ring-0 hover:cursor-pointer disabled:text-muted"
             {@rest}
           />
           <label
             for={"#{@id}_#{option_value}"}
-            class="block font-normal leading-6 text-neutral-50 hover:cursor-pointer"
+            class="block font-normal leading-6 text-foreground hover:cursor-pointer"
           >
             {option_label}
           </label>
@@ -711,12 +711,12 @@ defmodule PhoexnipWeb.CoreComponents do
             value={option_value}
             checked={@value == option_value}
             disabled={@disabled}
-            class="h-4 w-4 rounded-full border-gray-300 text-amber-600 disabled:text-gray-600 accent-amber-600 focus:ring-0 hover:cursor-pointer"
+            class="h-4 w-4 rounded-full border-border text-themePrimary disabled:text-muted accent-themePrimary focus:ring-0 hover:cursor-pointer"
             {@rest}
           />
           <label
             for={"#{@id}_#{option_value}"}
-            class="block font-normal leading-6 text-neutral-50 hover:cursor-pointer"
+            class="block font-normal leading-6 text-foreground hover:cursor-pointer"
           >
             {option_label}
           </label>
@@ -742,10 +742,10 @@ defmodule PhoexnipWeb.CoreComponents do
         autocomplete="off"
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
         class={[
-          "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-neutral-50 bg-neutral-800 focus:ring-0 sm: sm:leading-6 border-2",
-          "phx-no-feedback:border-gray-500 phx-no-feedback:focus:border-amber-600",
-          @errors == [] && "border-gray-500 focus:border-amber-600",
-          @errors != [] && "border-rose-400 focus:border-rose-400"
+          "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground bg-surface focus:ring-0 sm: sm:leading-6 border-2",
+          "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
+          @errors == [] && "border-muted focus:border-themePrimary",
+          @errors != [] && "border-danger focus:border-danger"
         ]}
         {@rest}
       />
@@ -769,11 +769,11 @@ defmodule PhoexnipWeb.CoreComponents do
       <LiveSelect.live_select
         field={@field}
         text_input_class={[
-          "block w-full mt-2 rounded-lg border-zinc-300 py-[7px] px-[11px]",
-          "text-zinc-900 focus:outline-none focus:ring-4 sm:leading-6",
-          "phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 phx-no-feedback:focus:ring-zinc-800/5",
-          "border-zinc-300 focus:border-zinc-400 focus:ring-zinc-800/5",
-          @errors != [] && "border-rose-400 focus:border-rose-400 focus:ring-rose-400/10"
+          "block w-full mt-2 rounded-lg py-[7px] px-[11px]",
+          "text-foreground focus:outline-none focus:ring-4 sm:leading-6",
+          "phx-no-feedback:border-border phx-no-feedback:focus:border-themePrimary phx-no-feedback:focus:ring-themePrimary/10",
+          "border-border focus:border-themePrimary focus:ring-themePrimary/10",
+          @errors != [] && "border-danger focus:border-danger focus:ring-danger/10"
         ]}
         {@live_select_opts}
       />
@@ -813,7 +813,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   def error(assigns) do
     ~H"""
-    <p class="mt-3 flex gap-3  leading-6 text-rose-600 phx-no-feedback:hidden">
+    <p class="mt-3 flex gap-3  leading-6 text-danger phx-no-feedback:hidden">
       <.icon name="hero-exclamation-circle-mini" class="mt-0.5 h-5 w-5 flex-none" />
       {render_slot(@inner_block)}
     </p>
@@ -900,7 +900,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <tbody
           id={@id <> "-tbody"}
           phx-update="replace"
-          class="relative divide-y divide-zinc-100 border-t border-zinc-200 leading-6"
+          class="relative divide-y divide-border border-t border-border leading-6"
         >
           <%= for row <- @rows do %>
             <tr id={@row_id && @row_id.(row)} class="group">
@@ -949,7 +949,7 @@ defmodule PhoexnipWeb.CoreComponents do
   def list(assigns) do
     ~H"""
     <div class="mt-14">
-      <dl class="-my-4 divide-y divide-zinc-100">
+      <dl class="-my-4 divide-y divide-border">
         <div :for={item <- @item} class="flex gap-4 py-4  leading-6 sm:gap-8">
           <dt class="w-1/4 flex-none">{item.title}</dt>
           <dd class="">{render_slot(item)}</dd>
@@ -974,7 +974,7 @@ defmodule PhoexnipWeb.CoreComponents do
     <div class="mt-16">
       <.link
         navigate={@navigate}
-        class=" font-semibold leading-6 hover:underline hover:text-amber-600 focus:text-amber-600 focus:underline"
+        class=" font-semibold leading-6 hover:underline hover:text-themePrimary focus:text-themePrimary focus:underline"
       >
         <.icon name="hero-arrow-left-solid" class="h-3 w-3" />
         {render_slot(@inner_block)}

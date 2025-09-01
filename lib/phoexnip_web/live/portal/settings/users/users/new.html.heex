@@ -1,4 +1,4 @@
-<div class="mx-auto border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+<div class="mx-auto border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600">
   <.simple_form
     :let={f}
     for={@form}
@@ -25,14 +25,14 @@
       <%= if @user_id > 0 do %>
         <.link
           patch={~p"/users/#{@user_id}"}
-          class="phx-submit-loading:opacity-75 flex rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          class="phx-submit-loading:opacity-75 flex rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary"
         >
           <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
         </.link>
       <% else %>
         <.link
           patch={~p"/users/"}
-          class="phx-submit-loading:opacity-75 flex rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          class="phx-submit-loading:opacity-75 flex rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary"
         >
           <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
         </.link>
@@ -48,7 +48,7 @@
               <.live_img_preview entry={entry} class="h-[300px] w-[300px] user-image mt-6" />
             </div>
             <%= for err <- upload_errors(@uploads.avatar, entry) do %>
-              <span class="alert alert-danger w-full text-rose-600 text-center mt-2">
+              <span class="alert alert-danger w-full text-danger text-center mt-2">
                 {error_to_string(err)}
               </span>
             <% end %>
@@ -58,7 +58,7 @@
             <img src={@image_url} class="h-[300px] w-[300px] user-image mt-6" id="" />
           </div>
         <% end %>
-        <label class="flex justify-center items-center mt-4 rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600">
+        <label class="flex justify-center items-center mt-4 rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary">
           <.icon name="hero-camera-solid" class="h-5 w-5 me-1" /> Change Image
           <.live_file_input upload={@uploads.avatar} class="upload hidden" />
         </label>
@@ -137,14 +137,14 @@
       <%= if @user_id > 0 do %>
         <.link
           patch={~p"/users/#{@user_id}"}
-          class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary"
         >
           <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
         </.link>
       <% else %>
         <.link
           patch={~p"/users/"}
-          class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          class="phx-submit-loading:opacity-75 flex align-center rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary"
         >
           <.icon name="hero-no-symbol" class="w-6 h-6 me-1" /> Cancel
         </.link>
