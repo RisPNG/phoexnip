@@ -1,0 +1,517 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+@import "./flatpickr.css";
+
+/* Scrollbar (Global) */
+/* Size + Hidden */
+::-webkit-scrollbar {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: rgb(38, 38, 38);
+  border-radius: 6px;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+  background-color: rgb(107, 114, 128);
+  border-radius: 6px;
+}
+
+/* Thumb (Hover) */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(217, 119, 6);
+}
+
+/* Scrollbar 2 */
+/* Size + Hidden */
+.sb2::-webkit-scrollbar {
+  width: 0.5rem;
+  height: 0.15rem;
+}
+
+/* Show (Hover) */
+.sb2:hover::-webkit-scrollbar {
+  height: 0.75rem;
+}
+
+/* Track */
+.sb2::-webkit-scrollbar-track {
+  background: rgb(38, 38, 38);
+  border-radius: 6px;
+}
+
+/* Thumb */
+.sb2::-webkit-scrollbar-thumb {
+  background-color: rgb(217, 119, 6);
+  border-radius: 6px;
+}
+
+/* Thumb (Hover) */
+.sb2::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(146, 64, 14);
+}
+
+/* This file is for your main application CSS */
+:root {
+  --background: #353535;
+  --color: #f0f0f0;
+}
+
+input[type="date"] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--color) !important;
+  font-family: Noto Sans, Ubuntu, Arial, sans-serif;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.5s ease-out forwards;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.pagination:first-of-type {
+  margin-bottom: 1em;
+}
+
+.pagination:last-of-type {
+  margin-top: 1em;
+}
+
+.pagination-list {
+  display: flex;
+  gap: 0.5em;
+}
+
+.pagination-previous,
+.pagination-next {
+  border: 1px solid #e5e7eb;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.pagination-list li a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.pagination-list li a:hover {
+  background-color: rgb(217, 119, 6);
+}
+
+.pagination-list li a.is-current {
+  background-color: rgb(217, 119, 6);
+}
+
+.pagination-previous:not(.disabled):hover,
+.pagination-next:not(.disabled):hover {
+  background-color: rgb(217, 119, 6);
+}
+
+.pagination-previous.disabled,
+.pagination-next.disabled {
+  color: rgb(240, 240, 240, 0.5);
+  border: 1px solid rgb(240, 240, 240, 0.5);
+}
+
+.title {
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.span-like-input-scrollable {
+  @apply whitespace-nowrap inline-block max-h-[2.75rem];
+  border-radius: 0.5rem;
+  display: block;
+  color: rgb(250 250 250);
+  background-color: #1c1c1c;
+  border: 2px solid rgb(107, 114, 128);
+  padding-top: 0.5rem;
+  padding-right: 0.75rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.75rem;
+  cursor: not-allowed;
+  user-select: none;
+  line-height: 24px;
+  opacity: 1;
+  overflow-x: scroll;
+}
+
+.span-like-input,
+.readonly input,
+select[disabled],
+textarea[readonly] {
+  border-radius: 0.5rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  display: block;
+  color: rgb(250 250 250);
+  background-color: #1c1c1c;
+  border: 2px solid rgb(107, 114, 128);
+  padding-top: 0.5rem;
+  padding-right: 0.75rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.75rem;
+  cursor: not-allowed;
+  user-select: none;
+  line-height: 24px;
+  opacity: 1;
+}
+
+input[type="checkbox"]:disabled,
+input[type="checkbox"]:disabled:hover,
+input[type="textarea"] {
+  background-color: #1c1c1c;
+  border: 2px solid rgb(107, 114, 128);
+  cursor: not-allowed;
+}
+
+.oneline-textarea textarea {
+  max-height: 1.5rem !important;
+}
+
+.span-like-input.no-margin {
+  margin: 0 !important;
+}
+
+.no-margin {
+  margin: 0 !important;
+}
+
+.span-like-input.mt-1 {
+  margin-top: 1rem !important;
+}
+
+.span-like-input.no-padding {
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+}
+.span-like-input.placeholder-text {
+  color: #6b7280;
+}
+
+.force-in-one-line {
+  @apply max-h-[2.75rem];
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+#products thead th:nth-child(6) {
+  width: 20%;
+}
+
+#products thead th:nth-child(2) {
+  width: 30%;
+}
+
+.invisible-button {
+  border: none !important;
+  padding: 0 !important;
+  background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.invisible-button:hover {
+  background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.grid-cols-13 {
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+}
+
+.grid-cols-14 {
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+}
+
+.grid-cols-15 {
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+}
+
+.grid-cols-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+.grid-cols-17 {
+  grid-template-columns: repeat(17, minmax(0, 1fr));
+}
+
+.grid-cols-18 {
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+}
+
+.select-like-text select {
+  background-image: none !important;
+}
+
+.select-like-text.disabled select {
+  background-image: none !important;
+  background-color: #1c1c1c;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Styles for all Live Select input */
+[id^="live-"] input {
+  background-color: #262626;
+  border: 2px solid rgb(107, 114, 128);
+  border-radius: 0.5rem;
+  color: #f0f0f0;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  position: inherit;
+  min-height: 44px;
+}
+
+[id^="live-"] > div.flex.flex-wrap.gap-1.p-1 {
+  padding: 0;
+}
+
+/* Styles for all Live Select on focus */
+[id^="live-"] input:focus {
+  border: 2px solid rgb(217, 119, 6);
+}
+
+/* Styles for all Live Select dropdown */
+[id^="live-"] > ul {
+  position: absolute;
+  top: 2.7rem;
+  max-height: 150px;
+  overflow-y: auto;
+  background-color: rgba(38, 38, 38, 0.8);
+  border: 1px solid #6b7280;
+  color: #f0f0f0;
+}
+
+/* Styles for all Live Select dropdown on hover */
+[id^="live-"] > ul > li div:hover,
+[id^="live-"] > ul > li div:focus {
+  @apply bg-amber-600;
+}
+
+/* Styles for all Live Select remove button */
+[id^="live-"] svg {
+  fill: rgb(220, 38, 38);
+}
+
+/* Styles for all Live Select remove button on hover */
+[id^="live-"] svg:hover {
+  fill: rgb(116, 42, 42);
+}
+
+/* Styles for tag mode Live Select tags group */
+[id^="live-select"] > div:has(.flex) {
+ margin-top: 0.25rem;
+}
+
+/* Styles for tag mode Live Select individual tags */
+[id^="live-select"] > div:has(.flex) div {
+  background-color: #353535;
+  color: #f0f0f0;
+  border: 1px solid #f0f0f0;
+}
+
+/* Styles for single mode Live Select */
+[id^="live-single-select"] {
+  height: auto !important;
+}
+
+/* Live select disabled */
+[phx-hook="LiveSelect"] input[disabled] {
+  background-color: rgb(28, 28, 28) !important;
+  color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.single-mode {
+  top: inherit !important;
+}
+
+.no-label-margin div input,
+.no-label-margin div textarea,
+.no-label-margin div select {
+  margin-top: 0 !important;
+}
+
+.input-center.text-center input {
+  text-align: center !important;
+}
+
+.input-like-span input {
+  border: none;
+  background: none;
+  cursor: default;
+}
+
+.input-like-span.text-center input {
+  text-align: center !important;
+}
+
+.input-like-span.text-right input {
+  text-align: right !important;
+}
+
+.input-with-currency input {
+  padding-right: 3.5rem !important;
+}
+
+td:has(.Draft) div {
+  @apply bg-gray-500 text-center flex justify-center items-center p-1 rounded-xl;
+}
+
+td:has(.Prepared) div,
+td:has(.Running) div,
+td:has(.Submitted) div {
+  @apply bg-amber-600 text-center flex justify-center items-center p-1 rounded-xl;
+}
+
+td:has(.Completed) div {
+  @apply bg-green-700 text-center flex justify-center items-center p-1 rounded-xl;
+}
+
+td:has(.Shipped) div {
+  @apply bg-green-700 text-center flex justify-center items-center p-1 rounded-xl;
+}
+
+td:has(.Cancelled) div {
+  @apply bg-red-700 text-center flex justify-center items-center p-1 rounded-xl;
+}
+
+button[phx-click="clear"] {
+  right: 30px !important;
+}
+
+.scribe-step {
+  @apply w-full flex justify-center flex-wrap mt-4;
+}
+
+.scribe-step-text {
+  @apply w-full text-center pb-2 text-xl;
+  font-weight: bold;
+}
+
+.scribe-screenshot {
+  border-radius: 0.5rem;
+  @apply border-[2px] border-amber-600;
+}
+
+.scribe-title {
+  @apply w-full border-b-[1px] border-[#f0f0f0] text-center uppercase text-4xl pb-6;
+  font-weight: bold;
+}
+
+.scribe-step-tip {
+  @apply p-2 rounded-lg border border-green-300 bg-green-50 text-green-900;
+  font-weight: normal;
+}
+
+.scribe-step-info {
+  @apply p-2 rounded-lg border border-sky-300 bg-sky-100 text-sky-900;
+  font-weight: normal;
+}
+
+.scribe-step-warning {
+  @apply p-2 rounded-lg border border-red-300 bg-red-100 text-red-900;
+  font-weight: normal;
+}
+
+.scribe-author {
+  display: none !important;
+}
+
+.radio-group {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
+}
+.radio-button {
+  width: 33%;
+}
+
+.radio-button-container {
+  display: flex;
+  align-items: center;
+}
+.radio-button-input:disabled {
+  cursor: not-allowed;
+  @apply bg-gray-400;
+}
+.radio-button-input:disabled:checked {
+  cursor: not-allowed;
+  @apply bg-gray-600;
+}
+
+.radio-button-input:checked:not(:disabled) {
+  @apply bg-amber-600;
+}
+.radio-button-input:checked:not(:disabled):hover,
+.radio-button-input:checked:not(:disabled):focus {
+  @apply bg-amber-900;
+}
+
+.radio-button-input:not(:disabled):hover,
+.radio-button-input:not(:disabled):focus {
+  @apply bg-amber-600;
+}
+
+/* to make the empty search headers not bold. */
+.py-2.px-4.border-b{
+  font-weight: normal;
+}
+
+@media (max-width: 993px) {
+  .pagination:first-of-type {
+    margin-top: 1em;
+  }
+
+  .pagination-list {
+    gap: 0.2em;
+  }
+
+  .pagination-previous,
+  .pagination-next,
+  .pagination-list li a {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    border-radius: 0.25rem;
+  }
+}

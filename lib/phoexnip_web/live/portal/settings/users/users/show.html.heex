@@ -1,0 +1,122 @@
+<div class="mx-auto border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+  <.simple_form
+    :let={f}
+    for={@form}
+    image_url={@image_url}
+    multipart={true}
+    user_id={@user_id}
+    phx-submit="save"
+    phx-change="validate"
+  >
+    <div class="mt-2 flex items-center justify-end gap-2">
+      <button
+        type="button"
+        class=" rounded-lg py-2 px-3 flex font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600 mr-auto"
+        phx-click="open_audit_log_modal"
+      >
+        <img src={~p"/images/history.svg"} class="h-[24px] me-1" /> Audit Log
+      </button>
+      <%!-- Live View Redirect --%>
+      <.link
+        patch={~p"/users/"}
+        class="rounded-lg py-2 px-3 flex font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+      >
+        <.icon name="hero-magnifying-glass" class="me-1" /> Search
+      </.link>
+
+      <%= if @user.super_user == true && @current_user.super_user == false do %>
+        <%!-- Only other super users can edit super users. --%>
+      <% else %>
+        <%= if @permission_level >= 2 do %>
+          <.link
+            patch={~p"/users/new"}
+            class="rounded-lg flex py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          >
+            <.icon name="hero-plus" class="me-1" /> New
+          </.link>
+        <% end %>
+        <%= if @permission_level >= 4 do %>
+          <.link
+            patch={~p"/users/#{@user}/edit"}
+            class="rounded-lg flex py-2 px-3 font-semibold leading-6 border border-f0f0f0 hover:bg-amber-600 focus:bg-amber-600"
+          >
+            <.icon name="hero-pencil" class="me-1" /> Edit
+          </.link>
+        <% end %>
+
+        <%= if @current_user.id == @user.id || @permission_level < 8 do %>
+          <%!-- you cannot delete the user that is currently logged in as! --%>
+        <% else %>
+          <.link
+            class="border flex py-2 px-3 rounded-lg bg-red-600 hover:bg-red-900 focus:bg-red-900"
+            phx-click={JS.push("delete", value: %{id: @user.id})}
+            data-confirm="Are you sure?"
+          >
+            <.icon name="hero-trash" class="me-1" /> Delete
+          </.link>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="w-full title">User Information</div>
+    <div class="flex w-full items-center">
+      <div class="w-[30%] flex justify-center flex-wrap">
+        <img src={@image_url} class="h-[300px] w-[300px] user-image mt-6 mb-14" id="" />
+      </div>
+      <div class="w-[70%] flex flex-wrap justify-evenly">
+        <.input field={f[:name]} type="text" label="Name" class="w-[32%] readonly" readonly />
+        <.input field={f[:email]} type="text" label="Email" class="w-[32%] readonly" readonly />
+        <.input field={f[:phone]} type="text" label="Phone" class="w-[32%] readonly" readonly />
+        <.input
+          field={f[:group]}
+          type="text"
+          label="Group"
+          class="w-[32%] mt-4 readonly"
+          readonly
+        />
+
+        <.input
+          field={f[:location]}
+          type="text"
+          label="Location"
+          class="w-[32%] mt-4 readonly"
+          readonly
+        />
+        <div class="w-[32%]"></div>
+      </div>
+    </div>
+
+    <div class="w-full title">User Roles</div>
+    <div class="flex w-full flex-wrap justify-between mt-2">
+      <.inputs_for :let={item_f} field={f[:user_roles]}>
+        <div class="w-[33%] mb-8">
+          <.input class="hidden" field={item_f[:role_name]} type="text" />
+          <.input class="hidden" field={item_f[:role_id]} type="number" />
+          <.input
+            type="checkbox"
+            field={item_f[:belongs_in_role]}
+            label={item_f[:role_name].value}
+            disabled="true"
+            value={item_f.params["belongs_in_role"]}
+          />
+        </div>
+      </.inputs_for>
+    </div>
+  </.simple_form>
+  <%= if @show_audit_log_modal do %>
+    <.audit_modal
+      id="audit_log_modal"
+      class="w-full"
+      show
+      on_cancel={JS.push("close_audit_log_modal")}
+    >
+      <.live_component
+        module={PhoexnipWeb.AuditLogLive.FormComponent}
+        id={@user.id}
+        unique_identifier={@user.email}
+        created_date={Phoexnip.DateUtils.formatDate(@user.inserted_at)}
+        entity_type="User,User - API"
+      />
+    </.audit_modal>
+  <% end %>
+</div>

@@ -1,0 +1,185 @@
+<div class="mx-auto max-w-9xl flex bg-[#353535] text-[#f0f0f0]">
+  <div class="relative">
+    <nav>
+      <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0 pl-8">
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "create", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+            phx-click="change_section"
+            phx-value-section="create"
+          >
+            Create Masterdata
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "create", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "create", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "update", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-800"}"}
+            phx-click="change_section"
+            phx-value-section="update"
+          >
+            Update Masterdata
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "update", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "update", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "create", do: "hidden"}"}>
+        <h1 class="scribe-title">Create Master Data</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Master Data"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">2. Click "New" to add a master data</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">3. Fill in "Sort"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-warning">
+            Alert: Sort must be unique and cannot be duplicated.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-info">
+            Info: Sort is used to order any drop down that uses the master data.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. Fill in a "Code" for your master data.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create4.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-warning">
+            Alert: Code must be unique and cannot be duplicated.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">5. Fill in the "Name" or your master data.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create5.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-warning">
+            Alert: Name must be unique and cannot be duplicated.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-info">
+            Info: Some master data might have additional fields, please fill them in when needed.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">6. Click "Save" to save the master data.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/create6.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "update", do: "hidden"}"}>
+        <h1 class="scribe-title">Updating Master Data</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Master Data"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/update1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">
+            2. Select the pencil icon to start editing your master data.
+          </p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/update2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">3. Update any field in the master data if required.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/update3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. Click "Save" to save the master data.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/master_data/update4.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+  </div>
+</div>

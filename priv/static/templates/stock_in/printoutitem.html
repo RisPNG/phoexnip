@@ -1,0 +1,53 @@
+<div class="container">
+  <div class="left-side">
+    <div style="display: flex">
+      <div style="width: 38%">
+        <img
+          src="data:image/png;base64,#LEFTITEMQRCODE#"
+          style="width: 2.9cm; height: 2.6cm"
+          alt="QR Code"
+        />
+      </div>
+
+      <div style="width: 62%; flex-direction: column; padding-left: 0.2cm">
+        Quantity: <br />
+        #LEFTITEMQUANTITY# #LEFTITEMUOM#<br />
+        Batch No: <br />
+        #LEFTITEMBATCHNO# <br />
+        Product colour: <br />
+        #LEFTITEMCOLOUR#
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column">
+      Product No: #LEFTITEMPRODUCT_NUMBER#<br />
+      Stock In Date: #LEFTITEMSTOCKINDATE# <br />
+      Location: #LEFTITEMLOCATION# <br />
+    </div>
+  </div>
+  <div class="right-side #SHOWRIGHTSIDE#">
+    <div style="display: flex">
+      <div style="width: 38%">
+        <img
+          src="data:image/png;base64,#RIGHTITEMQRCODE#"
+          style="width: 2.9cm; height: 2.6cm"
+          alt="QR Code"
+        />
+      </div>
+
+      <div style="width: 62%; flex-direction: column; padding-left: 0.2cm">
+        Quantity: <br />
+        #RIGHTITEMQUANTITY# #RIGHTITEMUOM#<br />
+        Batch No: <br />
+        #RIGHTITEMBATCHNO# <br />
+        Product colour: <br />
+        #RIGHTITEMCOLOUR#
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column">
+      Product No: #RIGHTITEMPRODUCT_NUMBER#<br />
+      Stock In Date: #RIGHTITEMSTOCKINDATE# <br />
+      Location: #RIGHTITEMLOCATION# <br />
+      Stock Type: #RIGHTITEMSTOCKTYPE#
+    </div>
+  </div>
+</div>

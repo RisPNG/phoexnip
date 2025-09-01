@@ -1,0 +1,56 @@
+<main class="px-4 py-4">
+  <div class="mx-auto max-w-[95%]">
+    <.flash_group flash={@flash} />
+    <div class="w-full mb-4 flex justify-between">
+      <div class="w-[70%] ps-1 flex gap-2 items-center">
+        <%= if @breadcrumb_first_segment != nil do %>
+          <p>{@breadcrumb_first_segment}</p>
+        <% end %>
+        <%= if @breadcrumb_second_segment != nil do %>
+          <.icon name="hero-chevron-right" class="ms-1 h-5" />
+          <%= if  @breadcrumb_second_link != nil do %>
+            <.link
+              patch={~p"/" <> @breadcrumb_second_link}
+              class=" hover:underline text-amber-600"
+            >
+              {@breadcrumb_second_segment}
+            </.link>
+          <% else %>
+            <p>{@breadcrumb_second_segment}</p>
+          <% end %>
+        <% end %>
+        <%!-- <%= if @breadcrumb_third_segment != nil do %>
+          <.icon name="hero-chevron-right" class="ms-1 h-5" />
+
+          <p><%= @breadcrumb_third_segment %></p>
+        <% end %> --%>
+        <%= if @breadcrumb_third_segment != nil do %>
+          <.icon name="hero-chevron-right" class="ms-1 h-5" />
+          <%= if  @breadcrumb_third_link != nil do %>
+            <.link patch={~p"/" <> @breadcrumb_third_link} class=" hover:underline text-amber-600">
+              {@breadcrumb_third_segment}
+            </.link>
+          <% else %>
+            <p>{@breadcrumb_third_segment}</p>
+          <% end %>
+        <% end %>
+        <%= if @breadcrumb_fourth_segment != nil do %>
+          <.icon name="hero-chevron-right" class="ms-1 h-5" />
+
+          <p>{@breadcrumb_fourth_segment}</p>
+        <% end %>
+      </div>
+      <div class="w-[30%] pe-1 flex justify-items-end items-end justify-end">
+        <%= if @breadcrumb_help_link != nil do %>
+          <.link patch={~p"/" <> @breadcrumb_help_link} class=" flex items-center w-[2em] h-[2em]">
+            <.icon
+              name="hero-question-mark-circle"
+              class="hover:bg-amber-600 focus:bg-amber-600 w-[100%] h-[100%]"
+            />
+          </.link>
+        <% end %>
+      </div>
+    </div>
+    {@inner_content}
+  </div>
+</main>

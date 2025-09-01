@@ -1,0 +1,14 @@
+[
+# Sobelow config: honor `# sobelow_skip`, report :low+, fail on :medium+, output JSON, ignore image_utils
+  # honor any `# sobelow_skip` markers in your code
+  skip: true,
+
+  # report all Low+ findings
+  threshold: :low,
+  format: "json",
+  # only fail (exit 1) on Medium+ findings
+  exit: :medium,
+
+  # never scan this file
+  ignore_files: ["lib/phoexnip/utils/image_utils.ex"]
+]

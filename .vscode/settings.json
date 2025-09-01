@@ -1,0 +1,115 @@
+{
+  // VSCode Settings
+
+  // Convenience
+  "emmet.includeLanguages": { "phoenix-heex": "html" },
+  "[phoenix-heex]": {
+    "editor.defaultFoldingRangeProvider": "vscode.html-language-features"
+  },
+  "editor.foldingStrategy": "auto",
+  "editor.stickyScroll.enabled": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "files.autoSave": "onFocusChange",
+  "files.saveConflictResolution": "overwriteFileOnDisk",
+  "git.autofetch": "all",
+  "git.autofetchPeriod": 30,
+  "security.workspace.trust.untrustedFiles": "open",
+  "search.useIgnoreFiles": false,
+  "search.exclude": {
+    "**/_*/": true,
+    "**/.*": true,
+    "deps/*": true,
+    "priv/gettext/*": true,
+    "priv/static/*": true
+  },
+
+  // Styling
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.fontLigatures": "'calt', 'liga', 'ss01', 'ss02', 'ss03', 'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09'",
+
+  // Extensions' Settings
+
+  // Tailwind CSS IntelliSense by Tailwind Labs
+  "tailwindCSS.includeLanguages": {
+    "elixir": "html",
+    "phoenix-heex": "html"
+  },
+
+  // indent-rainbow by oderwat
+  "indentRainbow.indicatorStyle": "light",
+  "indentRainbow.lightIndicatorStyleLineWidth": 2,
+  "indentRainbow.colors": [
+    "rgba(255,255,64,0.1)",
+    "rgba(127,255,127,0.1)",
+    "rgba(255,127,255,0.1)",
+    "rgba(79,236,236,0.1)"
+  ],
+  "indentRainbow.updateDelay": 10,
+  "indentRainbow.errorColor": "rgba(0,0,0,0.0)",
+  "indentRainbow.tabmixColor": "rgba(128,32,96,0.1)",
+  "indentRainbow.ignoreLinePatterns": ["/[ \t]* [*]/g", "/[ \t]+[/]{2}/g"],
+  "indentRainbow.ignoreErrorLanguages": ["markdown", "haskell"],
+  "indentRainbow.colorOnWhiteSpaceOnly": true,
+
+  // Run on Save by emeraldwalk
+  "emeraldwalk.runonsave": {
+    "message": "*** All Start ***",
+    "messageAfter": "*** All Complete ***",
+    "showElapsed": true,
+    "autoClearConsole": true,
+    "commands": [
+      {
+        "match": ".*",
+        "isAsync": true,
+        "cmd": "mix format && echo '${fileBasename} saved.'",
+        "autoShowOutputPanel": "never",
+        "showElapsed": true
+      }
+    ]
+  },
+
+  // Code Spell Checker by Street Side Software
+  "cSpell.enabled": true,
+  "cSpell.customDictionaries": {
+    "custom-dictionary-workspace": {
+      "name": "custom-dictionary-workspace",
+      "path": "${workspaceFolder}/.cspell/custom-dictionary-workspace.txt",
+      "addWords": true,
+      "scope": "workspace"
+    }
+  },
+  "cSpell.language": "en,en-GB",
+  "cSpell.minWordLength": 2,
+  "cSpell.maxDuplicateProblems": 1024,
+  "cSpell.maxNumberOfProblems": 1024,
+  "cSpell.blockCheckingWhenAverageChunkSizeGreaterThan": 128,
+  "cSpell.blockCheckingWhenTextChunkSizeGreaterThan": 512,
+  "cSpell.checkLimit": 512,
+  "cSpell.suggestionsTimeout": 512,
+  "cSpell.minRandomLength": 12,
+  "cSpell.allowCompoundWords": true,
+
+  // #region folding for VS Code by maptz
+  "maptz.regionfolder": {
+    "[elixir]": {
+      "foldStart": "# region",
+      "foldStartRegex": "#\\s*[Rr][Ee][Gg][Ii][Oo][Nn].*",
+      "foldEnd": "# endregion",
+      "foldEndRegex": "#\\s*[Ee][Nn][Dd][Rr][Ee][Gg][Ii][Oo][Nn]"
+    },
+    "[phoenix-heex]": {
+      "foldStart": "<%!-- region --%>",
+      "foldStartRegex": "<%!--\\s*[Rr][Ee][Gg][Ii][Oo][Nn].*--%>",
+      "foldEnd": "<%!-- endregion --%>",
+      "foldEndRegex": "<%!--\\s*[Ee][Nn][Dd][Rr][Ee][Gg][Ii][Oo][Nn].*--%>"
+    },
+    "[javascript]": {
+      "foldStart": "// region",
+      "foldStartRegex": "//\\s*[Rr][Ee][Gg][Ii][Oo][Nn].*",
+      "foldEnd": "// endregion",
+      "foldEndRegex": "//\\s*[Ee][Nn][Dd][Rr][Ee][Gg][Ii][Oo][Nn]"
+    }
+  }
+}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock In QR</title>
+    <style>
+      /* Ensure the entire page height is used */
+      html,
+      body {
+        height: 100%; /* Make the body and html take full height */
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Container that holds both the left and right columns */
+      .container {
+        background-color: white;
+        break-after: always;
+        display: flex;
+        height: 100%; /* The container should span the full height of the page */
+        width: 100%;
+        padding-left: 1.1cm;
+        padding-right: 1.1cm;
+        overflow: hidden; /* Prevent content from overflowing */
+      }
+
+      /* Style for the left and right side */
+      .left-side,
+      .right-side {
+        background-color: white;
+        width: 50%; /* Each side takes up 50% of the container width */
+        height: 100%; /* Ensure each side takes the full height */
+        padding: 0.1cm;
+        box-sizing: border-box; /* Include padding in the width calculation */
+        overflow: hidden; /* Prevent content from overflowing */
+        word-wrap: break-word; /* Wrap long words inside */
+        font-size: 0.35cm;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      p {
+        margin-bottom: 20px;
+      }
+      .none {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    #ITEMS#
+  </body>
+</html>

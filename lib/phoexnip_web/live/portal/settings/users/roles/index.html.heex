@@ -1,0 +1,381 @@
+<div class="border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600 mb-8">
+  <.header class="mb-2 title">Search</.header>
+  <.form
+    :let={f}
+    for={@form}
+    phx-submit="search"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6"
+    id="search-form"
+  >
+    <div class="">
+      <.live_select
+        label="Name"
+        id="live-single-select-name"
+        field={f[:name]}
+        options={[{"", ""}]}
+        placeholder="Type to search..."
+        phx-focus="live_select_change"
+        allow_clear={true}
+      />
+    </div>
+    <div class="">
+      <.live_select
+        label="Description"
+        id="live-single-select-description"
+        field={f[:description]}
+        options={[{"", ""}]}
+        placeholder="Type to search..."
+        phx-focus="live_select_change"
+        allow_clear={true}
+      />
+    </div>
+    <!-- This empty div ensures the buttons are placed on a new row -->
+    <div class="col-span-full"></div>
+    <!-- Buttons on a new row -->
+    <div class="col-span-full flex justify-end mt-4">
+      <.button type="submit" class="mr-4 flex items-center">
+        <.icon name="hero-magnifying-glass" class="me-1" /> Search
+      </.button>
+      <.button
+        type="button"
+        phx-click="reset_form"
+        class="flex items-center"
+        onclick="[...document.querySelectorAll('.cursor-pointer')].reverse().forEach(button => button.click()); document.querySelectorAll('[phx-click=clear]').forEach(button => button.click());document.getElementById('search-form').click();"
+      >
+        <.icon name="hero-x-circle" class="me-1" /> Reset
+      </.button>
+    </div>
+  </.form>
+</div>
+
+<div class="border-[1px] border-[#f0f0f0] p-8 rounded-lg shadow-lg shadow-neutral-600">
+  <.header class="title pb-2">
+    Roles
+    <:actions>
+      <%= if @permission_level >= 2 do %>
+        <.link patch={~p"/roles/new"}>
+          <.button class="flex align-center">
+            <.icon name="hero-plus" class="me-1" /> New
+          </.button>
+        </.link>
+      <% end %>
+    </:actions>
+  </.header>
+
+  <nav class="pagination mt-8" role="navigation" aria-label="pagination">
+    <%= if @page > 1 do %>
+      <.link phx-click="paginate" phx-value-page={@page - 1} class="pagination-previous">
+        Previous
+      </.link>
+    <% else %>
+      <span aria-label="Go to previous page" class="pagination-previous disabled">
+        Previous
+      </span>
+    <% end %>
+
+    <%= if @page < @total_pages do %>
+      <.link phx-click="paginate" phx-value-page={@page + 1} class="pagination-next">
+        Next
+      </.link>
+    <% else %>
+      <span aria-label="Go to next page" class="pagination-next disabled">Next</span>
+    <% end %>
+
+    <ul class="pagination-list">
+      <!-- Always display first page if total_pages > 0 -->
+      <%= if @total_pages > 10 do %>
+        <li>
+          <.link
+            phx-click="paginate"
+            phx-value-page={1}
+            aria-label="Go to page 1"
+            class={if @page == 1, do: "pagination-link is-current", else: "pagination-link"}
+          >
+            1
+          </.link>
+        </li>
+        <!-- Always display second page if total_pages > 1 -->
+        <%= if @total_pages > 1 do %>
+          <li>
+            <.link
+              phx-click="paginate"
+              phx-value-page={2}
+              aria-label="Go to page 2"
+              class={if @page == 2, do: "pagination-link is-current", else: "pagination-link"}
+            >
+              2
+            </.link>
+          </li>
+          <!-- Show ellipsis if necessary -->
+          <%= if @total_pages > 3 and @page > 3 do %>
+            <li><span class="pagination-ellipsis">&hellip;</span></li>
+          <% end %>
+          <!-- Display pages around the current page, only if there are more than 3 pages -->
+          <%= if @total_pages > 3 do %>
+            <%= for page <- max(3, @page - 3)..min(@total_pages - 2, @page + 2) do %>
+              <li>
+                <.link
+                  phx-click="paginate"
+                  phx-value-page={page}
+                  aria-label={"Go to page #{page}"}
+                  aria-current={if page == @page, do: "page", else: false}
+                  class={
+                    if page == @page, do: "pagination-link is-current", else: "pagination-link"
+                  }
+                >
+                  {page}
+                </.link>
+              </li>
+            <% end %>
+          <% end %>
+          <!-- Show ellipsis before the last two pages if necessary -->
+          <%= if @total_pages > 3 and @page < @total_pages - 2 do %>
+            <li><span class="pagination-ellipsis">&hellip;</span></li>
+          <% end %>
+          <!-- Always display the last two pages if total_pages > 3 -->
+          <%= if @total_pages > 3 do %>
+            <li>
+              <.link
+                phx-click="paginate"
+                phx-value-page={@total_pages - 1}
+                aria-label={"Go to page #{@total_pages - 1}"}
+                class={
+                  if @page == @total_pages - 1,
+                    do: "pagination-link is-current",
+                    else: "pagination-link"
+                }
+              >
+                {@total_pages - 1}
+              </.link>
+            </li>
+            <li>
+              <.link
+                phx-click="paginate"
+                phx-value-page={@total_pages}
+                aria-label={"Go to page #{@total_pages}"}
+                class={
+                  if @page == @total_pages,
+                    do: "pagination-link is-current",
+                    else: "pagination-link"
+                }
+              >
+                {@total_pages}
+              </.link>
+            </li>
+          <% end %>
+        <% end %>
+      <% else %>
+        <%= for page <- 1..@total_pages do %>
+          <li>
+            <.link
+              phx-click="paginate"
+              phx-value-page={page}
+              aria-label={"Go to page #{page}"}
+              aria-current={if page == @page, do: "page", else: false}
+              class={if page == @page, do: "pagination-link is-current", else: "pagination-link"}
+            >
+              {page}
+            </.link>
+          </li>
+        <% end %>
+      <% end %>
+    </ul>
+  </nav>
+  <%= if @error_message == true do %>
+    <table class="w-[40rem] mt-11 sm:w-full">
+      <thead>
+        <tr>
+          <th class="py-2 px-4 border-b">Name</th>
+          <th class="py-2 px-4 border-b">Description</th>
+          <th class="py-2 px-4 border-b"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="py-2 px-4 border-b text-center" colspan="5">
+            No records found matching the search criteria.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  <% else %>
+    <.table id="roles" rows={@streams.roles_collection}>
+      <:col :let={{_id, roles}} label="Name">
+        {roles.name}
+      </:col>
+      <:col :let={{_id, roles}} label="Description">{roles.description}</:col>
+      <:action :let={{id, roles}}>
+        <.button
+          type="button"
+          phx-click="open_audit_log_modal"
+          phx-value-id={roles.id}
+          phx-value-code={roles.name}
+          phx-value-inserted_at={roles.inserted_at}
+        >
+          <img src={~p"/images/history.svg"} class="w-5 h-5" />
+        </.button>
+        <%= if @permission_level >= 4 do %>
+          <.button type="button" phx-click={JS.patch(~p"/roles/#{roles}/edit")}>
+            <.icon name="hero-pencil" class="w-5 h-5" />
+          </.button>
+        <% end %>
+        <%= if @permission_level >= 8 do %>
+          <.button
+            type="button"
+            phx-click={JS.push("delete", value: %{id: roles.id}) |> hide("##{id}")}
+            data-confirm="Are you sure?"
+            class="bg-red-600 hover:bg-red-900 focus:bg-red-900"
+          >
+            <.icon name="hero-trash" class="w-5 h-5" />
+          </.button>
+        <% end %>
+      </:action>
+    </.table>
+  <% end %>
+  <div class="flex justify-between items-center">
+    <nav class="pagination mt-8" role="navigation" aria-label="pagination">
+      <%= if @page > 1 do %>
+        <.link phx-click="paginate" phx-value-page={@page - 1} class="pagination-previous">
+          Previous
+        </.link>
+      <% else %>
+        <span aria-label="Go to previous page" class="pagination-previous disabled">
+          Previous
+        </span>
+      <% end %>
+
+      <%= if @page < @total_pages do %>
+        <.link phx-click="paginate" phx-value-page={@page + 1} class="pagination-next">
+          Next
+        </.link>
+      <% else %>
+        <span aria-label="Go to next page" class="pagination-next disabled">Next</span>
+      <% end %>
+
+      <ul class="pagination-list">
+        <!-- Always display first page if total_pages > 0 -->
+        <%= if @total_pages > 10 do %>
+          <li>
+            <.link
+              phx-click="paginate"
+              phx-value-page={1}
+              aria-label="Go to page 1"
+              class={if @page == 1, do: "pagination-link is-current", else: "pagination-link"}
+            >
+              1
+            </.link>
+          </li>
+          <!-- Always display second page if total_pages > 1 -->
+          <%= if @total_pages > 1 do %>
+            <li>
+              <.link
+                phx-click="paginate"
+                phx-value-page={2}
+                aria-label="Go to page 2"
+                class={if @page == 2, do: "pagination-link is-current", else: "pagination-link"}
+              >
+                2
+              </.link>
+            </li>
+            <!-- Show ellipsis if necessary -->
+            <%= if @total_pages > 3 and @page > 3 do %>
+              <li><span class="pagination-ellipsis">&hellip;</span></li>
+            <% end %>
+            <!-- Display pages around the current page, only if there are more than 3 pages -->
+            <%= if @total_pages > 3 do %>
+              <%= for page <- max(3, @page - 3)..min(@total_pages - 2, @page + 2) do %>
+                <li>
+                  <.link
+                    phx-click="paginate"
+                    phx-value-page={page}
+                    aria-label={"Go to page #{page}"}
+                    aria-current={if page == @page, do: "page", else: false}
+                    class={
+                      if page == @page, do: "pagination-link is-current", else: "pagination-link"
+                    }
+                  >
+                    {page}
+                  </.link>
+                </li>
+              <% end %>
+            <% end %>
+            <!-- Show ellipsis before the last two pages if necessary -->
+            <%= if @total_pages > 3 and @page < @total_pages - 2 do %>
+              <li><span class="pagination-ellipsis">&hellip;</span></li>
+            <% end %>
+            <!-- Always display the last two pages if total_pages > 3 -->
+            <%= if @total_pages > 3 do %>
+              <li>
+                <.link
+                  phx-click="paginate"
+                  phx-value-page={@total_pages - 1}
+                  aria-label={"Go to page #{@total_pages - 1}"}
+                  class={
+                    if @page == @total_pages - 1,
+                      do: "pagination-link is-current",
+                      else: "pagination-link"
+                  }
+                >
+                  {@total_pages - 1}
+                </.link>
+              </li>
+              <li>
+                <.link
+                  phx-click="paginate"
+                  phx-value-page={@total_pages}
+                  aria-label={"Go to page #{@total_pages}"}
+                  class={
+                    if @page == @total_pages,
+                      do: "pagination-link is-current",
+                      else: "pagination-link"
+                  }
+                >
+                  {@total_pages}
+                </.link>
+              </li>
+            <% end %>
+          <% end %>
+        <% else %>
+          <%= for page <- 1..@total_pages do %>
+            <li>
+              <.link
+                phx-click="paginate"
+                phx-value-page={page}
+                aria-label={"Go to page #{page}"}
+                aria-current={if page == @page, do: "page", else: false}
+                class={
+                  if page == @page, do: "pagination-link is-current", else: "pagination-link"
+                }
+              >
+                {page}
+              </.link>
+            </li>
+          <% end %>
+        <% end %>
+      </ul>
+    </nav>
+    <div class="w-[30%] text-right">
+      <%= if @total_entries > 0 do %>
+        Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @total_entries)} of {@total_entries} entries
+      <% else %>
+        Showing 0 to 0 of 0 entries
+      <% end %>
+    </div>
+  </div>
+  <%= if @show_audit_log_modal do %>
+    <.audit_modal
+      id="audit_log_modal"
+      class="w-full"
+      show
+      on_cancel={JS.push("close_audit_log_modal")}
+    >
+      <.live_component
+        module={PhoexnipWeb.AuditLogLive.FormComponent}
+        id={@audit_log_data.id}
+        unique_identifier={@audit_log_data.name}
+        created_date={Phoexnip.DateUtils.formatDate(@audit_log_data.inserted_at)}
+        entity_type="Roles,Roles - API"
+      />
+    </.audit_modal>
+  <% end %>
+</div>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title suffix=" · Phoexnip">
+      {assigns[:page_title] || "Phoexnip"}
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+  </head>
+  <body class="">
+    <header class="px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between border-b border-zinc-100 text-sm">
+        <div class="flex items-center gap-4">
+          <.link patch="/">
+            <img src={~p"/images/logo.svg"} width="75" class="p-2" />
+          </.link>
+        </div>
+        <div class="flex items-center gap-6 font-semibold leading-6">
+          <%= if @current_user do %>
+            <%= for permission <- @permissions do %>
+              <%= if (permission.sitemap_level == 0 && Enum.any?(permission.children, fn child -> child.permission > 0 end)) || permission.sitemap_code == "H" do %>
+                <div class="relative inline-block text-left">
+                  <div class="group">
+                    <button
+                      type="button"
+                      class="dropdown-toggle inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-amber-600 hover:underline"
+                      data-dropdown-target={"menu-" <> to_string(permission.sitemap_code)}
+                      onclick="toggleDropdown(event)"
+                    >
+                      <%= if !Enum.empty?(permission.children) do %>
+                        <%= if permission.sitemap_url do %>
+                          <.link href={~p"/" <> permission.sitemap_url} class="">
+                            {permission.sitemap_name}
+                          </.link>
+                        <% else %>
+                          {permission.sitemap_name}
+                        <% end %>
+                      <% end %>
+                      <%= if Enum.empty?(permission.children) do %>
+                        <.link href={~p"/"} class="">
+                          {permission.sitemap_name}
+                        </.link>
+                      <% end %>
+                    </button>
+                    <%= if !Enum.empty?(permission.children) do %>
+                      <!-- Dropdown menu -->
+                      <div
+                        id={"menu-" <> to_string(permission.sitemap_code)}
+                        onclick="hideAllMenu(event)"
+                        class="dropdown-menu dropdown-menu-child absolute z-50 md:right-[-4rem] w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-neutral-800 pl-2 border-white border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300"
+                      >
+                        <%= for child <- permission.children do %>
+                          <%= if child.permission > 0 do %>
+                            <div class="py-2 w-full inline-flex justify-start pl-2 items-center hover:text-amber-600 hover:underline">
+                              <.link patch={~p"/" <> child.sitemap_url} class="w-full">
+                                {child.sitemap_name}
+                              </.link>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+
+            <%!-- User Icon plus user account action --%>
+            <div class="border-r-2 border-f0f0f0" style="height:28px"></div>
+            <div class="relative inline-block text-left">
+              <div class="group">
+                <button
+                  type="button"
+                  class="inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-amber-600  hover:underline "
+                >
+                  <img
+                    src={Phoexnip.ImageUtils.image_for(@current_user)}
+                    class="mr-1 rounded-full size-7"
+                  /> {@current_user.name}
+                  <!-- Dropdown arrow -->
+                  <svg
+                    class="w-4 h-4 ml-2 -mr-1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path fill-rule="evenodd" d="M10 12l-5-5h10l-5 5z" />
+                  </svg>
+                </button>
+                <!-- Dropdown menu -->
+                <div class="absolute right-[-4rem] md:right-0 z-50 w-[11rem] origin-top-right p-2 bg-neutral-800 pl-2 border-white border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300">
+                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                    <div class="pr-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                        />
+                      </svg>
+                    </div>
+                    <.link href={~p"/users/#{@current_user}"} class="">Profile</.link>
+                  </div>
+                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                    <div class="pr-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z"
+                        />
+                      </svg>
+                    </div>
+                    <.link href={~p"/account/settings"} class="">Change Password</.link>
+                  </div>
+                  <div class="py-1 inline-flex justify-center items-center hover:text-amber-600  hover:underline ">
+                    <div class="pr-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="size-6"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15"
+                        />
+                      </svg>
+                    </div>
+                    <.link href={~p"/log_out"} class="" method="delete">Log out</.link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% else %>
+            <.link href={~p"/"} class="hover:text-amber-600  hover:underline ">
+              Home
+            </.link>
+            <.link href={~p"/log_in"} class="hover:text-amber-600  hover:underline ">
+              Login
+            </.link>
+          <% end %>
+        </div>
+      </div>
+    </header>
+
+    {@inner_content}
+    <script>
+      function toggleDropdown(event) {
+        const button = event.currentTarget;
+        const dropdownMenuId = button.getAttribute('data-dropdown-target');
+        const dropdownMenu = document.getElementById(dropdownMenuId);
+
+        // Check if the dropdown menu is currently visible
+        const isVisible = dropdownMenu.classList.contains('opacity-100');
+
+        // Close all open dropdown menus
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('opacity-100', 'visible');
+        menu.classList.add('opacity-0', 'invisible');
+        });
+
+        // If the clicked menu wasn't already open, open it
+        if (!isVisible) {
+        dropdownMenu.classList.remove('opacity-0', 'invisible');
+        dropdownMenu.classList.add('opacity-100', 'visible');
+        }
+      }
+
+      function hideAllMenu() {
+        // Get all elements with the class 'dropdown-menu'
+        const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+
+        // Iterate over each dropdown menu and hide it
+        dropdownMenus.forEach(menu => {
+          if (menu.classList.contains('opacity-100')) {
+            menu.classList.remove('opacity-100', 'visible');
+            menu.classList.add('opacity-0', 'invisible');
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

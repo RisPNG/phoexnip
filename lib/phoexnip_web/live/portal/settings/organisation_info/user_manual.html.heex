@@ -1,0 +1,73 @@
+<div class="mx-auto max-w-9xl flex bg-[#353535] text-[#f0f0f0]">
+  <div class="relative">
+    <nav>
+      <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0 pl-8">
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "update", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-800"}"}
+            phx-click="change_section"
+            phx-value-section="update"
+          >
+            Update Organisation Information
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "update", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "update", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "update", do: "hidden"}"}>
+        <h1 class="scribe-title">Updating Organisation Information</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Organisation Information"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/organisation_information/update1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">2. Update "General Information" if required.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/organisation_information/update2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">3. Add, Remove or Edit address if required.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/organisation_information/update3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. Click "Save" when you updated all your information.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/organisation_information/update4.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,299 @@
+<div class="mx-auto max-w-9xl flex bg-[#353535] text-[#f0f0f0]">
+  <div class="relative">
+    <nav>
+      <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0 pl-8">
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "search", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+            phx-click="change_section"
+            phx-value-section="search"
+          >
+            Search User
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "search", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "search", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "create", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+            phx-click="change_section"
+            phx-value-section="create"
+          >
+            Create User
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "create", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "create", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+        <li>
+          <a
+            href="#"
+            class={"block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == "update", do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-800"}"}
+            phx-click="change_section"
+            phx-value-section="update"
+          >
+            Update User
+            <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == "update", do: "bg-amber-600"}"}>
+            </div>
+            <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == "update", do: "bg-[#353535]"}"}>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "search", do: "hidden"}"}>
+        <h1 class="scribe-title">Search User</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Users"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/search1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">2. Search by any options for example "Name"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/search2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">
+            3. Click "Search" after you have filled in your search criteria.
+          </p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/search3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. In the table below you will find the results.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/search4.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "create", do: "hidden"}"}>
+        <h1 class="scribe-title">Create User</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Users"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">2. Click "New"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">3. Fill in your name.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. Fill in your email</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create4.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-tip">
+            Info: Your email must be unique, if the email is already in the system you will not be allowed to create the user.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">5. Fill in your group</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create5.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">6. Fill in a strong password</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create6.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">7. Fill in the confirm password field</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create7.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-warning">
+            <strong>
+              Alert: The password must have:<br />
+            </strong>
+            1. at least one digit or punctuation character <br />
+            2. at least one upper case character <br /> 3. should be at least 12 character(s)
+            <br />
+            <strong>Please save this password securely (e.g., a password manager).</strong>
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">8. Add an optional profile picture.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create8.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">9. Select the roles this users belongs too.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create9.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">10. Click "Save" to save the user.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/create10.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+    <section>
+      <div class={"flex flex-wrap w-full gap-2 justify-evenly #{if @current_section != "update", do: "hidden"}"}>
+        <h1 class="scribe-title">Update User</h1>
+        <div class="scribe-step">
+          <p class="scribe-step-text">1. Click "Users"</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/update1.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">2. Click the pencil icon to start editing the user.</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/update2.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text">3. Update any information if required</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/update3.jpeg"}
+          />
+        </p>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-info">
+            Info: the password is not required. When filled in it will update the users password.
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text scribe-step-warning">
+            <strong>
+              Alert: The password must have:<br />
+            </strong>
+            1. at least one digit or punctuation character <br />
+            2. at least one upper case character <br /> 3. should be at least 12 character(s)
+            <br />
+            <strong>Please save this password securely (e.g., a password manager).</strong>
+          </p>
+        </div>
+        <div class="scribe-step">
+          <p class="scribe-step-text">4. Click "Save" once done to save the changes</p>
+        </div>
+        <p class="scribe-screenshot-container">
+          <img
+            class="scribe-screenshot"
+            width="900"
+            alt=""
+            src={~p"/images/user_manual/settings/users/update4.jpeg"}
+          />
+        </p>
+      </div>
+    </section>
+  </div>
+</div>

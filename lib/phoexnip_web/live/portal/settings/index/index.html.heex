@@ -1,0 +1,19 @@
+<div class="flex w-full flex-wrap items-center mt-5">
+  <h3 class="w-full text-4xl mb-6 text-center">
+    Welcome to Phoexnip
+  </h3>
+
+  <p class="w-full mb-3 text-center">
+    This portal provides access to parts of the system. <br />
+    If you encounter issues, please notify your support team. <br />
+    Thank you!
+  </p>
+
+  <%= unless @current_user do %>
+    <p class="w-full mb-3 text-center">
+      If you have an account you can
+      <.link class="text-sky-400 text-underline" href={~p"/log_in"}>login here.</.link>
+    </p>
+    <p class="w-full mb-3 text-center">Otherwise, please contact your HOD for access.</p>
+  <% end %>
+</div>

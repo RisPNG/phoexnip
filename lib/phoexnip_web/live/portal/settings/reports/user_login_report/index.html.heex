@@ -1,0 +1,432 @@
+<div class="mx-auto  flex bg-[#353535] text-[#f0f0f0]">
+  <div class="relative max-w-[12%]">
+    <nav>
+      <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0">
+        <%= for mp <- @purchase_reports do %>
+          <li>
+            <.link
+              patch={~p"/" <> mp.sitemap_url}
+              class={"w-full block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == mp.sitemap_name, do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+              phx-click="change_section"
+              phx-value-section={mp.sitemap_name}
+            >
+              {mp.sitemap_name}
+              <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == mp.sitemap_name, do: "bg-amber-600"}"}>
+              </div>
+              <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == mp.sitemap_name, do: "bg-[#353535]"}"}>
+              </div>
+            </.link>
+          </li>
+        <% end %>
+      </ul>
+    </nav>
+  </div>
+  <div class="max-w-[88%] flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+    <.header class="title">Search</.header>
+    <.form
+      :let={f}
+      for={@form}
+      phx-submit="search"
+      phx-change="validate"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6"
+      id="search-form"
+    >
+      <div class="flex flex-wrap">
+        <span class="w-full">Date:</span>
+        <div class="w-full flex items-center">
+          <.input
+            type="text"
+            class="me-2"
+            name="from_date"
+            id="from_date"
+            data-phx-hook="DatePicker"
+            placeholder="dd/mm/yyyy"
+            field={f[:from_date]}
+            label=""
+          />
+          <span> to</span>
+          <.input
+            type="text"
+            class="ms-2"
+            name="to_date"
+            id="to_date"
+            placeholder="dd/mm/yyyy"
+            data-phx-hook="DatePicker"
+            field={f[:to_date]}
+            label=""
+          />
+        </div>
+      </div>
+      <div>
+        <.live_select
+          label="User:"
+          id="live-single-select-user"
+          field={f[:user]}
+          placeholder="Type to search..."
+          phx-focus="live_select_change"
+          allow_clear={true}
+        />
+      </div>
+
+      <div class="col-span-full"></div>
+      <div class="col-span-full flex justify-end mt-4">
+        <.button type="submit" class="mr-4 flex items-center">
+          <.icon name="hero-magnifying-glass" class="me-1" /> Search
+        </.button>
+        <.button
+          type="button"
+          onclick="[...document.querySelectorAll('.cursor-pointer')].reverse().forEach(button => button.click()); document.querySelectorAll('[phx-click=clear]').forEach(button => button.click()); document.getElementById('search-form').click(); setTimeout(() => document.querySelector('[phx-click=\'reset_form\']').click(), 200);"
+          class="flex items-center cursor-pointer"
+        >
+          <.icon name="hero-x-circle" class="me-1" /> Reset
+        </.button>
+        <.button type="button" phx-click="reset_form" class="items-center hidden">
+          <.icon name="hero-x-circle" class="me-1" /> Reset
+        </.button>
+      </div>
+    </.form>
+    <div class={"flex flex-wrap justify-evenly gap-1 " <> @show_results}>
+      <%!-- START RESULTS --%>
+      <div class="title w-full">Result</div>
+      <div class="w-full">
+        <nav class="pagination mt-8" role="navigation" aria-label="pagination">
+          <%= if @page > 1 do %>
+            <.link phx-click="paginate" phx-value-page={@page - 1} class="pagination-previous">
+              Previous
+            </.link>
+          <% else %>
+            <span aria-label="Go to previous page" class="pagination-previous disabled">
+              Previous
+            </span>
+          <% end %>
+
+          <%= if @page < @total_pages do %>
+            <.link phx-click="paginate" phx-value-page={@page + 1} class="pagination-next">
+              Next
+            </.link>
+          <% else %>
+            <span aria-label="Go to next page" class="pagination-next disabled">Next</span>
+          <% end %>
+
+          <ul class="pagination-list">
+            <!-- Always display first page if total_pages > 0 -->
+            <%= if @total_pages > 10 do %>
+              <li>
+                <.link
+                  phx-click="paginate"
+                  phx-value-page={1}
+                  aria-label="Go to page 1"
+                  class={if @page == 1, do: "pagination-link is-current", else: "pagination-link"}
+                >
+                  1
+                </.link>
+              </li>
+              <!-- Always display second page if total_pages > 1 -->
+              <%= if @total_pages > 1 do %>
+                <li>
+                  <.link
+                    phx-click="paginate"
+                    phx-value-page={2}
+                    aria-label="Go to page 2"
+                    class={
+                      if @page == 2, do: "pagination-link is-current", else: "pagination-link"
+                    }
+                  >
+                    2
+                  </.link>
+                </li>
+                <!-- Show ellipsis if necessary -->
+                <%= if @total_pages > 3 and @page > 3 do %>
+                  <li><span class="pagination-ellipsis">&hellip;</span></li>
+                <% end %>
+                <!-- Display pages around the current page, only if there are more than 3 pages -->
+                <%= if @total_pages > 3 do %>
+                  <%= for page <- max(3, @page - 3)..min(@total_pages - 2, @page + 2) do %>
+                    <li>
+                      <.link
+                        phx-click="paginate"
+                        phx-value-page={page}
+                        aria-label={"Go to page #{page}"}
+                        aria-current={if page == @page, do: "page", else: false}
+                        class={
+                          if page == @page,
+                            do: "pagination-link is-current",
+                            else: "pagination-link"
+                        }
+                      >
+                        {page}
+                      </.link>
+                    </li>
+                  <% end %>
+                <% end %>
+                <!-- Show ellipsis before the last two pages if necessary -->
+                <%= if @total_pages > 3 and @page < @total_pages - 2 do %>
+                  <li><span class="pagination-ellipsis">&hellip;</span></li>
+                <% end %>
+                <!-- Always display the last two pages if total_pages > 3 -->
+                <%= if @total_pages > 3 do %>
+                  <li>
+                    <.link
+                      phx-click="paginate"
+                      phx-value-page={@total_pages - 1}
+                      aria-label={"Go to page #{@total_pages - 1}"}
+                      class={
+                        if @page == @total_pages - 1,
+                          do: "pagination-link is-current",
+                          else: "pagination-link"
+                      }
+                    >
+                      {@total_pages - 1}
+                    </.link>
+                  </li>
+                  <li>
+                    <.link
+                      phx-click="paginate"
+                      phx-value-page={@total_pages}
+                      aria-label={"Go to page #{@total_pages}"}
+                      class={
+                        if @page == @total_pages,
+                          do: "pagination-link is-current",
+                          else: "pagination-link"
+                      }
+                    >
+                      {@total_pages}
+                    </.link>
+                  </li>
+                <% end %>
+              <% end %>
+            <% else %>
+              <%= for page <- 1..@total_pages do %>
+                <li>
+                  <.link
+                    phx-click="paginate"
+                    phx-value-page={page}
+                    aria-label={"Go to page #{page}"}
+                    aria-current={if page == @page, do: "page", else: false}
+                    class={
+                      if page == @page, do: "pagination-link is-current", else: "pagination-link"
+                    }
+                  >
+                    {page}
+                  </.link>
+                </li>
+              <% end %>
+            <% end %>
+          </ul>
+        </nav>
+
+        <%= if @error_message == true do %>
+          <table class="w-[40rem] mt-11 sm:w-full">
+            <thead>
+              <tr>
+                <th class="py-2 px-4 border-b">Log In Date</th>
+                <th class="py-2 px-4 border-b">User Name</th>
+                <th class="py-2 px-4 border-b">User Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="py-2 px-4 border-b text-center" colspan="3">
+                  No records found matching the search criteria.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        <% else %>
+          <.table id="request" table_length="w-full mt-4 mb-4" rows={@streams.request_collection}>
+            <:col :let={{_id, request}} label="Log In Date">
+              {Phoexnip.DateUtils.formatDate(request.inserted_at)}
+            </:col>
+            <:col :let={{_id, request}} label="User Name">
+              <div class="w-full flex items-center relative">
+                <img
+                  class="h-11 w-11 rounded-full me-2 border-2 "
+                  src={
+                    Phoexnip.ImageUtils.fetch_image_for_by_object_identifier(request.user_name)
+                  }
+                /> {request.user_name}
+              </div>
+            </:col>
+            <:col :let={{_id, request}} label="User Email">
+              {request.entity_unique_identifier}
+            </:col>
+          </.table>
+        <% end %>
+        <div class="flex justify-between items-center">
+          <nav class="pagination mt-8" role="navigation" aria-label="pagination">
+            <%= if @page > 1 do %>
+              <.link phx-click="paginate" phx-value-page={@page - 1} class="pagination-previous">
+                Previous
+              </.link>
+            <% else %>
+              <span aria-label="Go to previous page" class="pagination-previous disabled">
+                Previous
+              </span>
+            <% end %>
+
+            <%= if @page < @total_pages do %>
+              <.link phx-click="paginate" phx-value-page={@page + 1} class="pagination-next">
+                Next
+              </.link>
+            <% else %>
+              <span aria-label="Go to next page" class="pagination-next disabled">Next</span>
+            <% end %>
+
+            <ul class="pagination-list">
+              <!-- Always display first page if total_pages > 0 -->
+              <%= if @total_pages > 10 do %>
+                <li>
+                  <.link
+                    phx-click="paginate"
+                    phx-value-page={1}
+                    aria-label="Go to page 1"
+                    class={
+                      if @page == 1, do: "pagination-link is-current", else: "pagination-link"
+                    }
+                  >
+                    1
+                  </.link>
+                </li>
+                <!-- Always display second page if total_pages > 1 -->
+                <%= if @total_pages > 1 do %>
+                  <li>
+                    <.link
+                      phx-click="paginate"
+                      phx-value-page={2}
+                      aria-label="Go to page 2"
+                      class={
+                        if @page == 2, do: "pagination-link is-current", else: "pagination-link"
+                      }
+                    >
+                      2
+                    </.link>
+                  </li>
+                  <!-- Show ellipsis if necessary -->
+                  <%= if @total_pages > 3 and @page > 3 do %>
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                  <% end %>
+                  <!-- Display pages around the current page, only if there are more than 3 pages -->
+                  <%= if @total_pages > 3 do %>
+                    <%= for page <- max(3, @page - 3)..min(@total_pages - 2, @page + 2) do %>
+                      <li>
+                        <.link
+                          phx-click="paginate"
+                          phx-value-page={page}
+                          aria-label={"Go to page #{page}"}
+                          aria-current={if page == @page, do: "page", else: false}
+                          class={
+                            if page == @page,
+                              do: "pagination-link is-current",
+                              else: "pagination-link"
+                          }
+                        >
+                          {page}
+                        </.link>
+                      </li>
+                    <% end %>
+                  <% end %>
+                  <!-- Show ellipsis before the last two pages if necessary -->
+                  <%= if @total_pages > 3 and @page < @total_pages - 2 do %>
+                    <li><span class="pagination-ellipsis">&hellip;</span></li>
+                  <% end %>
+                  <!-- Always display the last two pages if total_pages > 3 -->
+                  <%= if @total_pages > 3 do %>
+                    <li>
+                      <.link
+                        phx-click="paginate"
+                        phx-value-page={@total_pages - 1}
+                        aria-label={"Go to page #{@total_pages - 1}"}
+                        class={
+                          if @page == @total_pages - 1,
+                            do: "pagination-link is-current",
+                            else: "pagination-link"
+                        }
+                      >
+                        {@total_pages - 1}
+                      </.link>
+                    </li>
+                    <li>
+                      <.link
+                        phx-click="paginate"
+                        phx-value-page={@total_pages}
+                        aria-label={"Go to page #{@total_pages}"}
+                        class={
+                          if @page == @total_pages,
+                            do: "pagination-link is-current",
+                            else: "pagination-link"
+                        }
+                      >
+                        {@total_pages}
+                      </.link>
+                    </li>
+                  <% end %>
+                <% end %>
+              <% else %>
+                <%= for page <- 1..@total_pages do %>
+                  <li>
+                    <.link
+                      phx-click="paginate"
+                      phx-value-page={page}
+                      aria-label={"Go to page #{page}"}
+                      aria-current={if page == @page, do: "page", else: false}
+                      class={
+                        if page == @page,
+                          do: "pagination-link is-current",
+                          else: "pagination-link"
+                      }
+                    >
+                      {page}
+                    </.link>
+                  </li>
+                <% end %>
+              <% end %>
+            </ul>
+          </nav>
+          <div class="w-[30%] text-right">
+            <%= if @total_entries > 0 do %>
+              Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @total_entries)} of {@total_entries} entries
+            <% else %>
+              Showing 0 to 0 of 0 entries
+            <% end %>
+          </div>
+        </div>
+      </div>
+      <%!-- END RESULTS --%>
+      <%!-- START CURRENTLY ONLINE --%>
+      <div class="w-full">
+        <ul>
+          <%= if @total_online == 0 do %>
+            <li class="mt-4">
+              <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-[#f0f0f0] pt-2 pb-2">
+                <strong>Currently no one online</strong>
+              </div>
+            </li>
+          <% else %>
+            <%= for {_, dept_entry} <- @streams.currently_online do %>
+              <!-- Extract second value of tuple -->
+              <li class="mt-4">
+                <div class="bold uppercase text-center text-2xl border-b-[0.06rem] border-t-[0.06rem] border-[#f0f0f0] pt-2 pb-2">
+                  <strong>Currently online in {dept_entry.group}</strong>
+                </div>
+                <ul class="flex flex-wrap justify-center gap-4 mt-4">
+                  <%= for user <- dept_entry.users do %>
+                    <div class="flex items-center bg-green-700 w-[18rem] justify-center text-white p-2 rounded-l-[2rem] rounded-r-2xl shadow-md  shadow-green-900">
+                      <img
+                        class="h-[3.5rem] w-[3.5rem] me-2 rounded-full border-2 justify-self-start"
+                        src={Phoexnip.ImageUtils.image_for(user)}
+                      />
+                      <div class="w-full text-center text-[1.15rem]">
+                        {user.name}
+                      </div>
+                    </div>
+                  <% end %>
+                </ul>
+              </li>
+            <% end %>
+          <% end %>
+        </ul>
+      </div>
+      <%!-- END CURRENTLY ONLINE --%>
+    </div>
+  </div>
+</div>
