@@ -1,6 +1,6 @@
-defmodule Phoexnip.Masterdata.Currency do
+defmodule Phoexnip.Masterdata.Currencies do
   @moduledoc """
-  Ecto schema and changeset functions for managing Currency master data records.
+  Ecto schema and changeset functions for managing Currencies master data records.
 
   Fields include:
     * `:sort`          – integer sort order (must be unique)
@@ -12,7 +12,7 @@ defmodule Phoexnip.Masterdata.Currency do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @typedoc "A `%Currency{}` struct"
+  @typedoc "A `%Currencies{}` struct"
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: integer() | nil,
@@ -42,14 +42,14 @@ defmodule Phoexnip.Masterdata.Currency do
   end
 
   @doc """
-  Builds a changeset for **creating** a new `%Currency{}`.
+  Builds a changeset for **creating** a new `%Currencies{}`.
 
   Casts all schema fields, validates required fields (`:sort`, `:code`, `:name`),
   and checks uniqueness of those fields and their combination.
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
-  def changeset(currency, attrs) when is_map(attrs) do
-    currency
+  def changeset(currencies, attrs) when is_map(attrs) do
+    currencies
     |> cast(attrs, schema_casts())
     |> validate_required([:sort, :code, :name])
     |> unsafe_validate_unique(:sort, Phoexnip.Repo, message: "Sort must be unique")
@@ -65,14 +65,14 @@ defmodule Phoexnip.Masterdata.Currency do
   end
 
   @doc """
-  Builds a changeset for **updating** an existing `%Currency{}`.
+  Builds a changeset for **updating** an existing `%Currencies{}`.
 
   Casts all schema fields, validates required fields, and relies on
   database constraints for uniqueness.
   """
   @spec changeset_update(t(), map()) :: Ecto.Changeset.t()
-  def changeset_update(currency, attrs) when is_map(attrs) do
-    currency
+  def changeset_update(currencies, attrs) when is_map(attrs) do
+    currencies
     |> cast(attrs, schema_casts())
     |> validate_required([:sort, :code, :name])
     |> unique_constraint(:sort, name: :master_data_currencies_sort_index)

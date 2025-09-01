@@ -35,27 +35,27 @@
       </:actions>
     </.header>
 
-    <.table id="currency" rows={@streams.currency_collection}>
-      <:col :let={{_id, currency}} label="Sort">{currency.sort}</:col>
-      <:col :let={{_id, currency}} label="Code">{currency.code}</:col>
-      <:col :let={{_id, currency}} label="Name">{currency.name}</:col>
-      <:col :let={{_id, currency}} label="Exchange Rate">
-        {currency.exchange_rate}
+    <.table id="currencies" rows={@streams.currencies_collection}>
+      <:col :let={{_id, currencies}} label="Sort">{currencies.sort}</:col>
+      <:col :let={{_id, currencies}} label="Code">{currencies.code}</:col>
+      <:col :let={{_id, currencies}} label="Name">{currencies.name}</:col>
+      <:col :let={{_id, currencies}} label="Exchange Rate">
+        {currencies.exchange_rate}
       </:col>
-      <:action :let={{id, currency}}>
+      <:action :let={{id, currencies}}>
         <.button
           type="button"
           phx-click="open_audit_log_modal"
-          phx-value-id={currency.id}
-          phx-value-code={currency.code}
-          phx-value-inserted_at={currency.inserted_at}
+          phx-value-id={currencies.id}
+          phx-value-code={currencies.code}
+          phx-value-inserted_at={currencies.inserted_at}
         >
           <img src={~p"/images/history.svg"} class="w-5 h-5" />
         </.button>
         <%= if @permission_level >= 4 do %>
           <.button
             type="button"
-            phx-click={JS.patch(~p"/master_data/currencies/#{currency}/edit")}
+            phx-click={JS.patch(~p"/master_data/currencies/#{currencies}/edit")}
           >
             <.icon name="hero-pencil" class="w-5 h-5" />
           </.button>
@@ -63,7 +63,7 @@
         <%= if @permission_level >= 8 do %>
           <.button
             type="button"
-            phx-click={JS.push("delete", value: %{id: currency.id}) |> hide("##{id}")}
+            phx-click={JS.push("delete", value: %{id: currencies.id}) |> hide("##{id}")}
             data-confirm="Are you sure?"
             class="bg-red-600 hover:bg-red-900 focus:bg-red-900"
           >
@@ -74,16 +74,16 @@
     </.table>
     <.modal
       :if={@live_action in [:new, :edit]}
-      id="currency-modal"
+      id="currencies-modal"
       show
       on_cancel={JS.patch(~p"/master_data/currencies")}
     >
       <.live_component
-        module={PhoexnipWeb.MasterDataCurrencyLive.FormComponent}
-        id={@currency.id || :new}
+        module={PhoexnipWeb.MasterDataCurrenciesLive.FormComponent}
+        id={@currencies.id || :new}
         title={@page_title}
         action={@live_action}
-        currency={@currency}
+        currencies={@currencies}
         current_user={@current_user}
         patch={~p"/master_data/currencies"}
       />
@@ -101,7 +101,7 @@
         id={@audit_log_data.id}
         unique_identifier={@audit_log_data.code}
         created_date={Phoexnip.DateUtils.formatDate(@audit_log_data.inserted_at)}
-        entity_type="Currency,Currency - API"
+        entity_type="Currencies,Currencies - API"
       />
     </.audit_modal>
   <% end %>

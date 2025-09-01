@@ -1,4 +1,4 @@
-defmodule PhoexnipWeb.MasterDataCurrencyLive.UserManual do
+defmodule PhoexnipWeb.MasterDataCurrenciesLive.UserManual do
   use PhoexnipWeb, :live_view
 
   @impl true

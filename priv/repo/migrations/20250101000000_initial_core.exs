@@ -216,7 +216,7 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
       add :status, :integer, default: 0
     end
 
-    # Masterdata: Currency
+    # Masterdata: Currencies
     create table(:master_data_currencies) do
       add :sort, :integer, null: false
       add :code, :string, null: false

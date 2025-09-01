@@ -18,7 +18,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     changeset = OrganisationInfoService.change(organisation_information)
 
     currency =
-      Phoexnip.Masterdata.CurrencyService.list() |> Enum.map(&{"#{&1.name}", &1.code})
+      Phoexnip.Masterdata.CurrenciesService.list() |> Enum.map(&{"#{&1.name}", &1.code})
 
     {:ok,
      socket

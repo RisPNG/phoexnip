@@ -274,7 +274,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
           property(:fax, :string, "Organisation fax number")
           property(:website, :string, "Organisation website")
           property(:email, :string, "Organisation email")
-          property(:currency, :string, "Currency code")
+          property(:currency, :string, "Currencies code")
           property(:address, Schema.array(:Address), "List of organisation addresses")
         end
     }

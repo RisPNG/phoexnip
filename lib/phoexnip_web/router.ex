@@ -48,7 +48,7 @@ defmodule PhoexnipWeb.Router do
       get "/sitemap", SitemapController, :index
 
       scope "/master_data" do
-        resources "/currencies", MasterDataCurrencyController, except: [:new, :edit]
+        resources "/currencies", MasterDataCurrenciesController, except: [:new, :edit]
       end
     end
   end
@@ -170,10 +170,10 @@ defmodule PhoexnipWeb.Router do
         live "/", MasterDataIndexLive.Index, :index
 
         scope "/currencies" do
-          live "/", MasterDataCurrencyLive.Index, :index
-          live "/new", MasterDataCurrencyLive.Index, :new
-          live "/usermanual", MasterDataCurrencyLive.UserManual, :index
-          live "/:id/edit", MasterDataCurrencyLive.Index, :edit
+          live "/", MasterDataCurrenciesLive.Index, :index
+          live "/new", MasterDataCurrenciesLive.Index, :new
+          live "/usermanual", MasterDataCurrenciesLive.UserManual, :index
+          live "/:id/edit", MasterDataCurrenciesLive.Index, :edit
         end
       end
     end

@@ -1,4 +1,4 @@
-defmodule PhoexnipWeb.MasterDataCurrencyJSON do
+defmodule PhoexnipWeb.MasterDataCurrenciesJSON do
   @moduledoc """
   Handles JSON serialization for currency master data in the Phoexnip application.
 
@@ -8,14 +8,14 @@ defmodule PhoexnipWeb.MasterDataCurrencyJSON do
     * `show/1`  – Renders a single currency.
   """
 
-  alias Phoexnip.Masterdata.Currency
+  alias Phoexnip.Masterdata.Currencies
 
   @doc """
   Renders a list of currency master data entries.
 
   ## Parameters
 
-    - `%{masterdatas: masterdatas}`: A map containing the list of `Currency` structs under the `:masterdatas` key.
+    - `%{masterdatas: masterdatas}`: A map containing the list of `Currencies` structs under the `:masterdatas` key.
 
   ## Returns
 
@@ -23,10 +23,10 @@ defmodule PhoexnipWeb.MasterDataCurrencyJSON do
 
   ## Example
 
-      iex> index(%{masterdatas: [%Currency{id: 1}, %Currency{id: 2}]})
+      iex> index(%{masterdatas: [%Currencies{id: 1}, %Currencies{id: 2}]})
       %{data: [%{id: 1, sort: ..., code: ..., name: ..., exchange_rate: ...}, %{...}]}
   """
-  @spec index(%{masterdatas: [Currency.t()]}) :: %{data: [map()]}
+  @spec index(%{masterdatas: [Currencies.t()]}) :: %{data: [map()]}
   def index(%{masterdatas: masterdatas}) do
     %{data: for(masterdata <- masterdatas, do: data(masterdata))}
   end
@@ -34,14 +34,14 @@ defmodule PhoexnipWeb.MasterDataCurrencyJSON do
   @doc """
   Renders a single post.
   """
-  @spec show(%{masterdata: Currency.t()}) :: %{data: map()}
+  @spec show(%{masterdata: Currencies.t()}) :: %{data: map()}
   def show(%{masterdata: masterdata}) do
     %{data: data(masterdata)}
   end
 
   @doc false
-  @spec data(Currency.t()) :: map()
-  defp data(%Currency{} = masterdata) do
+  @spec data(Currencies.t()) :: map()
+  defp data(%Currencies{} = masterdata) do
     %{
       id: masterdata.id,
       sort: masterdata.sort,

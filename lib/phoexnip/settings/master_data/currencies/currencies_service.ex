@@ -1,172 +1,172 @@
-defmodule Phoexnip.Masterdata.CurrencyService do
+defmodule Phoexnip.Masterdata.CurrenciesService do
   @moduledoc """
-  The Masterdata context responsible for managing `Currency` records.
+  The Masterdata context responsible for managing `Currencies` records.
 
   This module provides functions to:
-    * list all currency
-    * fetch a single currency by ID or by attributes (with or without raising)
-    * create, update, and delete currency
-    * build changesets for tracking currency changes
+    * list all currencies
+    * fetch a single currencies by ID or by attributes (with or without raising)
+    * create, update, and delete currencies
+    * build changesets for tracking currencies changes
   """
 
   import Ecto.Query, warn: false
   alias Phoexnip.Repo
-  alias Phoexnip.Masterdata.Currency
+  alias Phoexnip.Masterdata.Currencies
 
   @doc """
-  Returns all currency, ordered ascending by their `sort` field.
+  Returns all currencies, ordered ascending by their `sort` field.
 
   ## Examples
 
       iex> list()
-      [%Currency{sort: 1, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}, ...]
+      [%Currencies{sort: 1, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}, ...]
   """
-  @spec list() :: [Currency.t()]
+  @spec list() :: [Currencies.t()]
   def list do
-    Repo.all(from c in Currency, order_by: [asc: c.sort])
+    Repo.all(from c in Currencies, order_by: [asc: c.sort])
   end
 
   @doc """
-  Fetches a single currency by its primary key.
+  Fetches a single currencies by its primary key.
 
-  Raises `Ecto.NoResultsError` if no currency with the given ID exists.
+  Raises `Ecto.NoResultsError` if no currencies with the given ID exists.
 
   ## Examples
 
       iex> get!(123)
-      %Currency{id: 123, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}
+      %Currencies{id: 123, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}
 
       iex> get!(456)
       ** (Ecto.NoResultsError)
   """
-  @spec get!(term()) :: Currency.t()
-  def get!(id), do: Repo.get!(Currency, id)
+  @spec get!(term()) :: Currencies.t()
+  def get!(id), do: Repo.get!(Currencies, id)
 
   @doc """
-  Fetches a single currency by its primary key.
+  Fetches a single currencies by its primary key.
 
-  Returns `nil` if no currency with the given ID exists.
+  Returns `nil` if no currencies with the given ID exists.
 
   ## Examples
 
       iex> get(123)
-      %Currency{id: 123, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}
+      %Currencies{id: 123, code: "USD", name: "US Dollar", exchange_rate: %Decimal{}}
 
       iex> get(456)
       nil
   """
-  @spec get(term()) :: Currency.t() | nil
-  def get(id), do: Repo.get(Currency, id)
+  @spec get(term()) :: Currencies.t() | nil
+  def get(id), do: Repo.get(Currencies, id)
 
   @doc """
-  Fetches a single currency matching the given attributes map.
+  Fetches a single currencies matching the given attributes map.
 
   Raises `Ecto.NoResultsError` if none match.
 
   ## Examples
 
       iex> get_by!(%{code: "EUR"})
-      %Currency{code: "EUR", name: "Euro", exchange_rate: %Decimal{}}
+      %Currencies{code: "EUR", name: "Euro", exchange_rate: %Decimal{}}
 
       iex> get_by!(%{code: "XXX"})
       ** (Ecto.NoResultsError)
   """
-  @spec get_by!(map()) :: Currency.t()
-  def get_by!(attrs) when is_map(attrs), do: Repo.get_by!(Currency, attrs)
+  @spec get_by!(map()) :: Currencies.t()
+  def get_by!(attrs) when is_map(attrs), do: Repo.get_by!(Currencies, attrs)
 
   @doc """
-  Fetches a single currency matching the given attributes map.
+  Fetches a single currencies matching the given attributes map.
 
   Returns `nil` if none match.
 
   ## Examples
 
       iex> get_by(%{code: "EUR"})
-      %Currency{code: "EUR", name: "Euro", exchange_rate: %Decimal{}}
+      %Currencies{code: "EUR", name: "Euro", exchange_rate: %Decimal{}}
 
       iex> get_by(%{code: "XXX"})
       nil
   """
-  @spec get_by(map()) :: Currency.t() | nil
-  def get_by(attrs) when is_map(attrs), do: Repo.get_by(Currency, attrs)
+  @spec get_by(map()) :: Currencies.t() | nil
+  def get_by(attrs) when is_map(attrs), do: Repo.get_by(Currencies, attrs)
 
   @doc """
-  Creates a new currency record with the given attributes.
+  Creates a new currencies record with the given attributes.
 
-  Returns `{:ok, %Currency{}}` on success or
+  Returns `{:ok, %Currencies{}}` on success or
   `{:error, %Ecto.Changeset{}}` if validation fails.
 
   ## Examples
 
       iex> create(%{sort: 1, code: "USD", name: "US Dollar", exchange_rate: "1.0"})
-      {:ok, %Currency{}}
+      {:ok, %Currencies{}}
 
       iex> create(%{code: nil})
       {:error, %Ecto.Changeset{}}
   """
-  @spec create(map()) :: {:ok, Currency.t()} | {:error, Ecto.Changeset.t()}
+  @spec create(map()) :: {:ok, Currencies.t()} | {:error, Ecto.Changeset.t()}
   def create(attrs \\ %{}) do
-    %Currency{}
-    |> Currency.changeset(attrs)
+    %Currencies{}
+    |> Currencies.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Updates an existing currency record with the given attributes.
+  Updates an existing currencies record with the given attributes.
 
-  Returns `{:ok, %Currency{}}` on success or
+  Returns `{:ok, %Currencies{}}` on success or
   `{:error, %Ecto.Changeset{}}` if validation fails.
 
   ## Examples
 
-      iex> update(currency, %{name: "US Dollar"})
-      {:ok, %Currency{name: "US Dollar"}}
+      iex> update(currencies, %{name: "US Dollar"})
+      {:ok, %Currencies{name: "US Dollar"}}
 
-      iex> update(currency, %{code: nil})
+      iex> update(currencies, %{code: nil})
       {:error, %Ecto.Changeset{}}
   """
-  @spec update(Currency.t(), map()) ::
-          {:ok, Currency.t()} | {:error, Ecto.Changeset.t()}
-  def update(%Currency{} = currency, attrs) do
-    currency
-    |> Currency.changeset(attrs)
+  @spec update(Currencies.t(), map()) ::
+          {:ok, Currencies.t()} | {:error, Ecto.Changeset.t()}
+  def update(%Currencies{} = currencies, attrs) do
+    currencies
+    |> Currencies.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Deletes the given currency record.
+  Deletes the given currencies record.
 
-  Returns `{:ok, %Currency{}}` on success or
+  Returns `{:ok, %Currencies{}}` on success or
   `{:error, %Ecto.Changeset{}}` if the delete fails.
 
   ## Examples
 
-      iex> delete(currency)
-      {:ok, %Currency{}}
+      iex> delete(currencies)
+      {:ok, %Currencies{}}
 
-      iex> delete(nonexistent_currency)
+      iex> delete(nonexistent_currencies)
       {:error, %Ecto.Changeset{}}
   """
-  @spec delete(Currency.t()) :: {:ok, Currency.t()} | {:error, Ecto.Changeset.t()}
-  def delete(%Currency{} = currency) do
-    Repo.delete(currency)
+  @spec delete(Currencies.t()) :: {:ok, Currencies.t()} | {:error, Ecto.Changeset.t()}
+  def delete(%Currencies{} = currencies) do
+    Repo.delete(currencies)
   end
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for tracking changes to a currency.
+  Returns an `%Ecto.Changeset{}` for tracking changes to a currencies.
 
   Useful for form rendering and validations without persisting.
 
   ## Examples
 
-      iex> change(currency)
-      %Ecto.Changeset{data: %Currency{}, changes: %{}}
+      iex> change(currencies)
+      %Ecto.Changeset{data: %Currencies{}, changes: %{}}
 
-      iex> change(currency, %{name: "Euro"})
-      %Ecto.Changeset{data: %Currency{}, changes: %{name: "Euro"}}
+      iex> change(currencies, %{name: "Euro"})
+      %Ecto.Changeset{data: %Currencies{}, changes: %{name: "Euro"}}
   """
-  @spec change(Currency.t(), map()) :: Ecto.Changeset.t()
-  def change(%Currency{} = currency, attrs \\ %{}) do
-    Currency.changeset(currency, attrs)
+  @spec change(Currencies.t(), map()) :: Ecto.Changeset.t()
+  def change(%Currencies{} = currencies, attrs \\ %{}) do
+    Currencies.changeset(currencies, attrs)
   end
 end

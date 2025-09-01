@@ -1,8 +1,8 @@
-defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
+defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
   use PhoexnipWeb, :live_view
 
-  alias Phoexnip.Masterdata.CurrencyService
-  alias Phoexnip.Masterdata.Currency
+  alias Phoexnip.Masterdata.CurrenciesService
+  alias Phoexnip.Masterdata.Currencies
   alias Phoexnip.UserRolesService
 
   @impl true
@@ -21,7 +21,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
     {:ok,
      socket
      |> assign(:master_data_permissions, highest_permission_master_data)
-     |> assign(:current_section, "Currency")
+     |> assign(:current_section, "Currencies")
      |> assign(:breadcrumb_first_segment, "Settings")
      |> assign(:breadcrumb_second_segment, "Master Data")
      |> assign(:breadcrumb_second_link, nil)
@@ -50,9 +50,9 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
       )
 
     socket
-    |> assign(:page_title, "Edit Currency")
-    |> assign(:currency, CurrencyService.get!(id))
-    |> stream(:currency_collection, CurrencyService.list())
+    |> assign(:page_title, "Edit Currencies")
+    |> assign(:currencies, CurrenciesService.get!(id))
+    |> stream(:currencies_collection, CurrenciesService.list())
   end
 
   defp apply_action(socket, :new, _params) do
@@ -64,19 +64,19 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
         2
       )
 
-    all_currency = CurrencyService.list()
+    all_currencies = CurrenciesService.list()
 
     socket
-    |> assign(:page_title, "New Currency")
-    |> assign(:currency, %Currency{
+    |> assign(:page_title, "New Currencies")
+    |> assign(:currencies, %Currencies{
       sort:
-        if length(all_currency) == 0 do
+        if length(all_currencies) == 0 do
           10
         else
-          Enum.max_by(all_currency, & &1.sort).sort + 10
+          Enum.max_by(all_currencies, & &1.sort).sort + 10
         end
     })
-    |> stream(:currency_collection, all_currency)
+    |> stream(:currencies_collection, all_currencies)
   end
 
   defp apply_action(socket, :index, _params) do
@@ -90,41 +90,41 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
 
     socket
     |> assign(:page_title, "Currencies")
-    |> assign(:currency, nil)
-    |> stream(:currency_collection, CurrencyService.list())
+    |> assign(:currencies, nil)
+    |> stream(:currencies_collection, CurrenciesService.list())
   end
 
   @impl true
   def handle_info(
-        {PhoexnipWeb.MasterDataCurrencyLive.FormComponent, {:saved, _currency}},
+        {PhoexnipWeb.MasterDataCurrenciesLive.FormComponent, {:saved, _currencies}},
         socket
       ) do
-    {:noreply, stream(socket, :currency_collection, CurrencyService.list())}
+    {:noreply, stream(socket, :currencies_collection, CurrenciesService.list())}
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    currency = CurrencyService.get!(id)
-    {:ok, _} = CurrencyService.delete(currency)
+    currencies = CurrenciesService.get!(id)
+    {:ok, _} = CurrenciesService.delete(currencies)
 
     Phoexnip.AuditLogService.create_audit_log(
       # Entity type
-      "Currency",
+      "Currencies",
       # Entity ID
-      currency.id,
+      currencies.id,
       # Action type
       "delete",
       # User who performed the action
       socket.assigns.current_user,
-      currency.code,
+      currencies.code,
       # New data (changes)
       %{},
       # Previous data (empty since it's a new record)
-      currency
+      currencies
       # Metadata (example: user's IP)
     )
 
-    {:noreply, stream(socket, :currency_collection, CurrencyService.list())}
+    {:noreply, stream(socket, :currencies_collection, CurrenciesService.list())}
   end
 
   def handle_event(
@@ -150,7 +150,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
       socket
       |> assign(:audit_log_data, audit_log_data)
       |> assign(:show_audit_log_modal, true)
-      |> stream(:currency_collection, CurrencyService.list())
+      |> stream(:currencies_collection, CurrenciesService.list())
 
     {:noreply, socket}
   end
@@ -158,6 +158,6 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.Index do
   def handle_event("close_audit_log_modal", _params, socket) do
     {:noreply,
      assign(socket, show_audit_log_modal: false)
-     |> stream(:currency_collection, CurrencyService.list())}
+     |> stream(:currencies_collection, CurrenciesService.list())}
   end
 end

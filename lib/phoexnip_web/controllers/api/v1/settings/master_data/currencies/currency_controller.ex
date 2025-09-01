@@ -1,6 +1,6 @@
-defmodule PhoexnipWeb.MasterDataCurrencyController do
+defmodule PhoexnipWeb.MasterDataCurrenciesController do
   @moduledoc """
-  Handles HTTP API endpoints for Master Data Currency in the Phoexnip application.
+  Handles HTTP API endpoints for Master Data Currencies in the Phoexnip application.
 
   This controller provides actions to:
     - list all currency (`index/2`)
@@ -16,8 +16,8 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   use PhoexnipWeb, :controller
   use PhoenixSwagger
 
-  alias Phoexnip.Masterdata.Currency
-  alias Phoexnip.Masterdata.CurrencyService
+  alias Phoexnip.Masterdata.Currencies
+  alias Phoexnip.Masterdata.CurrenciesService
 
   @doc """
   Renders a list of all currency.
@@ -46,7 +46,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
       |> halt()
     end
 
-    masterdatas = CurrencyService.list()
+    masterdatas = CurrenciesService.list()
     render(conn, :index, masterdatas: masterdatas)
   end
 
@@ -77,8 +77,8 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
       |> halt()
     end
 
-    case CurrencyService.get(id) do
-      %Currency{} = colour ->
+    case CurrenciesService.get(id) do
+      %Currencies{} = colour ->
         render(conn, :show, masterdata: colour)
 
       nil ->
@@ -118,11 +118,11 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
     # Extracting the user parameters from the body_params of the connection
     params = conn.body_params["currency"] || conn.body_params
 
-    case CurrencyService.create(params) do
-      {:ok, %Currency{} = masterdata} ->
+    case CurrenciesService.create(params) do
+      {:ok, %Currencies{} = masterdata} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
-          "Currency - API",
+          "Currencies - API",
           # Entity ID
           masterdata.id,
           # Action type
@@ -144,7 +144,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{
-          error: "Failed to create Currency",
+          error: "Failed to create Currencies",
           details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
         })
     end
@@ -179,13 +179,13 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
 
     IO.inspect(conn.body_params)
 
-    case CurrencyService.get(id) do
-      %Currency{} = masterdata ->
-        case CurrencyService.update(masterdata, conn.body_params) do
-          {:ok, %Currency{} = updated_masterdata} ->
+    case CurrenciesService.get(id) do
+      %Currencies{} = masterdata ->
+        case CurrenciesService.update(masterdata, conn.body_params) do
+          {:ok, %Currencies{} = updated_masterdata} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type
-              "Currency - API",
+              "Currencies - API",
               # Entity ID
               updated_masterdata.id,
               # Action type
@@ -207,7 +207,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
             conn
             |> put_status(:unprocessable_entity)
             |> json(%{
-              error: "Failed to update Currency",
+              error: "Failed to update Currencies",
               details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
             })
         end
@@ -215,7 +215,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
       nil ->
         conn
         |> put_status(:not_found)
-        |> json(%{error: "Currency not found"})
+        |> json(%{error: "Currencies not found"})
     end
   end
 
@@ -246,13 +246,13 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
       |> halt()
     end
 
-    case CurrencyService.get(id) do
-      %Currency{} = masterdata ->
-        case CurrencyService.delete(masterdata) do
+    case CurrenciesService.get(id) do
+      %Currencies{} = masterdata ->
+        case CurrenciesService.delete(masterdata) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type
-              "Currency - API",
+              "Currencies - API",
               # Entity ID
               masterdata.id,
               # Action type
@@ -273,7 +273,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
             conn
             |> put_status(:unprocessable_entity)
             |> json(%{
-              error: "Failed to delete Currency",
+              error: "Failed to delete Currencies",
               details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
             })
         end
@@ -281,12 +281,12 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
       nil ->
         conn
         |> put_status(:not_found)
-        |> json(%{error: "Currency not found"})
+        |> json(%{error: "Currencies not found"})
     end
   end
 
   @doc """
-  Returns the Swagger schema definitions for Currency objects.
+  Returns the Swagger schema definitions for Currencies objects.
 
   ## Returns
 
@@ -295,15 +295,15 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   @spec swagger_definitions() :: map()
   def swagger_definitions do
     %{
-      Currency:
+      Currencies:
         swagger_schema do
-          title("Masterdata - Currency")
-          description("Details of Currency")
+          title("Masterdata - Currencies")
+          description("Details of Currencies")
 
           properties do
-            code(:string, "Code of the Currency", required: true)
-            name(:string, "Name of the Currency", required: true)
-            sort(:integer, "Sort of the Currency", required: true)
+            code(:string, "Code of the Currencies", required: true)
+            name(:string, "Name of the Currencies", required: true)
+            sort(:integer, "Sort of the Currencies", required: true)
           end
         end
     }
@@ -317,7 +317,7 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
     produces("application/json")
     security([%{"api_key" => []}])
 
-    response(200, "OK", Schema.ref(:Currency))
+    response(200, "OK", Schema.ref(:Currencies))
     response(401, "Not Authorized")
     response(403, "Forbidden")
   end
@@ -325,16 +325,16 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   @doc false
   swagger_path :show do
     get("/api/v1/master_data/currencies/{id}")
-    summary("Show Currency")
-    description("Fetch a Currency by ID")
+    summary("Show Currencies")
+    description("Fetch a Currencies by ID")
     produces("application/json")
     security([%{"api_key" => []}])
 
     parameters do
-      id(:path, :integer, "Currency ID", required: true)
+      id(:path, :integer, "Currencies ID", required: true)
     end
 
-    response(200, "OK", Schema.ref(:Currency))
+    response(200, "OK", Schema.ref(:Currencies))
     response(401, "Not Authorized")
     response(403, "Forbidden")
     response(404, "Not Found")
@@ -343,17 +343,17 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   @doc false
   swagger_path :create do
     post("/api/v1/master_data/currencies/")
-    summary("Create Currency")
-    description("Create a new Currency.")
+    summary("Create Currencies")
+    description("Create a new Currencies.")
     produces("application/json")
     consumes("application/json")
     security([%{"api_key" => []}])
 
     parameters do
-      body(:body, Schema.ref(:Currency), "Currency attributes", required: true)
+      body(:body, Schema.ref(:Currencies), "Currencies attributes", required: true)
     end
 
-    response(200, "OK", Schema.ref(:Currency))
+    response(200, "OK", Schema.ref(:Currencies))
     response(401, "Not Authorized")
     response(403, "Forbidden")
     response(422, "Unprocessable Entity")
@@ -362,17 +362,17 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   @doc false
   swagger_path :update do
     put("/api/v1/master_data/currencies/{id}")
-    summary("Update Currency")
-    description("Update a Currency.")
+    summary("Update Currencies")
+    description("Update a Currencies.")
     produces("application/json")
     consumes("application/json")
     security([%{"api_key" => []}])
 
     parameters do
-      body(:body, Schema.ref(:Currency), "Currency attributes", required: true)
+      body(:body, Schema.ref(:Currencies), "Currencies attributes", required: true)
     end
 
-    response(200, "OK", Schema.ref(:Currency))
+    response(200, "OK", Schema.ref(:Currencies))
     response(401, "Not Authorized")
     response(403, "Forbidden")
     response(404, "Not Found")
@@ -382,13 +382,13 @@ defmodule PhoexnipWeb.MasterDataCurrencyController do
   @doc false
   swagger_path :delete do
     PhoenixSwagger.Path.delete("/api/v1/master_data/currencies/{id}")
-    summary("Delete Currency")
-    description("Delete a Currency by ID.")
+    summary("Delete Currencies")
+    description("Delete a Currencies by ID.")
     produces("application/json")
     security([%{"api_key" => []}])
 
     parameters do
-      id(:path, :integer, "Currency ID", required: true)
+      id(:path, :integer, "Currencies ID", required: true)
     end
 
     response(204, "No Content")

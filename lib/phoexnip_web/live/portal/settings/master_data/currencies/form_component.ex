@@ -1,13 +1,13 @@
-defmodule PhoexnipWeb.MasterDataCurrencyLive.FormComponent do
+defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
   use PhoexnipWeb, :live_component
   @moduledoc """
-  LiveComponent for creating and editing Currency records.
+  LiveComponent for creating and editing Currencies records.
 
   Renders a simple form, validates changes, and dispatches save events for
-  new or existing currency. Emits `{:saved, currency}` to the parent on success.
+  new or existing currencies. Emits `{:saved, currencies}` to the parent on success.
   """
 
-  alias Phoexnip.Masterdata.CurrencyService
+  alias Phoexnip.Masterdata.CurrenciesService
 
   @impl true
   def render(assigns) do
@@ -15,12 +15,12 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.FormComponent do
     <div>
       <.header>
         {@title}
-        <:subtitle>Use this form to manage currency records in your database.</:subtitle>
+        <:subtitle>Use this form to manage currencies records in your database.</:subtitle>
       </.header>
 
       <.simple_form
         for={@form}
-        id="currency-form"
+        id="currencies-form"
         phx-target={@myself}
         phx-change="validate"
         phx-submit="save"
@@ -50,50 +50,50 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.FormComponent do
   end
 
   @impl true
-  def update(%{currency: currency} = assigns, socket) do
+  def update(%{currencies: currencies} = assigns, socket) do
     {:ok,
      socket
      |> assign(assigns)
      |> assign_new(:form, fn ->
-       to_form(CurrencyService.change(currency))
+       to_form(CurrenciesService.change(currencies))
      end)}
   end
 
   @impl true
-  def handle_event("validate", %{"currency" => currency_params}, socket) do
-    changeset = CurrencyService.change(socket.assigns.currency, currency_params)
+  def handle_event("validate", %{"currencies" => currencies_params}, socket) do
+    changeset = CurrenciesService.change(socket.assigns.currencies, currencies_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
-  def handle_event("save", %{"currency" => currency_params}, socket) do
-    save(socket, socket.assigns.action, currency_params)
+  def handle_event("save", %{"currencies" => currencies_params}, socket) do
+    save(socket, socket.assigns.action, currencies_params)
   end
 
-  defp save(socket, :edit, currency_params) do
-    case CurrencyService.update(socket.assigns.currency, currency_params) do
-      {:ok, currency} ->
+  defp save(socket, :edit, currencies_params) do
+    case CurrenciesService.update(socket.assigns.currencies, currencies_params) do
+      {:ok, currencies} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
-          "Currency",
+          "Currencies",
           # Entity ID
-          currency.id,
+          currencies.id,
           # Action type
           "update",
           # User who performed the action
           socket.assigns.current_user,
-          currency.code,
+          currencies.code,
           # New data (changes)
-          currency,
+          currencies,
           # Previous data (empty since it's a new record)
-          socket.assigns.currency
+          socket.assigns.currencies
           # Metadata (example: user's IP)
         )
 
-        notify_parent({:saved, currency})
+        notify_parent({:saved, currencies})
 
         {:noreply,
          socket
-         |> put_flash(:info, "Currency updated successfully")
+         |> put_flash(:info, "Currencies updated successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -101,31 +101,31 @@ defmodule PhoexnipWeb.MasterDataCurrencyLive.FormComponent do
     end
   end
 
-  defp save(socket, :new, currency_params) do
-    case CurrencyService.create(currency_params) do
-      {:ok, currency} ->
+  defp save(socket, :new, currencies_params) do
+    case CurrenciesService.create(currencies_params) do
+      {:ok, currencies} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
-          "Currency",
+          "Currencies",
           # Entity ID
-          currency.id,
+          currencies.id,
           # Action type
           "create",
           # User who performed the action
           socket.assigns.current_user,
-          currency.code,
+          currencies.code,
           # New data (changes)
-          currency,
+          currencies,
           # Previous data (empty since it's a new record)
           %{}
           # Metadata (example: user's IP)
         )
 
-        notify_parent({:saved, currency})
+        notify_parent({:saved, currencies})
 
         {:noreply,
          socket
-         |> put_flash(:info, "Currency created successfully")
+         |> put_flash(:info, "Currencies created successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
