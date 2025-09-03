@@ -67,7 +67,6 @@ See `mix.exs` for additional aliases such as `assets.rebuild` and `reset.*`.
 
 ## Contributing
 
-- Keep PRs focused and small.
 - Follow existing code style and module documentation patterns.
 - Update or add module docs (`@moduledoc`/`@doc`) when changing behavior.
 
