@@ -39,9 +39,6 @@
       <:col :let={{_id, currencies}} label="Sort">{currencies.sort}</:col>
       <:col :let={{_id, currencies}} label="Code">{currencies.code}</:col>
       <:col :let={{_id, currencies}} label="Name">{currencies.name}</:col>
-      <:col :let={{_id, currencies}} label="Exchange Rate">
-        {currencies.exchange_rate}
-      </:col>
       <:action :let={{id, currencies}}>
         <.button
           type="button"

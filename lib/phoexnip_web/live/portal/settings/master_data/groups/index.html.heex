@@ -1,0 +1,105 @@
+<div class="mx-auto  flex bg-[#353535] text-[#f0f0f0]">
+  <div class="relative">
+    <nav>
+      <ul class="space-y-2 mt-20 pt-12 pb-12 pr-0 pl-8">
+        <%= for mp <- @masterdata_permissions do %>
+          <li>
+            <.link
+              patch={~p"/" <> mp.sitemap_url}
+              class={"w-full block p-2 rounded-l-lg border-[1px] border-r-0 relative #{if @current_section == mp.sitemap_name, do: "bg-amber-600 border-[#f0f0f0]", else: "border-transparent hover:bg-neutral-900"}"}
+              phx-click="change_section"
+              phx-value-section={mp.sitemap_name}
+            >
+              {mp.sitemap_name}
+              <div class={"absolute top-0 right-0 w-2 h-full #{if @current_section == mp.sitemap_name, do: "bg-amber-600"}"}>
+              </div>
+              <div class={"absolute top-0 -right-0.5 w-0.5 h-full #{if @current_section == mp.sitemap_name, do: "bg-[#353535]"}"}>
+              </div>
+            </.link>
+          </li>
+        <% end %>
+      </ul>
+    </nav>
+  </div>
+  <div class="flex-1 p-8 border-[1px] border-[#f0f0f0] rounded-lg shadow-lg shadow-neutral-600">
+    <.header class="title pb-2">
+      Groups
+      <:actions>
+        <%= if @permission_level >= 2 do %>
+          <.link patch={~p"/masterdata/groups/new"}>
+            <.button class="flex align-center">
+              <.icon name="hero-plus" class="me-1" /> New
+            </.button>
+          </.link>
+        <% end %>
+      </:actions>
+    </.header>
+
+    <.table id="groups" rows={@streams.groups_collection}>
+      <:col :let={{_id, groups}} label="Sort">{groups.sort}</:col>
+      <:col :let={{_id, groups}} label="Code">{groups.code}</:col>
+      <:col :let={{_id, groups}} label="Name">{groups.name}</:col>
+      <:action :let={{id, groups}}>
+        <.button
+          type="button"
+          phx-click="open_audit_log_modal"
+          phx-value-id={groups.id}
+          phx-value-code={groups.code}
+          phx-value-inserted_at={groups.inserted_at}
+        >
+          <img src={~p"/images/history.svg"} class="w-5 h-5" />
+        </.button>
+        <%= if @permission_level >= 4 do %>
+          <.button
+            type="button"
+            phx-click={JS.patch(~p"/masterdata/groups/#{groups}/edit")}
+          >
+            <.icon name="hero-pencil" class="w-5 h-5" />
+          </.button>
+        <% end %>
+        <%= if @permission_level >= 8 do %>
+          <.button type="button" class="bg-red-600 hover:bg-red-900 focus:bg-red-900">
+            <.link
+              phx-click={JS.push("delete", value: %{id: groups.id}) |> hide("##{id}")}
+              data-confirm="Are you sure?"
+            >
+              <.icon name="hero-trash" class="w-5 h-5" />
+            </.link>
+          </.button>
+        <% end %>
+      </:action>
+    </.table>
+    <.modal
+      :if={@live_action in [:new, :edit]}
+      id="groups-modal"
+      show
+      on_cancel={JS.patch(~p"/masterdata/groups")}
+    >
+      <.live_component
+        module={PhoexnipWeb.MasterDataGroupsLive.FormComponent}
+        id={@groups.id || :new}
+        title={@page_title}
+        action={@live_action}
+        groups={@groups}
+        current_user={@current_user}
+        patch={~p"/masterdata/groups"}
+      />
+    </.modal>
+  </div>
+  <%= if @show_audit_log_modal do %>
+    <.audit_modal
+      id="audit_log_modal"
+      class="w-full"
+      show
+      on_cancel={JS.push("close_audit_log_modal")}
+    >
+      <.live_component
+        module={PhoexnipWeb.AuditLogLive.FormComponent}
+        id={@audit_log_data.id}
+        unique_identifier={@audit_log_data.code}
+        created_date={Phoexnip.DateUtils.formatDate(@audit_log_data.inserted_at)}
+        entity_type="Groups,Groups - API"
+      />
+    </.audit_modal>
+  <% end %>
+</div>

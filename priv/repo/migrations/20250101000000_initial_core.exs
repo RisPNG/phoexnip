@@ -136,6 +136,7 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
         ('SET2', 'Roles',               1, NULL,   'SET',  'roles',                   92000),
         ('SET3', 'Master Data',         1, NULL,   'SET',  'master_data',             93000),
         ('SET3A','Currencies',          2, NULL,  'SET3',  'master_data/currencies',    93100),
+        ('SET3B','Groups',              2, NULL,  'SET3',  'master_data/groups',    93200),
         ('SET4', 'Organisation Information', 1, NULL,   'SET',  'organisation_information', 94000),
         ('SET5', 'Scheduled Jobs',      1, NULL,   'SET',  'schedulers',              95000),
         ('SET6', 'Reports',             1, NULL,   'SET',  'settings_reports',        96000),
@@ -221,7 +222,6 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
       add :sort, :integer, null: false
       add :code, :string, null: false
       add :name, :string, null: false
-      add :exchange_rate, :decimal
 
       timestamps(type: :utc_datetime)
     end
@@ -231,6 +231,22 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
     create unique_index(:master_data_currencies, [:name], name: :master_data_currencies_name_index)
     create unique_index(:master_data_currencies, [:code, :name, :sort],
              name: :master_data_currencies_code_name_sort_index
+           )
+
+    # Masterdata: Groups
+    create table(:master_data_groups) do
+      add :sort, :integer, null: false
+      add :code, :string, null: false
+      add :name, :string, null: false
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:master_data_groups, [:sort], name: :master_data_groups_sort_index)
+    create unique_index(:master_data_groups, [:code], name: :master_data_groups_code_index)
+    create unique_index(:master_data_groups, [:name], name: :master_data_groups_name_index)
+    create unique_index(:master_data_groups, [:code, :name, :sort],
+             name: :master_data_groups_code_name_sort_index
            )
   end
 end

@@ -175,6 +175,13 @@ defmodule PhoexnipWeb.Router do
           live "/usermanual", MasterDataCurrenciesLive.UserManual, :index
           live "/:id/edit", MasterDataCurrenciesLive.Index, :edit
         end
+
+        scope "/groups" do
+          live "/", MasterDataGroupsLive.Index, :index
+          live "/new", MasterDataGroupsLive.Index, :new
+          live "/usermanual", MasterDataGroupsLive.UserManual, :index
+          live "/:id/edit", MasterDataGroupsLive.Index, :edit
+        end
       end
     end
   end
