@@ -58,7 +58,7 @@ defmodule Phoexnip.SearchUtils do
 
   * `order_by` (`atom`) – field to sort by (default `:id`).
 
-  * `user_timezone` (`String.t`) – timezone for converting string inputs to `:date`/`:utc_datetime` (default `"Asia/Kuala_Lumpur"`).
+  * `user_timezone` (`String.t`) – timezone for converting string inputs to `:date`/`:utc_datetime` (default `"Etc/UTC"`).
 
   * `preload` (`true | false | [] | [assoc | {assoc, opts}]`) –
     - `true` preloads **all** associations via `ImportUtils.preload_all(module)`,
@@ -149,7 +149,7 @@ defmodule Phoexnip.SearchUtils do
     use_or = Keyword.get(opts, :use_or, false)
     drop_args = Keyword.get(opts, :drop_args, [])
     order_by = Keyword.get(opts, :order_by, :id)
-    user_timezone = Keyword.get(opts, :user_timezone, "Asia/Kuala_Lumpur")
+    user_timezone = Keyword.get(opts, :user_timezone, "Etc/UTC")
     preload = Keyword.get(opts, :preload, [])
     order_method = Keyword.get(opts, :order_method, :asc)
 
@@ -1115,7 +1115,7 @@ defmodule Phoexnip.SearchUtils do
           | binary()
           | map()
           | nil
-  def convert_value_to_field(module, field, value, user_timezone \\ "Asia/Kuala_Lumpur") do
+  def convert_value_to_field(module, field, value, user_timezone \\ "Etc/UTC") do
     case detect_schema_field?(module, field) do
       # Date conversion
       :date ->
