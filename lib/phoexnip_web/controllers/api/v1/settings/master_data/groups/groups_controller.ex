@@ -291,7 +291,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
   @doc false
   swagger_path :index do
-    get("/api/v1/masterdata/groups")
+    get("/api/v1/master_data/groups")
     summary("List of Groups")
     description("Fetch a paginated list of Groups.")
     produces("application/json")
@@ -304,7 +304,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
   @doc false
   swagger_path :show do
-    get("/api/v1/masterdata/groups/{id}")
+    get("/api/v1/master_data/groups/{id}")
     summary("Show Groups")
     description("Fetch a Country by their ID")
     produces("application/json")
@@ -322,7 +322,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
   @doc false
   swagger_path :create do
-    post("/api/v1/masterdata/groups/")
+    post("/api/v1/master_data/groups/")
     summary("Create Groups")
     description("Create a new Country.")
     produces("application/json")
@@ -341,7 +341,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
   @doc false
   swagger_path :update do
-    put("/api/v1/masterdata/groups/{id}")
+    put("/api/v1/master_data/groups/{id}")
     summary("Update Groups")
     description("Updates a Country.")
     produces("application/json")
@@ -361,7 +361,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
   @doc false
   swagger_path :delete do
-    PhoenixSwagger.Path.delete("/api/v1/masterdata/groups/{id}")
+    PhoenixSwagger.Path.delete("/api/v1/master_data/groups/{id}")
     summary("Delete Groups")
     description("Delete a Country by their ID.")
     produces("application/json")

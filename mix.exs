@@ -24,7 +24,8 @@ defmodule Phoexnip.MixProject do
         output: "doc/v#{@version}",
         filter_modules:
           ~r/^(?!Elixir\.PhoexnipWeb\..*(?:Live|Report|Plugs|UserAuth|UserLoginLive|UserResetPasswordLive|UserSessionController|UserSettingsLive|Telemetry|Router|Plugs|Presence|Home|Layouts|Endpoint|DetailComponent|PresenceTracker)(?:\.(?:Index|New|Show|UserManual|FormComponent|SessionExpiryHook))?$).*$/
-      ]
+      ],
+       listeners: [Phoenix.CodeReloader]
     ]
   end
 

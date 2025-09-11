@@ -13,7 +13,7 @@ config :phoexnip, Phoexnip.Repo,
     System.get_env("DATABASE_URL") ||
       "ecto://postgres:postgres@localhost/phoexnip_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.scheduler_online() * 2,
+  pool_size: System.schedulers_online() * 2,
   # Increase query timeout
   timeout: 60_000,
   # Time to wait before considering pool saturation

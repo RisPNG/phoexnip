@@ -26,7 +26,7 @@
       Groups
       <:actions>
         <%= if @permission_level >= 2 do %>
-          <.link patch={~p"/masterdata/groups/new"}>
+          <.link patch={~p"/master_data/groups/new"}>
             <.button class="flex align-center">
               <.icon name="hero-plus" class="me-1" /> New
             </.button>
@@ -52,7 +52,7 @@
         <%= if @permission_level >= 4 do %>
           <.button
             type="button"
-            phx-click={JS.patch(~p"/masterdata/groups/#{groups}/edit")}
+            phx-click={JS.patch(~p"/master_data/groups/#{groups}/edit")}
           >
             <.icon name="hero-pencil" class="w-5 h-5" />
           </.button>
@@ -73,7 +73,7 @@
       :if={@live_action in [:new, :edit]}
       id="groups-modal"
       show
-      on_cancel={JS.patch(~p"/masterdata/groups")}
+      on_cancel={JS.patch(~p"/master_data/groups")}
     >
       <.live_component
         module={PhoexnipWeb.MasterDataGroupsLive.FormComponent}
@@ -82,7 +82,7 @@
         action={@live_action}
         groups={@groups}
         current_user={@current_user}
-        patch={~p"/masterdata/groups"}
+        patch={~p"/master_data/groups"}
       />
     </.modal>
   </div>
