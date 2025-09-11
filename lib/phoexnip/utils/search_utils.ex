@@ -218,9 +218,7 @@ defmodule Phoexnip.SearchUtils do
   defp apply_filters(filters, base_query, module, user_timezone, use_or) do
     Enum.reduce(filters, {base_query, MapSet.new()}, fn
       {{field, association}, value}, {acc_query, joined} ->
-        # If the association filter's value is blank, skip joining entirely to avoid
-        # inner-join filtering out parent rows that have no associated records yet.
-        if blank_value?(value) do
+        if non_value?(value) do
           {acc_query, joined}
         else
           query_with_join = ensure_association_joined(acc_query, association, joined)
@@ -241,18 +239,22 @@ defmodule Phoexnip.SearchUtils do
         end
 
       {field, value}, {acc_query, joined} ->
-        new_query =
-          build_field_query(
-            acc_query,
-            module,
-            :p,
-            field,
-            value,
-            user_timezone,
-            use_or
-          )
+        if non_value?(value) do
+          {acc_query, joined}
+        else
+          new_query =
+            build_field_query(
+              acc_query,
+              module,
+              :p,
+              field,
+              value,
+              user_timezone,
+              use_or
+            )
 
-        {new_query, joined}
+          {new_query, joined}
+        end
     end)
   end
 
@@ -357,7 +359,7 @@ defmodule Phoexnip.SearchUtils do
     filters
     |> Enum.reduce(MapSet.new(), fn
       {{_field, assoc}, value}, acc ->
-        if blank_value?(value) do
+        if non_value?(value) do
           acc
         else
           MapSet.put(acc, assoc)
@@ -372,8 +374,8 @@ defmodule Phoexnip.SearchUtils do
   defp build_or_dynamic(parsed_or_filters, module, user_timezone) do
     Enum.reduce(parsed_or_filters, dynamic(false), fn
       {{field, association}, value}, acc ->
-        # Skip building conditions for blank association values
-        if blank_value?(value) do
+        # Skip building conditions for non-values
+        if non_value?(value) do
           acc
         else
           assoc_module = get_assoc_module(module, association)
@@ -382,8 +384,12 @@ defmodule Phoexnip.SearchUtils do
         end
 
       {field, value}, acc ->
-        comp = build_field_condition(module, :p, field, value, user_timezone)
-        dynamic([p], ^acc or ^comp)
+        if non_value?(value) do
+          acc
+        else
+          comp = build_field_condition(module, :p, field, value, user_timezone)
+          dynamic([p], ^acc or ^comp)
+        end
     end)
   end
 
@@ -399,8 +405,8 @@ defmodule Phoexnip.SearchUtils do
   defp build_group_and_dynamic(group_map, module, user_timezone) do
     Enum.reduce(group_map, dynamic(true), fn
       {{field, association}, value}, and_acc ->
-        # Skip blank association values to avoid unnecessary joins and tautologies
-        if blank_value?(value) do
+        # Skip non-values to avoid unnecessary joins and tautologies
+        if non_value?(value) do
           and_acc
         else
           assoc_module = get_assoc_module(module, association)
@@ -409,8 +415,12 @@ defmodule Phoexnip.SearchUtils do
         end
 
       {field, value}, and_acc ->
-        comp = build_field_condition(module, :p, field, value, user_timezone)
-        dynamic([p], ^and_acc and ^comp)
+        if non_value?(value) do
+          and_acc
+        else
+          comp = build_field_condition(module, :p, field, value, user_timezone)
+          dynamic([p], ^and_acc and ^comp)
+        end
     end)
   end
 
@@ -568,7 +578,7 @@ defmodule Phoexnip.SearchUtils do
       field in [:_fields_diff, :_fields_sum] and is_list(value) ->
         handle_fields_operation(acc_query, module, binding, field, value, user_timezone, use_or)
 
-      is_nil(value) or value == "" or value == [] or value == -1 or value == "-1" ->
+      non_value?(value) ->
         acc_query
 
       is_list(value) ->
@@ -580,16 +590,40 @@ defmodule Phoexnip.SearchUtils do
   end
 
   # Treat these values as "blank" for filter and association-join purposes
-  defp blank_value?(value) do
-    value in [nil, "", [], -1, "-1"]
+  defp non_value?(value) do
+    case value do
+      nil ->
+        true
+
+      "" ->
+        true
+
+      [] ->
+        true
+
+      -1 ->
+        true
+
+      "-1" ->
+        true
+
+      list when is_list(list) ->
+        # Check if list only contains non-values
+        Enum.all?(list, &non_value?/1)
+
+      _ ->
+        false
+    end
   end
 
   # Remove association-based filters (like {field, assoc}) whose value is blank
   defp drop_blank_assoc_filters(filters) when is_map(filters) do
     filters
     |> Enum.reject(fn
-      {{_field, _assoc}, value} -> blank_value?(value)
-      _ -> false
+      # Remove association-based filters with blank values
+      {{_field, _assoc}, value} -> non_value?(value)
+      # Remove regular field filters with blank values
+      {_field, value} -> non_value?(value)
     end)
     |> Enum.into(%{})
   end
@@ -675,25 +709,31 @@ defmodule Phoexnip.SearchUtils do
   end
 
   defp handle_list_value(acc_query, module, binding, field, value, user_timezone, use_or) do
-    {keywords, values} = extract_list_keywords(value)
+    filtered_value = Enum.reject(value, &non_value?/1)
 
-    if values == [] do
+    if filtered_value == [] do
       acc_query
     else
-      field_condition =
-        build_list_field_condition(binding, module, field, keywords, values, user_timezone)
+      {keywords, values} = extract_list_keywords(value)
 
-      apply_list_condition(
-        acc_query,
-        field_condition,
-        keywords,
-        values,
-        use_or,
-        module,
-        field,
-        binding,
-        user_timezone
-      )
+      if values == [] do
+        acc_query
+      else
+        field_condition =
+          build_list_field_condition(binding, module, field, keywords, values, user_timezone)
+
+        apply_list_condition(
+          acc_query,
+          field_condition,
+          keywords,
+          values,
+          use_or,
+          module,
+          field,
+          binding,
+          user_timezone
+        )
+      end
     end
   end
 
@@ -707,6 +747,9 @@ defmodule Phoexnip.SearchUtils do
       "before_equal" -> {"before_equal", Enum.drop(value, -1)}
       "and" -> {"and", Enum.drop(value, -1)}
       "or" -> {"or", Enum.drop(value, -1)}
+      "exact_and" -> {"exact_and", Enum.drop(value, -1)}
+      "exact_or" -> {"exact_or", Enum.drop(value, -1)}
+      "exact_not" -> {"exact_not", Enum.drop(value, -1)}
       "not" -> {"not", Enum.drop(value, -1)}
       _ -> {nil, value}
     end
@@ -720,8 +763,17 @@ defmodule Phoexnip.SearchUtils do
       keywords == "not" ->
         build_not_condition(binding, module, field, values, user_timezone)
 
+      keywords == "exact_not" ->
+        build_exact_not_condition(binding, module, field, values, user_timezone)
+
       keywords == "or" ->
         build_or_condition(binding, module, field, values, user_timezone)
+
+      keywords == "exact_or" ->
+        build_exact_or_condition(binding, module, field, values, user_timezone)
+
+      keywords == "exact_and" ->
+        build_exact_and_condition(binding, module, field, values, user_timezone)
 
       true ->
         build_and_condition(binding, module, field, values, user_timezone)
@@ -771,6 +823,25 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
+  defp build_exact_not_condition(binding, module, field, values, user_timezone) do
+    if is_exact_type_field?(module, field) do
+      converted_values =
+        Enum.map(values, fn v ->
+          convert_value_to_field(module, field, v, user_timezone)
+        end)
+
+      dynamic([{^binding, r}], field(r, ^field) not in ^converted_values)
+    else
+      # Force exact match exclusion for string fields
+      Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
+        dynamic(
+          [{^binding, r}],
+          ^dyn_acc and field(r, ^field) != ^v
+        )
+      end)
+    end
+  end
+
   defp build_or_condition(binding, module, field, values, user_timezone) do
     Enum.reduce(values, dynamic(false), fn v, dyn_acc ->
       if is_exact_type_field?(module, field) do
@@ -782,6 +853,23 @@ defmodule Phoexnip.SearchUtils do
         dynamic(
           [{^binding, r}],
           ^dyn_acc or fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(v) <> "%"))
+        )
+      end
+    end)
+  end
+
+  defp build_exact_or_condition(binding, module, field, values, user_timezone) do
+    Enum.reduce(values, dynamic(false), fn v, dyn_acc ->
+      if is_exact_type_field?(module, field) do
+        dynamic(
+          [{^binding, r}],
+          ^dyn_acc or field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
+        )
+      else
+        # Force exact match for string fields
+        dynamic(
+          [{^binding, r}],
+          ^dyn_acc or field(r, ^field) == ^v
         )
       end
     end)
@@ -799,6 +887,24 @@ defmodule Phoexnip.SearchUtils do
         dynamic(
           [{^binding, r}],
           ^dyn_acc and fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(v) <> "%"))
+        )
+      end
+    end)
+  end
+
+  defp build_exact_and_condition(binding, module, field, values, user_timezone) do
+    Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
+      if is_exact_type_field?(module, field) do
+        dynamic(
+          [{^binding, r}],
+          ^dyn_acc and
+            field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
+        )
+      else
+        # Force exact match for string fields
+        dynamic(
+          [{^binding, r}],
+          ^dyn_acc and field(r, ^field) == ^v
         )
       end
     end)
@@ -826,6 +932,9 @@ defmodule Phoexnip.SearchUtils do
       "not" ->
         from r in acc_query, where: ^field_condition
 
+      "exact_not" ->
+        from r in acc_query, where: ^field_condition
+
       "range" ->
         apply_range_condition(acc_query, values, module, field, binding, user_timezone)
 
@@ -841,9 +950,15 @@ defmodule Phoexnip.SearchUtils do
         )
 
       "or" ->
-        from r in acc_query, or_where: ^field_condition
+        from r in acc_query, where: ^field_condition
+
+      "exact_or" ->
+        from r in acc_query, where: ^field_condition
 
       "and" ->
+        from r in acc_query, where: ^field_condition
+
+      "exact_and" ->
         from r in acc_query, where: ^field_condition
 
       _ ->

@@ -1,7 +1,7 @@
 [tools]
-age = "latest"
-elixir = "latest"
-erlang = "latest"
-node = "latest"
-postgres = "latest"
-sops = "latest"
+age = "1.2.1"
+elixir = "1.18.3-otp-27"
+erlang = "27.3"
+node = "24.6.0"
+postgres = "17.4"
+sops = "3.9.4"
