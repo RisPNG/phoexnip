@@ -332,10 +332,10 @@ defmodule PhoexnipWeb.CoreComponents do
       role="alert"
       class={[
         "flash fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 shadow-lg",
-        @kind == :info && "bg-infoBg text-infoFg ring-infoBorder",
-        @kind == :error && "bg-errorBg text-errorFg ring-errorBorder",
-        @kind == :warning && "bg-warnBg text-warnFg ring-warnBorder",
-        @kind not in [:warning, :error, :info] && "bg-infoBg text-infoFg ring-infoBorder"
+        @kind == :info && "bg-emerald-50 text-emerald-800 ring-emerald-500",
+        @kind == :error && "bg-rose-50 text-rose-900 ring-rose-500",
+        @kind == :warning && "bg-yellow-100 text-yellow-700 ring-yellow-500",
+        @kind not in [:warning, :error, :info] && "bg-emerald-50 text-emerald-800 ring-emerald-500"
       ]}
       {@rest}
     >
@@ -343,9 +343,12 @@ defmodule PhoexnipWeb.CoreComponents do
         <.icon :if={@icon} name={@icon} class="h-4 w-4" />
         {@title}
       </p>
-      <p class="mt-2 leading-5">
-        {msg}
-        <.icon :if={@show_spinner} name="hero-arrow-path" class="ml-1 h-3 w-3 animate-spin" />
+      <p class="mt-2 leading-5" phx-no-format>
+        <span class="whitespace-break-spaces break-words">{msg}</span><.icon
+          :if={@show_spinner}
+          name="hero-arrow-path"
+          class="ml-1 h-3 w-3 animate-spin"
+        />
       </p>
     </div>
     """
@@ -362,7 +365,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   def flash_group(assigns) do
     ~H"""
-    <div id="flash-group">
+    <div id="flash-group" phx-no-format>
       <%!-- Legacy Flash Presets --%>
       <.flash kind={:info} flash={@flash} title="Success!" duration={5000} />
       <.flash kind={:error} flash={@flash} title="Error!" duration={8000} />
@@ -376,9 +379,7 @@ defmodule PhoexnipWeb.CoreComponents do
         phx-disconnected={show("#client-error")}
         phx-connected={hide("#client-error")}
         hidden
-      >
-        Attempting to reconnect
-      </.flash>
+      >Attempting to reconnect</.flash>
       <.flash
         id="server-error"
         kind={:error}
@@ -387,9 +388,7 @@ defmodule PhoexnipWeb.CoreComponents do
         phx-error={show("#server-error")}
         phx-connected={hide("#server-error")}
         hidden
-      >
-        Hang in there while we get back on track
-      </.flash>
+      >Hang in there while we get back on track</.flash>
     </div>
     """
   end

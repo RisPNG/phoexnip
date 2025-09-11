@@ -541,6 +541,9 @@ defmodule Phoexnip.ImportUtils do
 
   def bulk_upsert(schema, entities_attrs, chunk_size \\ 256, on_replace \\ [])
       when is_list(entities_attrs) do
+    # Helper function to check if value is NotLoaded
+    is_not_loaded = fn value -> match?(%Ecto.Association.NotLoaded{}, value) end
+
     on_replace =
       on_replace
       |> List.wrap()
@@ -684,8 +687,14 @@ defmodule Phoexnip.ImportUtils do
             {_count, entities_in_chunk} =
               chunk
               |> Enum.map(fn attrs ->
-                processed =
+                # Filter out NotLoaded associations first, then process normally
+                cleaned_attrs =
                   attrs
+                  |> Enum.filter(fn {_k, v} -> not is_not_loaded.(v) end)
+                  |> Enum.into(%{})
+
+                processed =
+                  cleaned_attrs
                   |> Map.drop(schema.__schema__(:associations) |> Enum.map(&Atom.to_string/1))
                   |> Map.new(fn {k, v} ->
                     key_atom = if is_atom(k), do: k, else: String.to_existing_atom(k)
@@ -696,7 +705,7 @@ defmodule Phoexnip.ImportUtils do
                 original_entity =
                   if Map.has_key?(attrs, "id"), do: original_entities[attrs["id"]], else: nil
 
-                add_timestamps.(processed, attrs, schema, timestamp, original_entity)
+                add_timestamps.(processed, cleaned_attrs, schema, timestamp, original_entity)
               end)
               |> (&Repo.insert_all(schema, &1,
                     returning: true,
@@ -718,31 +727,42 @@ defmodule Phoexnip.ImportUtils do
                   |> Enum.flat_map(fn {parent_entity, parent_attrs} ->
                     assoc_data = Map.get(parent_attrs, assoc_str)
 
-                    assoc_attrs_list =
-                      case assoc_info.cardinality do
-                        :one ->
-                          if is_map(assoc_data), do: [assoc_data], else: []
+                    # Skip if the association is NotLoaded
+                    if is_not_loaded.(assoc_data) do
+                      []
+                    else
+                      assoc_attrs_list =
+                        case assoc_info.cardinality do
+                          :one ->
+                            if is_map(assoc_data), do: [assoc_data], else: []
 
-                        :many ->
-                          cond do
-                            is_map(assoc_data) -> Map.values(assoc_data)
-                            is_list(assoc_data) -> assoc_data
-                            true -> []
-                          end
-                          |> Enum.filter(&is_map/1)
-                      end
+                          :many ->
+                            cond do
+                              is_map(assoc_data) -> Map.values(assoc_data)
+                              is_list(assoc_data) -> assoc_data
+                              true -> []
+                            end
+                            |> Enum.filter(&is_map/1)
+                        end
 
-                    Enum.map(assoc_attrs_list, &{&1, parent_entity.id})
+                      Enum.map(assoc_attrs_list, &{&1, parent_entity.id})
+                    end
                   end)
 
                 if assoc_entries_with_data != [] do
                   processed_data =
                     Enum.map(assoc_entries_with_data, fn {attrs, parent_id} ->
+                      # Also clean NotLoaded from nested associations
+                      cleaned_nested_attrs =
+                        attrs
+                        |> Enum.filter(fn {_k, v} -> not is_not_loaded.(v) end)
+                        |> Enum.into(%{})
+
                       nested_assoc_keys =
                         assoc_schema.__schema__(:associations) |> Enum.map(&Atom.to_string/1)
 
                       processed =
-                        attrs
+                        cleaned_nested_attrs
                         |> Map.drop(nested_assoc_keys)
                         |> Map.new(fn {k, v} ->
                           key_atom = if is_atom(k), do: k, else: String.to_existing_atom(k)
@@ -769,9 +789,15 @@ defmodule Phoexnip.ImportUtils do
                         end
 
                       processed =
-                        add_timestamps.(processed, attrs, assoc_schema, timestamp, original_assoc)
+                        add_timestamps.(
+                          processed,
+                          cleaned_nested_attrs,
+                          assoc_schema,
+                          timestamp,
+                          original_assoc
+                        )
 
-                      {processed, attrs}
+                      {processed, cleaned_nested_attrs}
                     end)
 
                   entries_to_insert = Enum.map(processed_data, &elem(&1, 0))
@@ -799,7 +825,21 @@ defmodule Phoexnip.ImportUtils do
               end)
             end
 
-            recursive_processor.(recursive_processor, schema, Enum.zip(entities_in_chunk, chunk))
+            # Clean the chunk data before passing to recursive processor
+            cleaned_chunk =
+              chunk
+              |> Enum.map(fn attrs ->
+                attrs
+                |> Enum.filter(fn {_k, v} -> not is_not_loaded.(v) end)
+                |> Enum.into(%{})
+              end)
+
+            recursive_processor.(
+              recursive_processor,
+              schema,
+              Enum.zip(entities_in_chunk, cleaned_chunk)
+            )
+
             acc_entities ++ entities_in_chunk
           end)
 
