@@ -105,7 +105,7 @@ defmodule Phoexnip.MixProject do
       {:telemetry_metrics, ">= 1.0.0"},
       {:telemetry_poller, ">= 1.0.0"},
       {:timex, ">= 3.0.0"},
-      {:xlsx_reader, ">= 0.8.0", git: "https://github.com/weih-kahoot/xlsx_reader.git", branch: "otp-28-compatibility"}
+      {:xlsx_reader, ">= 0.8.0", git: "https://github.com/xavier/xlsx_reader.git", branch: "master"}
     ]
   end
 
