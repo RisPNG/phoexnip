@@ -332,10 +332,10 @@ defmodule PhoexnipWeb.CoreComponents do
       role="alert"
       class={[
         "flash fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 shadow-lg",
-        @kind == :info && "bg-emerald-50 text-emerald-800 ring-emerald-500",
-        @kind == :error && "bg-rose-50 text-rose-900 ring-rose-500",
-        @kind == :warning && "bg-yellow-100 text-yellow-700 ring-yellow-500",
-        @kind not in [:warning, :error, :info] && "bg-emerald-50 text-emerald-800 ring-emerald-500"
+        @kind == :info && "bg-infoBg text-infoFg ring-infoBorder",
+        @kind == :error && "bg-errorBg text-errorFg ring-errorBorder",
+        @kind == :warning && "bg-warnBg text-warnFg ring-warnBorder",
+        @kind not in [:warning, :error, :info] && "bg-infoBg text-infoFg ring-infoBorder"
       ]}
       {@rest}
     >
