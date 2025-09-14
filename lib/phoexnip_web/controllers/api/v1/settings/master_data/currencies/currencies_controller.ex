@@ -17,7 +17,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   use PhoenixSwagger
 
   alias Phoexnip.Masterdata.Currencies
-  alias Phoexnip.Masterdata.CurrenciesService
+  alias Phoexnip.ServiceUtils
 
   @doc """
   Renders a list of all currency.
@@ -46,7 +46,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
       |> halt()
     end
 
-    masterdatas = CurrenciesService.list()
+    masterdatas = ServiceUtils.list_ordered(Currencies, [asc: :sort])
     render(conn, :index, masterdatas: masterdatas)
   end
 
@@ -77,7 +77,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
       |> halt()
     end
 
-    case CurrenciesService.get(id) do
+    case ServiceUtils.get(Currencies, id) do
       %Currencies{} = colour ->
         render(conn, :show, masterdata: colour)
 
@@ -118,7 +118,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
     # Extracting the user parameters from the body_params of the connection
     params = conn.body_params["currency"] || conn.body_params
 
-    case CurrenciesService.create(params) do
+    case ServiceUtils.create(Currencies, params) do
       {:ok, %Currencies{} = masterdata} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
@@ -179,9 +179,9 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
 
     IO.inspect(conn.body_params)
 
-    case CurrenciesService.get(id) do
+    case ServiceUtils.get(Currencies, id) do
       %Currencies{} = masterdata ->
-        case CurrenciesService.update(masterdata, conn.body_params) do
+        case ServiceUtils.update(masterdata, conn.body_params) do
           {:ok, %Currencies{} = updated_masterdata} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type
@@ -246,9 +246,9 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
       |> halt()
     end
 
-    case CurrenciesService.get(id) do
+    case ServiceUtils.get(Currencies, id) do
       %Currencies{} = masterdata ->
-        case CurrenciesService.delete(masterdata) do
+        case ServiceUtils.delete(masterdata) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type

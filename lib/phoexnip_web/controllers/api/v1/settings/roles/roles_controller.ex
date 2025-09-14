@@ -17,7 +17,9 @@ defmodule PhoexnipWeb.RolesController do
   use PhoenixSwagger
 
   alias Phoexnip.Roles
-  alias Phoexnip.RolesService
+  alias Phoexnip.ServiceUtils
+  alias Phoexnip.SearchUtils
+  import Ecto.Query, warn: false
 
   @doc """
   Renders a paginated list of roles.
@@ -47,7 +49,12 @@ defmodule PhoexnipWeb.RolesController do
     per_page =
       Map.get(params, "per_page", 20) |> Phoexnip.NumberUtils.validate_positive_integer(20)
 
-    roles = RolesService.list(page: page, per_page: per_page, preload: false)
+    %{entries: roles} =
+      SearchUtils.search(
+        pagination: %{page: page, per_page: per_page},
+        module: Phoexnip.Roles
+      )
+
     render(conn, :index, roles: roles)
   end
 
@@ -73,7 +80,7 @@ defmodule PhoexnipWeb.RolesController do
       |> halt()
     end
 
-    case RolesService.get(id) do
+    case ServiceUtils.get_with_preload(Phoexnip.Roles, id, [role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)]) do
       %Roles{} = role ->
         render(conn, :show, role: role)
 
@@ -109,7 +116,7 @@ defmodule PhoexnipWeb.RolesController do
     # Extracting the user parameters from the body_params of the connection
     role_params = conn.body_params["role"] || conn.body_params
 
-    case RolesService.create(role_params) do
+    case ServiceUtils.create(Phoexnip.Roles, role_params) do
       {:ok, %Roles{} = role} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
@@ -166,9 +173,9 @@ defmodule PhoexnipWeb.RolesController do
     # Extracting the user parameters from the body_params of the connection
     role_params = conn.body_params["role"] || conn.body_params
 
-    case RolesService.get(id) do
+    case ServiceUtils.get(Phoexnip.Roles, id) do
       %Roles{} = role ->
-        case RolesService.update(role, role_params) do
+        case ServiceUtils.update(role, role_params) do
           {:ok, %Roles{} = updated_role} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type
@@ -228,9 +235,9 @@ defmodule PhoexnipWeb.RolesController do
       |> halt()
     end
 
-    case RolesService.get(id) do
+    case ServiceUtils.get(Phoexnip.Roles, id) do
       %Roles{} = role ->
-        case RolesService.delete(role) do
+        case ServiceUtils.delete(role) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               # Entity type

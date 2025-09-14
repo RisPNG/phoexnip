@@ -1,8 +1,8 @@
 defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
   use PhoexnipWeb, :live_view
 
-  alias Phoexnip.Masterdata.GroupsService
   alias Phoexnip.Masterdata.Groups
+  alias Phoexnip.ServiceUtils
   alias Phoexnip.UserRolesService
 
   @impl true
@@ -53,8 +53,8 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
 
     socket
     |> assign(:page_title, "Edit Groups")
-    |> assign(:groups, GroupsService.get!(id))
-    |> stream(:groups_collection, GroupsService.list())
+    |> assign(:groups, ServiceUtils.get!(Groups, id))
+    |> stream(:groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -66,7 +66,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
         2
       )
 
-    all_groups = GroupsService.list()
+    all_groups = ServiceUtils.list_ordered(Groups, [asc: :sort])
 
     socket
     |> assign(:page_title, "New Groups")
@@ -93,7 +93,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
     socket
     |> assign(:page_title, "Groups")
     |> assign(:groups, nil)
-    |> stream(:groups_collection, GroupsService.list())
+    |> stream(:groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))
   end
 
   @impl true
@@ -101,13 +101,13 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
         {PhoexnipWeb.MasterDataGroupsLive.FormComponent, {:saved, _groups}},
         socket
       ) do
-    {:noreply, stream(socket, :groups_collection, GroupsService.list())}
+    {:noreply, stream(socket, :groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))}
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    groups = GroupsService.get!(id)
-    {:ok, _} = GroupsService.delete(groups)
+    groups = ServiceUtils.get!(Groups, id)
+    {:ok, _} = ServiceUtils.delete(groups)
 
     Phoexnip.AuditLogService.create_audit_log(
       # Entity type
@@ -126,7 +126,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
       # Metadata (example: user's IP)
     )
 
-    {:noreply, stream(socket, :groups_collection, GroupsService.list())}
+    {:noreply, stream(socket, :groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))}
   end
 
   def handle_event(
@@ -152,7 +152,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
       socket
       |> assign(:audit_log_data, audit_log_data)
       |> assign(:show_audit_log_modal, true)
-      |> stream(:groups_collection, GroupsService.list())
+      |> stream(:groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))
 
     {:noreply, socket}
   end
@@ -160,6 +160,6 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
   def handle_event("close_audit_log_modal", _params, socket) do
     {:noreply,
      assign(socket, show_audit_log_modal: false)
-     |> stream(:groups_collection, GroupsService.list())}
+     |> stream(:groups_collection, ServiceUtils.list_ordered(Groups, [asc: :sort]))}
   end
 end

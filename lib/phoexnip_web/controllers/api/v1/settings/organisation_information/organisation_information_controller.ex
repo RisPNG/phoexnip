@@ -14,7 +14,8 @@ defmodule PhoexnipWeb.OrganisationInformationController do
   use PhoenixSwagger
 
   alias Phoexnip.Settings.OrganisationInfo
-  alias Phoexnip.Settings.OrganisationInfoService
+  alias Phoexnip.SearchUtils
+  alias Phoexnip.ServiceUtils
 
   @doc """
   Retrieves the organisation information record.
@@ -39,7 +40,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       |> halt()
     end
 
-    organisation_info = OrganisationInfoService.get_organisation_info()
+    organisation_info = fetch_organisation_info()
 
     render(conn, :index, organisation_info: organisation_info)
   end
@@ -68,7 +69,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       |> halt()
     end
 
-    organisation_info = OrganisationInfoService.get_organisation_info()
+    organisation_info = fetch_organisation_info()
 
     if organisation_info.id != nil do
       conn
@@ -80,7 +81,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       # Extracting the user parameters from the body_params of the connection
       params = conn.body_params["organisation_info"] || conn.body_params
 
-      case OrganisationInfoService.create(params) do
+      case ServiceUtils.create(OrganisationInfo, params) do
         {:ok, %OrganisationInfo{} = new_organisation_info} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -137,9 +138,9 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       |> halt()
     end
 
-    master_data = OrganisationInfoService.get_organisation_info()
+    master_data = fetch_organisation_info()
 
-    case OrganisationInfoService.update(master_data, conn.body_params) do
+    case ServiceUtils.update(master_data, conn.body_params) do
       {:ok, %OrganisationInfo{} = updated_master_data} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
@@ -297,5 +298,28 @@ defmodule PhoexnipWeb.OrganisationInformationController do
           property(:address, Schema.array(:Address), "List of organisation addresses")
         end
     }
+  end
+
+  defp fetch_organisation_info do
+    result =
+      SearchUtils.search(
+        args: %{},
+        pagination: %{page: 1, per_page: 1},
+        module: OrganisationInfo,
+        preload: [:address]
+      )
+
+    case result.entries do
+      [info | _] ->
+        info
+
+      [] ->
+        %OrganisationInfo{
+          address: [
+            %Phoexnip.Address{guid: Ecto.UUID.generate(), category: "BILLING", sequence: 1},
+            %Phoexnip.Address{guid: Ecto.UUID.generate(), category: "DELIVERY", sequence: 1}
+          ]
+        }
+    end
   end
 end

@@ -18,7 +18,7 @@ defmodule Phoexnip.JobExecutor do
   """
 
   alias Phoexnip.Settings.Schedulers
-  alias Phoexnip.Settings.SchedulersService
+  alias Phoexnip.ServiceUtils
 
   @allowed_jobs %{
     "quality_images_clean_up" => :quality_images_clean_up,
@@ -40,7 +40,7 @@ defmodule Phoexnip.JobExecutor do
   """
   @spec execute_job(String.t()) :: :ok | :error
   def execute_job(name) do
-    case SchedulersService.get_by(%{name: name}) do
+    case ServiceUtils.get_by(Schedulers, %{name: name}) do
       nil ->
         IO.inspect("No job found with name #{name}")
         :error
@@ -151,13 +151,13 @@ defmodule Phoexnip.JobExecutor do
       allowed_job_atom ->
         case Phoexnip.JobSchedulers.find_job(allowed_job_atom) do
           nil ->
-            case SchedulersService.get_by(%{name: job_name}) do
+            case ServiceUtils.get_by(Schedulers, %{name: job_name}) do
               nil ->
                 IO.inspect("No job found with name #{job_name}")
                 :error
 
               scheduler ->
-                SchedulersService.update(scheduler, %{status: 1})
+                ServiceUtils.update(scheduler, %{status: 1})
                 start_job_from_db(scheduler)
                 IO.inspect("Job #{job_name} started.")
                 :ok
@@ -194,13 +194,13 @@ defmodule Phoexnip.JobExecutor do
             :ok
 
           _job ->
-            case SchedulersService.get_by(%{name: job_name}) do
+            case ServiceUtils.get_by(Schedulers, %{name: job_name}) do
               nil ->
                 IO.inspect("No scheduler found with the name #{job_name}.")
                 :error
 
               scheduler ->
-                case SchedulersService.update(scheduler, %{status: 0}) do
+                case ServiceUtils.update(scheduler, %{status: 0}) do
                   {:ok, _} ->
                     Phoexnip.JobSchedulers.delete_job(job_name_atom)
                     IO.inspect("Job #{job_name} stopped successfully.")

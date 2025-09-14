@@ -5,7 +5,7 @@ defmodule PhoexnipWeb.Plugs.ApiKeyAuth do
   This plug:
     1. Reads the "x-api-key" header from the request.
     2. Attempts to fetch user and permission data from the ApiKeyCache.
-    3. If not cached, retrieves the API key record from the database via `Phoexnip.Settings.ApiKeyService`,
+    3. If not cached, retrieves the API key record from the database via `Phoexnip.ServiceUtils` and `Phoexnip.Settings.ApiKey`,
        validates its expiry, loads the associated user and permissions, and stores them in the cache.
     4. Assigns `:current_user` and `:permissions` into `conn.assigns` on success.
     5. Returns a `401 Unauthorized` on missing or invalid keys, or `403 Forbidden` on expired keys.
@@ -67,7 +67,7 @@ defmodule PhoexnipWeb.Plugs.ApiKeyAuth do
   @doc false
   @spec fetch_and_cache_api_key_data(Plug.Conn.t(), String.t()) :: Plug.Conn.t()
   defp fetch_and_cache_api_key_data(conn, api_key) do
-    case Phoexnip.Settings.ApiKeyService.get_by!(%{key: api_key}) do
+    case Phoexnip.ServiceUtils.get_by(Phoexnip.Settings.ApiKey, %{key: api_key}) do
       nil ->
         conn
         |> put_status(:unauthorized)

@@ -3,8 +3,9 @@ defmodule PhoexnipWeb.RolesLive.New do
 
   alias Phoexnip.SitemapService
   alias Phoexnip.Roles
-  alias Phoexnip.RolesService
+  alias Phoexnip.ServiceUtils
   alias Phoexnip.UserRolesService
+  import Ecto.Query, warn: false
 
   @impl true
   def mount(params, _session, socket) do
@@ -60,7 +61,12 @@ defmodule PhoexnipWeb.RolesLive.New do
         UserRolesService.fetch_highest_permission_for_users(socket.assigns.current_user)
         |> Enum.filter(fn rp -> rp.permission == 16 end)
 
-      role = RolesService.get!(String.to_integer(params["id"]))
+      role =
+        ServiceUtils.get_with_preload!(
+          Phoexnip.Roles,
+          String.to_integer(params["id"]),
+          [role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)]
+        )
 
       sitemap_entries = SitemapService.list() |> Enum.sort_by(& &1.sequence)
 
@@ -108,7 +114,7 @@ defmodule PhoexnipWeb.RolesLive.New do
           end
         end)
 
-      changeset = role |> RolesService.change(%{role_permissions: role_permissions})
+      changeset = ServiceUtils.change(role, %{role_permissions: role_permissions})
 
       {:ok,
        socket
@@ -133,7 +139,7 @@ defmodule PhoexnipWeb.RolesLive.New do
     old_role = socket.assigns.role
 
     if old_role.id == nil do
-      case RolesService.create(params) do
+      case ServiceUtils.create(Phoexnip.Roles, params) do
         {:ok, role} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -161,7 +167,7 @@ defmodule PhoexnipWeb.RolesLive.New do
           {:noreply, assign(socket, :form, errors)}
       end
     else
-      case RolesService.update(old_role, params) do
+      case ServiceUtils.update(old_role, params) do
         {:ok, role} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -194,7 +200,7 @@ defmodule PhoexnipWeb.RolesLive.New do
   def handle_event("validate", %{"role" => params}, socket) do
     changeset =
       %Roles{}
-      |> RolesService.change(params)
+      |> ServiceUtils.change(params)
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, form: changeset)}

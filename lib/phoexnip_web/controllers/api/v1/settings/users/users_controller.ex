@@ -54,11 +54,12 @@ defmodule PhoexnipWeb.UserController do
       |> json(%{error: "Unauthorized: Invalid username or password"})
       |> halt()
     else
-      existing_key = Phoexnip.Settings.ApiKeyService.get_by!(%{given_to: user.email})
+      existing_key =
+        Phoexnip.ServiceUtils.get_by(Phoexnip.Settings.ApiKey, %{given_to: user.email})
 
       new_key =
         if existing_key != nil do
-          case Phoexnip.Settings.ApiKeyService.delete(existing_key) do
+          case Phoexnip.ServiceUtils.delete(existing_key) do
             {:ok, _} ->
               Phoexnip.AuditLogService.create_audit_log(
                 "Apikey",
@@ -70,7 +71,7 @@ defmodule PhoexnipWeb.UserController do
                 existing_key
               )
 
-              case Phoexnip.Settings.ApiKeyService.generate_api_key(user.email) do
+              case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
                 {:ok, api_key} ->
                   Phoexnip.AuditLogService.create_audit_log(
                     "Apikey",
@@ -92,7 +93,7 @@ defmodule PhoexnipWeb.UserController do
               nil
           end
         else
-          case Phoexnip.Settings.ApiKeyService.generate_api_key(user.email) do
+          case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
             {:ok, api_key} ->
               Phoexnip.AuditLogService.create_audit_log(
                 "Apikey",
@@ -145,7 +146,10 @@ defmodule PhoexnipWeb.UserController do
     end
 
     existing_key =
-      Phoexnip.Settings.ApiKeyService.get_by!(%{refresh_key: refreshToken, given_to: email})
+      Phoexnip.ServiceUtils.get_by(Phoexnip.Settings.ApiKey, %{
+        refresh_key: refreshToken,
+        given_to: email
+      })
 
     if existing_key == nil ||
          NaiveDateTime.compare(NaiveDateTime.utc_now(), existing_key.refresh_until) == :gt do
@@ -157,7 +161,7 @@ defmodule PhoexnipWeb.UserController do
       user = UserService.get_user_by_email(email)
 
       new_key =
-        case Phoexnip.Settings.ApiKeyService.delete(existing_key) do
+        case Phoexnip.ServiceUtils.delete(existing_key) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               "Apikey",
@@ -169,7 +173,7 @@ defmodule PhoexnipWeb.UserController do
               existing_key
             )
 
-            case Phoexnip.Settings.ApiKeyService.generate_api_key(user.email) do
+            case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
               {:ok, api_key} ->
                 Phoexnip.AuditLogService.create_audit_log(
                   "Apikey",

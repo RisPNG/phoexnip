@@ -8,18 +8,20 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
   addresses, with dynamic add/remove and resequencing per address category.
   """
 
-  alias Phoexnip.Settings.OrganisationInfoService
   alias Phoexnip.Settings.OrganisationInfo
+  alias Phoexnip.ServiceUtils
+  alias Phoexnip.SearchUtils
+  alias Phoexnip.Masterdata.Currencies
 
   @impl true
   def mount(_params, _session, socket) do
     socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET4", 4)
 
-    organisation_information = OrganisationInfoService.get_organisation_info()
-    changeset = OrganisationInfoService.change(organisation_information)
+    organisation_information = fetch_organisation_info()
+    changeset = ServiceUtils.change(organisation_information)
 
     currency =
-      Phoexnip.Masterdata.CurrenciesService.list() |> Enum.map(&{"#{&1.name}", &1.code})
+      ServiceUtils.list_ordered(Currencies, [asc: :sort]) |> Enum.map(&{"#{&1.name}", &1.code})
 
     {:ok,
      socket
@@ -43,7 +45,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     organisation_info = socket.assigns.organisation_info
 
     if organisation_info.id != nil do
-      case OrganisationInfoService.update(organisation_info, params) do
+      case ServiceUtils.update(organisation_info, params) do
         {:ok, new_organisation_info} ->
           # Create the audit log after customer creation
           Phoexnip.AuditLogService.create_audit_log(
@@ -73,7 +75,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
       end
     else
       # Save the user first to ensure unique constrained is honored.
-      case OrganisationInfoService.create(params) do
+      case ServiceUtils.create(OrganisationInfo, params) do
         {:ok, organisation_info} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -107,14 +109,14 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     if socket.assigns.organisation_info.id != nil do
       changeset =
         socket.assigns.organisation_info
-        |> OrganisationInfoService.change(params)
+        |> ServiceUtils.change(params)
         |> Map.put(:action, :validate)
 
       {:noreply, assign(socket, form: changeset)}
     else
       changeset =
         %OrganisationInfo{}
-        |> OrganisationInfoService.change(params)
+        |> ServiceUtils.change(params)
         |> Map.put(:action, :validate)
 
       {:noreply, assign(socket, form: changeset)}
@@ -144,7 +146,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
       | address: customer.address ++ [new_address]
     }
 
-    {:noreply, assign(socket, :form, OrganisationInfoService.change(updated_customer))}
+    {:noreply, assign(socket, :form, ServiceUtils.change(updated_customer))}
   end
 
   def handle_event("remove_address", %{"guid" => guid}, socket) do
@@ -186,7 +188,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     updated_customer = %{customer | address: final_addresses}
 
     # Assign the updated changeset back to the socket
-    {:noreply, assign(socket, :form, OrganisationInfoService.change(updated_customer))}
+    {:noreply, assign(socket, :form, ServiceUtils.change(updated_customer))}
   end
 
   @impl true
@@ -215,5 +217,26 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     send_update(LiveSelect.Component, id: id, options: options)
 
     {:noreply, socket}
+  end
+
+  defp fetch_organisation_info do
+    result =
+      SearchUtils.search(
+        args: %{},
+        pagination: %{page: 1, per_page: 1},
+        module: OrganisationInfo,
+        preload: [:address]
+      )
+
+    case result.entries do
+      [info | _] -> info
+      [] ->
+        %OrganisationInfo{
+          address: [
+            %Phoexnip.Address{guid: Ecto.UUID.generate(), category: "BILLING", sequence: 1},
+            %Phoexnip.Address{guid: Ecto.UUID.generate(), category: "DELIVERY", sequence: 1}
+          ]
+        }
+    end
   end
 end

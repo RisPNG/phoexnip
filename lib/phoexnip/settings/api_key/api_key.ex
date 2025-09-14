@@ -10,6 +10,7 @@ defmodule Phoexnip.Settings.ApiKey do
 
   use Ecto.Schema
   import Ecto.Changeset
+  alias Phoexnip.ServiceUtils
 
   @typedoc "An `%ApiKey{}` struct"
   @type t :: %__MODULE__{
@@ -54,5 +55,32 @@ defmodule Phoexnip.Settings.ApiKey do
     |> cast(attrs, schema_casts())
     |> validate_required([:key, :given_to, :valid_until, :refresh_key, :refresh_until])
     |> unique_constraint(:key)
+  end
+
+  @doc """
+  Generates and persists a new API key pair for the given identifier.
+
+  Creates a random base64-encoded `key` and `refresh_key`, sets
+  `valid_until` to 1 day from now and `refresh_until` to 7 days from now
+  (UTC), and inserts the record.
+
+  Returns `{:ok, %ApiKey{}}` on success or `{:error, %Ecto.Changeset{}}` on failure.
+  """
+  @spec generate_api_key(String.t()) :: {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def generate_api_key(given_to) when is_binary(given_to) do
+    api_key = :crypto.strong_rand_bytes(32) |> Base.encode64() |> binary_part(0, 43)
+    refresh_key = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 86)
+
+    utc_now = Timex.now("Etc/UTC")
+    valid_until = Timex.shift(utc_now, days: 1)
+    refresh_until = Timex.shift(utc_now, days: 7)
+
+    ServiceUtils.create(__MODULE__, %{
+      key: api_key,
+      given_to: given_to,
+      valid_until: valid_until,
+      refresh_key: refresh_key,
+      refresh_until: refresh_until
+    })
   end
 end

@@ -4,14 +4,15 @@ defmodule Phoexnip.JobStarter do
   scheduled jobs when the application boots.
 
   On startup it waits briefly, then:
-    1. Fetches all active scheduler entries from the database via `SchedulersService.list_active/0`.
+    1. Fetches all active scheduler entries from the database via `ServiceUtils.list_where/2`.
     2. Invokes `Phoexnip.JobExecutor.start_job_from_db/1` for each scheduler to register them
        with the Quantum scheduler.
   """
 
   use GenServer
 
-  alias Phoexnip.Settings.SchedulersService
+  alias Phoexnip.ServiceUtils
+  alias Phoexnip.Settings.Schedulers
   alias Phoexnip.JobExecutor
 
   @doc """
@@ -51,7 +52,7 @@ defmodule Phoexnip.JobStarter do
   @doc """
   Handles the `:init_jobs` message by:
 
-    1. Fetching all active scheduler records via `SchedulersService.list_active/0`.
+    1. Fetching all active scheduler records via `ServiceUtils.list_where/2`.
     2. Starting each job using `JobExecutor.start_job_from_db/1`.
 
   ## Parameters
@@ -65,7 +66,7 @@ defmodule Phoexnip.JobStarter do
   """
   @spec handle_info(:init_jobs, list()) :: {:noreply, list()}
   def handle_info(:init_jobs, state) do
-    active_scheduler = SchedulersService.list_active()
+    active_scheduler = ServiceUtils.list_where(Schedulers, [status: 1])
     Enum.each(active_scheduler, &JobExecutor.start_job_from_db/1)
     {:noreply, state}
   end

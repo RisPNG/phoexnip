@@ -17,7 +17,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
   use PhoenixSwagger
 
   alias Phoexnip.Masterdata.Groups
-  alias Phoexnip.Masterdata.GroupsService
+  alias Phoexnip.ServiceUtils
 
   @doc """
   Lists all groups.
@@ -47,7 +47,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> halt()
     end
 
-    masterdatas = GroupsService.list()
+    masterdatas = ServiceUtils.list_ordered(Groups, [asc: :sort])
     render(conn, :index, masterdatas: masterdatas)
   end
 
@@ -77,7 +77,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> halt()
     end
 
-    case GroupsService.get(id) do
+    case ServiceUtils.get(Groups, id) do
       %Groups{} = group ->
         render(conn, :show, masterdata: group)
 
@@ -116,7 +116,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
 
     params = conn.body_params["groups"] || conn.body_params
 
-    case GroupsService.create(params) do
+    case ServiceUtils.create(Groups, params) do
       {:ok, %Groups{} = group} ->
         Phoexnip.AuditLogService.create_audit_log(
           "Groups - API",
@@ -169,9 +169,9 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> halt()
     end
 
-    case GroupsService.get(id) do
+    case ServiceUtils.get(Groups, id) do
       %Groups{} = group ->
-        case GroupsService.update(group, conn.body_params) do
+        case ServiceUtils.update(group, conn.body_params) do
           {:ok, %Groups{} = updated_group} ->
             IO.inspect(updated_group, label: "updated_masterdata")
 
@@ -232,9 +232,9 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> halt()
     end
 
-    case GroupsService.get(id) do
+    case ServiceUtils.get(Groups, id) do
       %Groups{} = group ->
-        case GroupsService.delete(group) do
+        case ServiceUtils.delete(group) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               "Groups - API",

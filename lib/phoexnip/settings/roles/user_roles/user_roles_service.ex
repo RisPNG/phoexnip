@@ -1,34 +1,17 @@
 defmodule Phoexnip.UserRolesService do
   @moduledoc """
-  Provides functions to manage user-role associations, fetch roles for a user,
-  and retrieve the highest permissions based on user roles and sitemap entries.
+  Focused permission helpers built on top of roles and sitemap entries.
+
+  This module keeps only non-generic logic that cannot be covered by
+  `Phoexnip.ServiceUtils` or `Phoexnip.SearchUtils`.
   """
 
   import Ecto.Query, warn: false
   alias Phoexnip.{Repo, SitemapService, RolesPermission, UserRoles, Roles}
 
-  @doc """
-  Returns all user-role associations.
-
-  ## Examples
-      iex> Phoexnip.UserRolesService.list(%{})
-      [%Phoexnip.UserRoles{}, ...]
-  """
-  @spec list(params :: map()) :: [UserRoles.t()]
-  def list(_params) do
-    Repo.all(UserRoles)
-  end
-
-  @doc """
-  Fetches all roles that a given user belongs to (where `belongs_in_role` is true),
-  preloading each role's permissions.
-
-  ## Examples
-      iex> Phoexnip.UserRolesService.fetch_roles_users_belongs_too(user)
-      [%Phoexnip.Roles{role_permissions: [...]}, ...]
-  """
+  # Internal: fetch roles a user belongs to (with permissions preloaded)
   @spec fetch_roles_users_belongs_too(user :: struct()) :: [Roles.t()]
-  def fetch_roles_users_belongs_too(user) do
+  defp fetch_roles_users_belongs_too(user) do
     from(r in Roles,
       join: ur in UserRoles,
       on: ur.role_id == r.id,
@@ -207,61 +190,5 @@ defmodule Phoexnip.UserRolesService do
     end
   end
 
-  @doc """
-  Retrieves a `%UserRoles{}` by its ID or raises if not found.
-  """
-  @spec get!(id :: integer()) :: UserRoles.t()
-  def get!(id), do: Repo.get!(UserRoles, id)
-
-  @doc """
-  Retrieves a `%UserRoles{}` by its ID or returns `nil` if not found.
-  """
-  @spec get(id :: integer()) :: UserRoles.t() | nil
-  def get(id), do: Repo.get(UserRoles, id)
-
-  @doc """
-  Retrieves a `%UserRoles{}` matching the given clauses or raises if not found.
-  """
-  @spec get_by!(clauses :: Keyword.t() | map()) :: UserRoles.t()
-  def get_by!(args), do: Repo.get_by!(UserRoles, args)
-
-  @doc """
-  Retrieves a `%UserRoles{}` matching the given clauses or returns `nil` if not found.
-  """
-  @spec get_by(clauses :: Keyword.t() | map()) :: UserRoles.t() | nil
-  def get_by(args), do: Repo.get_by(UserRoles, args)
-
-  @doc """
-  Creates a new `%UserRoles{}` with the given attributes.
-
-  Returns `{:ok, user_role}` or `{:error, changeset}`.
-  """
-  @spec create(attrs :: map()) :: {:ok, UserRoles.t()} | {:error, Ecto.Changeset.t()}
-  def create(attrs \\ %{}) do
-    %UserRoles{}
-    |> UserRoles.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Updates a `%UserRoles{}` with the given attributes.
-
-  Returns `{:ok, user_role}` or `{:error, changeset}`.
-  """
-  @spec update(attrs :: map()) :: {:ok, UserRoles.t()} | {:error, Ecto.Changeset.t()}
-  def update(attrs \\ %{}) do
-    %UserRoles{}
-    |> UserRoles.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Deletes the given `%UserRoles{}`.
-
-  Returns `{:ok, user_role}` or `{:error, changeset}`.
-  """
-  @spec delete(role :: UserRoles.t()) :: {:ok, UserRoles.t()} | {:error, Ecto.Changeset.t()}
-  def delete(%UserRoles{} = role) do
-    Repo.delete(role)
-  end
+  # All generic CRUD for UserRoles should be done via ServiceUtils.
 end
