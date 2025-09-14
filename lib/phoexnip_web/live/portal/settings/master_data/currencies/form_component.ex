@@ -1,5 +1,6 @@
 defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
   use PhoexnipWeb, :live_component
+
   @moduledoc """
   LiveComponent for creating and editing Currencies records.
 

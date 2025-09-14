@@ -532,6 +532,7 @@ defmodule PhoexnipWeb.CoreComponents do
   attr :id, :any, default: nil
   attr :name, :any
   attr :label, :string, default: nil
+  attr :icon, :string, default: nil
   attr :value, :any
   attr :class, :string, default: ""
 
@@ -574,8 +575,21 @@ defmodule PhoexnipWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
-      <label class="flex items-center gap-4 leading-6 hover:cursor-pointer">
+      <label class={
+        [
+          "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground bg-surface flex items-center justify-between px-3",
+          "phx-no-feedback:border-muted",
+          # Hover border - show primary color on hover regardless of checked state
+          "hover:border-themePrimary",
+          @errors != [] && "border-danger",
+          @errors == [] && ((@checked && "border-muted") || "border-muted")
+        ]
+      }>
         <input type="hidden" name={@name} value="false" />
+        <span class="flex items-center gap-2">
+          <.icon :if={@icon} name={@icon} class="h-5 w-5" />
+          {@label}
+        </span>
         <input
           type="checkbox"
           id={@id}
@@ -583,10 +597,26 @@ defmodule PhoexnipWeb.CoreComponents do
           disabled={@disabled}
           value="true"
           checked={@checked}
-          class="rounded text-themePrimary accent-themePrimary focus:ring-0 hover:cursor-pointer"
+          class={
+            [
+              "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-pointer focus:ring-0 focus:outline-none",
+              # Hover states - only apply when NOT checked
+              "hover:!bg-surface focus:!bg-surface",
+              "focus:!border-2",
+              # Checked states - override hover/focus
+              "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
+              # Keep checked styles even when hovering/focusing
+              "checked:hover:!bg-success checked:focus:!bg-success",
+              "checked:hover:!border-success checked:focus:!border-success",
+              @errors != [] &&
+                "border-danger focus:!border-danger checked:hover:!border-success checked:focus:!border-success",
+              @errors == [] &&
+                ((@checked && "border-success focus:!border-success") ||
+                   "border-muted focus:!border-muted")
+            ]
+          }
           {@rest}
         />
-        {@label}
       </label>
 
       <.error :for={msg <- @errors}>{msg}</.error>
@@ -769,9 +799,9 @@ defmodule PhoexnipWeb.CoreComponents do
         field={@field}
         text_input_class={[
           "block w-full mt-2 rounded-lg py-[7px] px-[11px]",
-          "text-foreground focus:outline-none focus:ring-4 sm:leading-6",
-          "phx-no-feedback:border-border phx-no-feedback:focus:border-themePrimary phx-no-feedback:focus:ring-themePrimary/10",
-          "border-border focus:border-themePrimary focus:ring-themePrimary/10",
+          "text-foreground focus:outline-none focus:ring-0 sm:leading-6",
+          "phx-no-feedback:border-border phx-no-feedback:focus:border-themePrimary",
+          "border-border focus:border-themePrimary",
           @errors != [] && "border-danger focus:border-danger focus:ring-danger/10"
         ]}
         {@live_select_opts}

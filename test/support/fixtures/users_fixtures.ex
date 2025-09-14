@@ -1,5 +1,4 @@
 defmodule Phoexnip.UsersFixtures do
-
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
   def valid_user_password, do: "W12354@sdfjk!"
   def valid_user_name, do: "user#{System.unique_integer()}"

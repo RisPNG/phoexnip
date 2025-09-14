@@ -16,6 +16,7 @@ defmodule Phoexnip.Users.User do
           __meta__: Ecto.Schema.Metadata.t(),
           id: integer() | nil,
           email: String.t() | nil,
+          username: String.t() | nil,
           password: String.t() | nil,
           password_confirmation: String.t() | nil,
           hashed_password: String.t() | nil,
@@ -46,6 +47,7 @@ defmodule Phoexnip.Users.User do
     import Ecto.Schema, except: [field: 2], warn: false
     import Phoexnip.EctoUtils, only: [field: 2]
     field :email, :citext
+    field :username, :text
     field :password, :string, virtual: true, redact: true
     field :password_confirmation, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
@@ -73,7 +75,7 @@ defmodule Phoexnip.Users.User do
   @spec registration_changeset(t() | Ecto.Schema.t(), map(), keyword()) :: Ecto.Changeset.t()
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :name])
+    |> cast(attrs, [:email, :username, :password, :name])
     |> validate_email(opts)
     |> validate_password(opts)
   end
@@ -153,6 +155,7 @@ defmodule Phoexnip.Users.User do
   @attrs_to_save_or_update [
     :name,
     :email,
+    :username,
     :password,
     :password_confirmation,
     :image_url,
@@ -176,6 +179,7 @@ defmodule Phoexnip.Users.User do
     |> validate_format(:email, @valid_email_regex)
     |> update_change(:email, &String.downcase/1)
     |> unique_constraint(:email)
+    |> unique_constraint(:username)
     |> validate_required([:email, :name, :password, :password_confirmation])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_length(:password, min: 12, max: 72)
@@ -202,6 +206,7 @@ defmodule Phoexnip.Users.User do
     |> validate_format(:email, @valid_email_regex)
     |> update_change(:email, &String.downcase/1)
     |> unique_constraint(:email)
+    |> unique_constraint(:username)
     |> validate_required([:email, :name])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_length(:password, min: 12, max: 72)

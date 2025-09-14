@@ -2,7 +2,6 @@
   <.simple_form
     :let={f}
     for={@form}
-    image_url={@image_url}
     multipart={true}
     user_id={@user_id}
     phx-submit="save"
@@ -61,12 +60,13 @@
     <div class="w-full title">User Information</div>
     <div class="flex w-full items-center">
       <div class="w-[30%] flex justify-center flex-wrap">
-        <img src={@image_url} class="h-[300px] w-[300px] user-image mt-6 mb-14" id="" />
+        <img src={@upload_url} class="h-[300px] w-[300px] user-image mt-6 mb-14" id="" />
       </div>
       <div class="w-[70%] flex-wrap grid grid-cols-3 gap-1 items-center">
         <.input field={f[:name]} type="text" label="Name" class="readonly" readonly />
+        <.input field={f[:username]} type="text" label="Username" class="readonly" readonly />
         <.input field={f[:email]} type="text" label="Email" class="readonly" readonly />
-        <.input field={f[:phone]} type="text" label="Phone" class="readonly" readonly />
+        <.input field={f[:phone]} type="text" label="Phone" class="mt-4 readonly" readonly />
         <.input
           field={f[:group]}
           type="text"

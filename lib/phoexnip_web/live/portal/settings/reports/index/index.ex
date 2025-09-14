@@ -6,7 +6,10 @@ defmodule PhoexnipWeb.SettingsReports.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    highest_permission_master_data = UserRolesService.fetch_level_two_user_permissions(user, "SET6")
+
+    highest_permission_master_data =
+      UserRolesService.fetch_level_two_user_permissions(user, "SET6")
+
     IO.inspect(highest_permission_master_data)
 
     socket =

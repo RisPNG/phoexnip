@@ -180,7 +180,12 @@ defmodule PhoexnipWeb.OrganisationInformationController do
     tag("Organisation Information")
     security([%{"api_key" => []}])
 
-    response(200, "Organisation information retrieved successfully", Schema.ref(:OrganisationInformation))
+    response(
+      200,
+      "Organisation information retrieved successfully",
+      Schema.ref(:OrganisationInformation)
+    )
+
     response(401, "Unauthorized: Not enough permissions!")
     response(403, "Forbidden: Your API Key is no longer valid")
   end
@@ -195,11 +200,20 @@ defmodule PhoexnipWeb.OrganisationInformationController do
     tag("Organisation Information")
     security([%{"api_key" => []}])
 
-    parameter(:body, :body, Schema.ref(:OrganisationInformation), "Organisation Information parameters",
+    parameter(
+      :body,
+      :body,
+      Schema.ref(:OrganisationInformation),
+      "Organisation Information parameters",
       required: true
     )
 
-    response(200, "Organisation information created successfully", Schema.ref(:OrganisationInformation))
+    response(
+      200,
+      "Organisation information created successfully",
+      Schema.ref(:OrganisationInformation)
+    )
+
     response(401, "Unauthorized: Not enough permissions!")
     response(403, "Forbidden: Your API Key is no longer valid")
     response(409, "Conflict: Organisation information already exists. Use PUT instead.")
@@ -226,7 +240,12 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       required: true
     )
 
-    response(200, "Organisation information updated successfully", Schema.ref(:OrganisationInformation))
+    response(
+      200,
+      "Organisation information updated successfully",
+      Schema.ref(:OrganisationInformation)
+    )
+
     response(401, "Unauthorized: Not enough permissions!")
     response(403, "Forbidden: Your API Key is no longer valid")
     response(404, "Not Found: Organisation information not found")

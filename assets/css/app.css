@@ -3,43 +3,46 @@
 @import "tailwindcss/utilities";
 @import "./flatpickr.css";
 
+
+
 /* Theme variables: central control for app colors */
 :root {
-  --color-page: 53 53 53;               /* #353535 */
-  --color-surface: 38 38 38;            /* #262626 */
-  --color-foreground: 240 240 240;      /* #f0f0f0 */
-  --color-muted: 107 114 128;           /* #6b7280 (gray-500) */
-  --color-border-subtle: 229 231 235;   /* #e5e7eb (gray-200) */
-  --color-border-strong: 240 240 240;   /* #f0f0f0 */
-  --color-overlay: 0 0 0;               /* #000000 */
-  --color-primary: 67 160 71;           /* amber-600 */
-  --color-primary-dark: 146 64 14;      /* amber-800 */
-  --color-danger: 220 38 38;            /* red-600 */
-  --color-danger-dark: 153 27 27;       /* red-800 */
-  --color-disabled-surface: 28 28 28;   /* #1c1c1c */
+  /* Main colors */
+  --color-page: #353535ff;
+  --color-surface: #262626ff;
+  --color-foreground: #f0f0f0ff;
+  --color-muted: #6b7280ff;
+  --color-border-subtle: #e5e7ebff;
+  --color-border-strong: #f0f0f0ff;
+  --color-overlay: #000000ff;
+  --color-primary: #43a047ff;
+  --color-primary-dark: #92400eff;
+  --color-danger: #dc2626ff;
+  --color-danger-dark: #991b1bff;
+  --color-disabled-surface: #1c1c1cff;
 
   /* Notice/Status tokens */
-  --color-success: 21 128 61;           /* green-700 */
-  --color-success-dark: 22 101 52;      /* green-800 */
-  --color-success-border: 134 239 172;  /* green-300 */
-  --color-success-bg: 240 253 244;      /* green-50 */
-  --color-success-fg: 20 83 45;         /* green-900 */
+  --color-success: #15803dff;
+  --color-success-dark: #166534ff;
+  --color-success-border: #86efacff;
+  --color-success-bg: #f0fdf4ff;
+  --color-success-fg: #14532dff;
 
-  --color-info-border: 125 211 252;     /* sky-300 */
-  --color-info-bg: 224 242 254;         /* sky-100 */
-  --color-info-fg: 12 74 110;           /* sky-900 */
+  --color-info-border: #7dd3fcff;
+  --color-info-bg: #e0f2feff;
+  --color-info-fg: #0c4a6eff;
 
-  --color-warning-border: 252 165 165;  /* red-300 */
-  --color-warning-bg: 254 226 226;      /* red-100 */
-  --color-warning-fg: 127 29 29;        /* red-900 */
+  --color-warning-border: #fca5a5ff;
+  --color-warning-bg: #fee2e2ff;
+  --color-warning-fg: #7f1d1dff;
 
-  --color-error-border: 244 63 94;      /* rose-500 */
-  --color-error-bg: 255 228 230;        /* rose-50 */
-  --color-error-fg: 136 19 55;          /* rose-900 */
+  --color-error-border: #f43f5eff;
+  --color-error-bg: #ffe4e6ff;
+  --color-error-fg: #881337ff;
 
-  --color-warn-border: 234 179 8;       /* amber-500 */
-  --color-warn-bg: 254 243 199;         /* amber-100 */
-  --color-warn-fg: 133 77 14;           /* amber-700 */
+  --color-warn-border: #eab308ff;
+  --color-warn-bg: #fef3c7ff;
+  --color-warn-fg: #854d0eff;
 }
 
 /* Scrollbar (Global) */
@@ -51,19 +54,19 @@
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: rgb(var(--color-surface));
+  background: var(--color-surface);
   border-radius: 6px;
 }
 
 /* Thumb */
 ::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--color-muted));
+  background-color: var(--color-muted);
   border-radius: 6px;
 }
 
 /* Thumb (Hover) */
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--color-primary));
+  background-color: var(--color-primary);
 }
 
 /* Scrollbar 2 */
@@ -80,19 +83,19 @@
 
 /* Track */
 .sb2::-webkit-scrollbar-track {
-  background: rgb(var(--color-surface));
+  background: var(--color-surface);
   border-radius: 6px;
 }
 
 /* Thumb */
 .sb2::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--color-primary));
+  background-color: var(--color-primary);
   border-radius: 6px;
 }
 
 /* Thumb (Hover) */
 .sb2::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--color-primary-dark));
+  background-color: var(--color-primary-dark);
 }
 
 /* This file is for your main application CSS */
@@ -102,8 +105,8 @@ input[type="date"] {
 }
 
 body {
-  background: rgb(var(--color-page));
-  color: rgb(var(--color-foreground)) !important;
+  background: var(--color-page);
+  color: var(--color-foreground) !important;
   font-family: Noto Sans, Ubuntu, Arial, sans-serif;
 }
 
@@ -173,8 +176,8 @@ body {
 
 .pagination-previous.disabled,
 .pagination-next.disabled {
-  color: rgb(var(--color-foreground) / 0.5);
-  border: 1px solid rgb(var(--color-foreground) / 0.5);
+  color: var(--color-muted);
+  border: 1px solid var(--color-muted);
 }
 
 .title {
@@ -188,8 +191,8 @@ body {
 .span-like-input-scrollable {
   @apply whitespace-nowrap inline-block max-h-[2.75rem];
   @apply rounded-lg block;
-  color: rgb(var(--color-foreground));
-  background-color: rgb(var(--color-disabled-surface));
+  color: var(--color-foreground);
+  background-color: var(--color-disabled-surface);
   @apply border-2 border-muted;
   padding-top: 0.5rem;
   padding-right: 0.75rem;
@@ -210,8 +213,8 @@ textarea[readonly] {
   width: 100%;
   margin-top: 0.5rem;
   @apply block;
-  color: rgb(var(--color-foreground));
-  background-color: rgb(var(--color-disabled-surface));
+  color: var(--color-foreground);
+  background-color: var(--color-disabled-surface);
   @apply border-2 border-muted;
   padding-top: 0.5rem;
   padding-right: 0.75rem;
@@ -226,9 +229,34 @@ textarea[readonly] {
 input[type="checkbox"]:disabled,
 input[type="checkbox"]:disabled:hover,
 input[type="textarea"] {
-  background-color: rgb(var(--color-disabled-surface));
+  background-color: var(--color-disabled-surface);
   @apply border-2 border-muted;
   cursor: not-allowed;
+}
+
+/* Custom checkbox reset to remove native inner border and blue accent */
+input.input-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  box-shadow: none;
+  background-color: var(--color-surface);
+  /* rounded handled by Tailwind class */
+}
+
+/* Checked state: success bg + inline SVG check */
+input.input-checkbox:checked {
+  background-color: var(--color-success);
+  background-image: url('/images/check.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Remove focus ring outline color that can appear blue */
+input.input-checkbox:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .oneline-textarea textarea {
@@ -254,7 +282,7 @@ input[type="textarea"] {
   padding-left: 0 !important;
 }
 .span-like-input.placeholder-text {
-  color: rgb(var(--color-muted));
+  color: var(--color-muted);
 }
 
 .force-in-one-line {
@@ -311,7 +339,7 @@ input[type="textarea"] {
 
 .select-like-text.disabled select {
   background-image: none !important;
-  background-color: rgb(var(--color-disabled-surface));
+  background-color: var(--color-disabled-surface);
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -319,7 +347,7 @@ input[type="textarea"] {
 /* Styles for all Live Select input */
 [id^="live-"] input {
   @apply bg-surface border-2 border-muted rounded-lg;
-  color: rgb(var(--color-foreground));
+  color: var(--color-foreground);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
@@ -346,9 +374,9 @@ input[type="textarea"] {
   top: 2.7rem;
   max-height: 150px;
   overflow-y: auto;
-  background-color: rgb(var(--color-surface) / 0.8);
+  background-color: var(--color-surface);
   @apply border border-muted;
-  color: rgb(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
 /* Styles for all Live Select dropdown on hover */
@@ -359,12 +387,12 @@ input[type="textarea"] {
 
 /* Styles for all Live Select remove button */
 [id^="live-"] svg {
-  fill: rgb(var(--color-danger));
+  fill: var(--color-danger);
 }
 
 /* Styles for all Live Select remove button on hover */
 [id^="live-"] svg:hover {
-  fill: rgb(var(--color-danger-dark));
+  fill: var(--color-danger-dark);
 }
 
 /* Styles for tag mode Live Select tags group */
@@ -374,9 +402,9 @@ input[type="textarea"] {
 
 /* Styles for tag mode Live Select individual tags */
 [id^="live-select"] > div:has(.flex) div {
-  background-color: rgb(var(--color-page));
-  color: rgb(var(--color-foreground));
-  border: 1px solid rgb(var(--color-border-strong));
+  background-color: var(--color-page);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border-strong);
 }
 
 /* Styles for single mode Live Select */
@@ -386,8 +414,8 @@ input[type="textarea"] {
 
 /* Live select disabled */
 [phx-hook="LiveSelect"] input[disabled] {
-  background-color: rgb(var(--color-disabled-surface)) !important;
-  color: rgb(var(--color-foreground));
+  background-color: var(--color-disabled-surface) !important;
+  color: var(--color-foreground);
   cursor: not-allowed;
 }
 

@@ -80,7 +80,7 @@ defmodule PhoexnipWeb.UserJSON do
       name: user.name,
       group: user.group,
       phone: user.phone,
-      image_url: Phoexnip.ImageUtils.image_for(user),
+      image_url: Phoexnip.UploadUtils.image_for(user),
       inserted_at: user.inserted_at,
       updated_at: user.updated_at
     }

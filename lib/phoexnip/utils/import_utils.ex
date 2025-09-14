@@ -88,7 +88,7 @@ defmodule Phoexnip.ImportUtils do
                                                         %Phoenix.LiveView.UploadEntry{
                                                           client_name: client
                                                         } ->
-              case Phoexnip.ImageUtils.validate_file(path) do
+              case Phoexnip.UploadUtils.validate_file(path) do
                 {:ok, valid_path} ->
                   case XlsxReader.open(valid_path, source: :path) do
                     {:ok, pkg} ->

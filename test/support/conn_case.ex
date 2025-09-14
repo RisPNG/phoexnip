@@ -1,5 +1,4 @@
 defmodule PhoexnipWeb.ConnCase do
-
   use ExUnit.CaseTemplate
 
   using do

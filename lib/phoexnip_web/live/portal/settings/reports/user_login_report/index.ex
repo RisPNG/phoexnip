@@ -1,5 +1,6 @@
 defmodule PhoexnipWeb.UsersLoginReport.Index do
   use PhoexnipWeb, :hacking_live_view
+
   @moduledoc """
   LiveView for the User Login Report page.
 

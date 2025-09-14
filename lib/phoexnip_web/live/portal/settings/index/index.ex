@@ -1,5 +1,6 @@
 defmodule PhoexnipWeb.Home.Index do
   use PhoexnipWeb, :live_view
+
   @moduledoc """
   Home page LiveView for the template. Sets up breadcrumbs and
   enforces basic page permissions when a user has permissions assigned.

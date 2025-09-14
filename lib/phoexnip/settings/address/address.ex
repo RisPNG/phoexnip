@@ -11,8 +11,7 @@ defmodule Phoexnip.Address do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @derive {Jason.Encoder,
-           except: [:__meta__, :inserted_at, :updated_at, :organisation_info]}
+  @derive {Jason.Encoder, except: [:__meta__, :inserted_at, :updated_at, :organisation_info]}
   schema "address" do
     import Ecto.Schema, except: [field: 2], warn: false
     import Phoexnip.EctoUtils, only: [field: 2]
@@ -52,7 +51,8 @@ defmodule Phoexnip.Address do
           sequence: integer() | nil,
           supplier_mco: String.t() | nil,
           organisation_info_id: integer() | nil,
-          organisation_info: Phoexnip.Settings.OrganisationInfo.t() | Ecto.Association.NotLoaded.t(),
+          organisation_info:
+            Phoexnip.Settings.OrganisationInfo.t() | Ecto.Association.NotLoaded.t(),
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil
         }

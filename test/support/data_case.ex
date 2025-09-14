@@ -1,5 +1,4 @@
 defmodule Phoexnip.DataCase do
-
   use ExUnit.CaseTemplate
 
   using do

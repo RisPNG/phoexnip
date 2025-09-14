@@ -69,6 +69,7 @@ defmodule PhoexnipWeb.UserSessionController do
           |> put_flash(:error, "Invalid email or password")
           |> put_flash(:email, String.slice(email, 0, 160))
           |> redirect(to: ~p"/log_in")
+
         {:error, _changeset} ->
           # Even if audit log fails, continue with the user-facing flow.
           conn

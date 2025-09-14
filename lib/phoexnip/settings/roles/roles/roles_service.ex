@@ -98,7 +98,8 @@ defmodule Phoexnip.RolesService do
 
   Returns `{:ok, %Roles{}}` on success or `{:error, changeset}` on failure.
   """
-  @spec update(role :: Roles.t(), attrs :: map()) :: {:ok, Roles.t()} | {:error, Ecto.Changeset.t()}
+  @spec update(role :: Roles.t(), attrs :: map()) ::
+          {:ok, Roles.t()} | {:error, Ecto.Changeset.t()}
   def update(%Roles{} = role, attrs \\ %{}) when is_map(attrs) do
     role
     |> Roles.changeset(attrs)

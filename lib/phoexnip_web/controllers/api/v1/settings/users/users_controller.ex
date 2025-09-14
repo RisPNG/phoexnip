@@ -445,7 +445,7 @@ defmodule PhoexnipWeb.UserController do
 
     case UserService.get_user_by(%{id: id}) do
       %User{} = user ->
-        case Phoexnip.ImageUtils.save_image_from_path(
+        case Phoexnip.UploadUtils.save_upload(
                upload.path,
                user.image_url
              ) do
@@ -516,7 +516,7 @@ defmodule PhoexnipWeb.UserController do
 
     case UserService.get_user_by(%{id: id}) do
       %User{} = user ->
-        case Phoexnip.ImageUtils.delete_image(user.image_url) do
+        case Phoexnip.UploadUtils.delete_upload(user.image_url) do
           {:ok, _} ->
             case UserService.update_user(user, %{image_url: ""}) do
               {:ok, updated_user} ->

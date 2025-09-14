@@ -25,7 +25,7 @@ defmodule Phoexnip.MixProject do
         filter_modules:
           ~r/^(?!Elixir\.PhoexnipWeb\..*(?:Live|Report|Plugs|UserAuth|UserLoginLive|UserResetPasswordLive|UserSessionController|UserSettingsLive|Telemetry|Router|Plugs|Presence|Home|Layouts|Endpoint|DetailComponent|PresenceTracker)(?:\.(?:Index|New|Show|UserManual|FormComponent|SessionExpiryHook))?$).*$/
       ],
-       listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader]
     ]
   end
 
@@ -79,7 +79,8 @@ defmodule Phoexnip.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:gen_smtp, ">= 1.2.0"},
       {:gettext, ">= 0.20.0"},
-      {:heroicons, github: "tailwindlabs/heroicons", sparse: "optimized", app: false, compile: false, depth: 1},
+      {:heroicons,
+       github: "tailwindlabs/heroicons", sparse: "optimized", app: false, compile: false, depth: 1},
       {:httpoison, ">= 1.8.0"},
       {:jason, ">= 1.2.0"},
       {:live_debugger, ">= 0.3.0", only: :dev},
@@ -105,7 +106,8 @@ defmodule Phoexnip.MixProject do
       {:telemetry_metrics, ">= 1.0.0"},
       {:telemetry_poller, ">= 1.0.0"},
       {:timex, ">= 3.0.0"},
-      {:xlsx_reader, ">= 0.8.0", git: "https://github.com/xavier/xlsx_reader.git", branch: "master"}
+      {:xlsx_reader, ">= 0.8.0",
+       git: "https://github.com/xavier/xlsx_reader.git", branch: "master"}
     ]
   end
 

@@ -1,18 +1,16 @@
-defmodule Phoexnip.ImageUtils do
+defmodule Phoexnip.UploadUtils do
   @moduledoc """
-  Utilities for resolving, validating, reading, saving, and deleting image files.
+  Utilities for working with uploads and file handling (including images).
 
-  This module centralizes all image‐related logic, including:
+  This module centralizes shared logic for files and uploads, including:
 
-    * Choosing the correct URL or default for product, user, and machine images.
-    * Fetching an entity’s image by its identifier.
-    * Handling attachments on product structs.
+    * Image helpers (selecting a user/product image URL or default).
     * Detecting MIME types from binary data.
     * Validating file types against a whitelist.
     * Reading raw file bytes (with `.xlsx`‑as‑ZIP support).
     * Validating file paths/extensions without reading contents.
-    * Saving uploaded images (size, type, old‑file cleanup, UUID filenames).
-    * Safely deleting images under the application's static root.
+    * Saving uploaded files (size, type, old‑file cleanup, UUID filenames).
+    * Safely deleting files under the application's static root.
 
   ## Configuration
 
@@ -29,8 +27,8 @@ defmodule Phoexnip.ImageUtils do
     * `validate_mime_type/2` – Check that a binary’s detected type is allowed.
     * `read_file/2` – Read and return file bytes only if its type (or ZIP for `.xlsx`) is permitted.
     * `validate_file/2` – Validate a file’s extension or `.xlsx`‑as‑ZIP without loading full contents.
-    * `save_image_from_path/6` – Enforce size/type, remove old file, generate safe filename, and copy into uploads.
-    * `delete_image/1` – Safely remove an image under `priv/static`, guarding against path traversal.
+    * `save_upload/6` – Enforce size/type, remove old file, generate safe filename, and copy into uploads.
+    * `delete_upload/1` – Safely remove an uploaded file under `priv/static`, guarding against path traversal.
 
   ## Error Handling
 
@@ -40,22 +38,22 @@ defmodule Phoexnip.ImageUtils do
 
   ## Examples
 
-      iex> Phoexnip.ImageUtils.image_for(%{image: "a.png,b.png"}, "product")
+      iex> Phoexnip.UploadUtils.image_for(%{image: "a.png,b.png"}, "product")
       "a.png"
 
-      iex> Phoexnip.ImageUtils.image_for(nil, "user")
+      iex> Phoexnip.UploadUtils.image_for(nil, "user")
       "/images/default-user.png"
 
-      iex> Phoexnip.ImageUtils.validate_mime_type(<<255, 216, 255, 224, ...>>, [".jpg", ".png"])
+      iex> Phoexnip.UploadUtils.validate_mime_type(<<255, 216, 255, 224, ...>>, [".jpg", ".png"])
       {:ok, ".jpeg"}
 
-      iex> Phoexnip.ImageUtils.read_file("priv/static/uploads/data.xlsx", [".xlsx"])
+      iex> Phoexnip.UploadUtils.read_file("priv/static/uploads/data.xlsx", [".xlsx"])
       {:ok, binary()}
 
-      iex> Phoexnip.ImageUtils.save_image_from_path("tmp/photo.png")
+      iex> Phoexnip.UploadUtils.save_upload("tmp/photo.png")
       {:ok, "/uploads/<uuid>.png"}
 
-      iex> Phoexnip.ImageUtils.delete_image("/uploads/<uuid>.png")
+      iex> Phoexnip.UploadUtils.delete_upload("/uploads/<uuid>.png")
       {:ok, "Image deleted"}
   """
 
@@ -90,11 +88,11 @@ defmodule Phoexnip.ImageUtils do
   @spec image_for(nil | Phoexnip.Users.User.t(), String.t()) :: String.t()
   def image_for(object \\ nil, type \\ "user")
 
-  def image_for(%Phoexnip.Users.User{image_url: url}, "user") when is_binary(url) and byte_size(url) > 0,
-    do: url
+  def image_for(%Phoexnip.Users.User{image_url: url}, "user")
+      when is_binary(url) and byte_size(url) > 0,
+      do: url
 
   def image_for(_, _), do: "/images/default-user.png"
-
 
   @doc """
   Fetches the image URL for an entity identified by `object_id`, falling back to a default.
@@ -167,7 +165,7 @@ defmodule Phoexnip.ImageUtils do
 
       true ->
         ""
-      end
+    end
   end
 
   # Function to determine the MIME type based on magic numbers
@@ -384,13 +382,13 @@ defmodule Phoexnip.ImageUtils do
   end
 
   @doc """
-  Saves an image from a local path into your uploads directory, validating file size and MIME type,
-  optionally removing an existing image, and generating a safe filename.
+  Saves a file from a local path into your uploads directory, validating file size and MIME type,
+  optionally removing an existing file, and generating a safe filename.
 
   ## Parameters
 
     * `source_path` — the file system path (`String.t()`) to the source image.
-    * `old_image_url` — an existing relative image path to remove before saving (defaults to `""`).
+    * `old_upload_url` — an existing relative file path to remove before saving (defaults to `""`).
     * `max_file_size` — the maximum allowed file size in bytes (defaults to `@max_file_size`).
     * `allowed_extensions` — a list of permitted MIME-based extensions (e.g. `[".png", ".jpg"]`), defaults to `@allowed_extensions`.
     * `path_suffix` — an optional directory suffix under `"/uploads/"` to namespace saved files (defaults to `""`).
@@ -400,7 +398,7 @@ defmodule Phoexnip.ImageUtils do
 
     1. Checks the file size via `File.stat/1`; if it exceeds `max_file_size`, returns `{:error, _}` immediately.
     2. Reads the first 2048 bytes to validate its MIME type with `validate_mime_type/2`.
-    3. If an `old_image_url` is provided, builds its absolute path under `@static_root`, ensures it lives within that root, and deletes it if present.
+    3. If an `old_upload_url` is provided, builds its absolute path under `@static_root`, ensures it lives within that root, and deletes it if present.
     4. Constructs a new filename in the form `"/uploads/" <> path_suffix <> (file_name or UUID) <> extension`.
     5. Ensures the destination directory exists, then copies the source file to the destination.
     6. Returns `{:ok, relative_path}` on success or `{:error, reason}` on failure.
@@ -410,24 +408,24 @@ defmodule Phoexnip.ImageUtils do
     * `{:ok, String.t()}` — the new relative path under `@static_root` (e.g. `"/uploads/avatar/123e4567.png"`).
     * `{:error, term()}` — an error tuple if the file is too large, has an unsupported type, or the copy fails.
   """
-  @spec save_image_from_path(
+  @spec save_upload(
           source_path :: String.t(),
-          old_image_url :: String.t(),
+          old_upload_url :: String.t(),
           max_file_size :: non_neg_integer(),
           allowed_extensions :: [String.t()],
           path_suffix :: String.t(),
           file_name :: String.t()
         ) :: {:ok, String.t()} | {:error, term()}
-  def save_image_from_path(
+  def save_upload(
         source_path,
-        old_image_url \\ "",
+        old_upload_url \\ "",
         max_file_size \\ @max_file_size,
         allowed_extensions \\ @allowed_extensions,
         path_suffix \\ "",
         # DO NOT USE THE ORIGINAL FILENAME ALWAYS A RANDOM ONE KNOW WHAT YOU ARE DOING
         file_name \\ ""
       ) do
-    # First check its size, if to big early return
+    # First check its size, if too big, return early
     case File.stat(source_path) do
       {:ok, %File.Stat{size: size}} when size <= max_file_size ->
         # Read only the first chunk for MIME validation
@@ -436,12 +434,12 @@ defmodule Phoexnip.ImageUtils do
           |> Enum.to_list()
           |> IO.iodata_to_binary()
 
-        case Phoexnip.ImageUtils.validate_mime_type(mime_blob, allowed_extensions) do
+        case Phoexnip.UploadUtils.validate_mime_type(mime_blob, allowed_extensions) do
           {:ok, extention} ->
-            if old_image_url && old_image_url != "" do
+            if old_upload_url && old_upload_url != "" do
               target =
                 @static_root
-                |> Path.join(old_image_url)
+                |> Path.join(old_upload_url)
                 |> Path.expand()
 
               if String.starts_with?(target, @static_root) and File.exists?(target) do
@@ -472,7 +470,7 @@ defmodule Phoexnip.ImageUtils do
         end
 
       {:ok, %File.Stat{size: size}} ->
-        {:error, "Image exceeds #{max_file_size} byte limit (#{size} bytes)"}
+        {:error, "File exceeds #{max_file_size} byte limit (#{size} bytes)"}
 
       {:error, reason} ->
         {:error, reason}
@@ -480,7 +478,7 @@ defmodule Phoexnip.ImageUtils do
   end
 
   @doc """
-  Deletes an image file at the given relative path under the application’s static root.
+  Deletes an uploaded file at the given relative path under the application’s static root.
 
   ## Parameters
 
@@ -503,8 +501,8 @@ defmodule Phoexnip.ImageUtils do
     * `{:ok, String.t()}` when deletion succeeds.
     * `{:error, String.t()}` when the path is invalid, the file is missing, or deletion fails.
   """
-  @spec delete_image(image_path :: any()) :: {:ok, String.t()} | {:error, String.t()}
-  def delete_image(image_path) when is_binary(image_path) and image_path != "" do
+  @spec delete_upload(image_path :: any()) :: {:ok, String.t()} | {:error, String.t()}
+  def delete_upload(image_path) when is_binary(image_path) and image_path != "" do
     target =
       @static_root
       |> Path.join(image_path)
@@ -522,7 +520,7 @@ defmodule Phoexnip.ImageUtils do
         # attempt the deletion and wrap any error
         case File.rm(target) do
           :ok ->
-            {:ok, "Image deleted"}
+            {:ok, "File deleted"}
 
           {:error, reason} ->
             {:error, "could not delete image: #{inspect(reason)}"}
@@ -531,5 +529,5 @@ defmodule Phoexnip.ImageUtils do
   end
 
   # all other cases (nil, "", not a binary)
-  def delete_image(_), do: {:error, "no image to be deleted"}
+  def delete_upload(_), do: {:error, "no file to be deleted"}
 end

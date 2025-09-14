@@ -1,5 +1,6 @@
 defmodule PhoexnipWeb.UsersLive.New do
   use PhoexnipWeb, :live_view
+
   @moduledoc """
   LiveView for creating and updating users, including role assignment and avatar upload.
 
@@ -33,7 +34,7 @@ defmodule PhoexnipWeb.UsersLive.New do
       {:ok,
        socket
        |> assign(:page_title, "New User")
-       |> assign(:image_url, Phoexnip.ImageUtils.image_for(%User{}))
+       |> assign(:upload_url, Phoexnip.UploadUtils.image_for(%User{}))
        |> assign(:user_id, 0)
        |> assign(:user, user)
        |> assign(:form, changeset)
@@ -90,7 +91,7 @@ defmodule PhoexnipWeb.UsersLive.New do
       {:ok,
        socket
        |> assign(:page_title, "Update User")
-       |> assign(:image_url, Phoexnip.ImageUtils.image_for(user))
+       |> assign(:upload_url, Phoexnip.UploadUtils.image_for(user))
        |> assign(:user, user)
        |> assign(:user_id, user.id)
        |> assign(:form, changeset)
@@ -119,7 +120,7 @@ defmodule PhoexnipWeb.UsersLive.New do
     # prepare the socket because redirect seems to do strange stuff when using
     uploaded_file =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, _ ->
-        case Phoexnip.ImageUtils.save_image_from_path(
+        case Phoexnip.UploadUtils.save_upload(
                path,
                old_user.image_url
              ) do

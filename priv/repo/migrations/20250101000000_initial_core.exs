@@ -6,6 +6,7 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
 
     create table(:users) do
       add :email, :citext, null: false
+      add :username, :text
       add :hashed_password, :string, null: false
       add :confirmed_at, :utc_datetime
       add :name, :text, null: false
@@ -21,6 +22,7 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
     end
 
     create unique_index(:users, [:email])
+    create unique_index(:users, [:username])
 
     # Seed: Super user account
     execute(
@@ -61,6 +63,21 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
 
     create unique_index(:roles, [:name])
 
+    execute(
+      """
+      INSERT INTO roles (name, inserted_at, updated_at)
+      VALUES (
+        'Superuser',
+        timezone('UTC', now()),
+        timezone('UTC', now())
+      )
+      ON CONFLICT (name) DO NOTHING
+      """,
+      """
+      DELETE FROM roles WHERE name = 'Superuser'
+      """
+    )
+
     create table(:role_permissions) do
       add :permission, :integer
       add :sitemap_code, :string
@@ -72,6 +89,28 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
       add :sitemap_description, :string
       add :role_id, references(:roles, on_delete: :delete_all), null: false
     end
+
+    execute(
+      """
+      INSERT INTO role_permissions (sitemap_code, sitemap_name, sitemap_level, sitemap_description, sitemap_parent, sitemap_url, sequence, permission, role_id)
+      VALUES
+        ('H',    'Home',                0, NULL,    NULL,  NULL,                          0, 16, 1),
+        ('SET',  'Settings',            0, NULL,    NULL,  NULL,                      90000, 16, 1),
+        ('SET1', 'Users',               1, NULL,   'SET',  'users',                   91000, 16, 1),
+        ('SET2', 'Roles',               1, NULL,   'SET',  'roles',                   92000, 16, 1),
+        ('SET3', 'Master Data',         1, NULL,   'SET',  'master_data',             93000, 16, 1),
+        ('SET3A','Currencies',          2, NULL,  'SET3',  'master_data/currencies',    93100, 16, 1),
+        ('SET3B','Groups',              2, NULL,  'SET3',  'master_data/groups',    93200, 16, 1),
+        ('SET4', 'Organisation Information', 1, NULL,   'SET',  'organisation_information', 94000, 16, 1),
+        ('SET5', 'Scheduled Jobs',      1, NULL,   'SET',  'schedulers',              95000, 16, 1),
+        ('SET6', 'Reports',             1, NULL,   'SET',  'settings_reports',        96000, 16, 1),
+        ('SET6A','User Login Report',   2, NULL,  'SET6',  'settings_reports/user_login_report', 96100, 16, 1)
+      ON CONFLICT DO NOTHING
+      """,
+      """
+      DELETE FROM role_permissions WHERE sitemap_code IN ('H','SET','SET1','SET2','SET3','SET3A','SET4','SET5','SET6','SET6A')
+      """
+    )
 
     create table(:user_roles) do
       add :role_id, references(:roles, on_delete: :delete_all), null: false
@@ -226,9 +265,18 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:master_data_currencies, [:sort], name: :master_data_currencies_sort_index)
-    create unique_index(:master_data_currencies, [:code], name: :master_data_currencies_code_index)
-    create unique_index(:master_data_currencies, [:name], name: :master_data_currencies_name_index)
+    create unique_index(:master_data_currencies, [:sort],
+             name: :master_data_currencies_sort_index
+           )
+
+    create unique_index(:master_data_currencies, [:code],
+             name: :master_data_currencies_code_index
+           )
+
+    create unique_index(:master_data_currencies, [:name],
+             name: :master_data_currencies_name_index
+           )
+
     create unique_index(:master_data_currencies, [:code, :name, :sort],
              name: :master_data_currencies_code_name_sort_index
            )
@@ -245,6 +293,7 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
     create unique_index(:master_data_groups, [:sort], name: :master_data_groups_sort_index)
     create unique_index(:master_data_groups, [:code], name: :master_data_groups_code_index)
     create unique_index(:master_data_groups, [:name], name: :master_data_groups_name_index)
+
     create unique_index(:master_data_groups, [:code, :name, :sort],
              name: :master_data_groups_code_name_sort_index
            )

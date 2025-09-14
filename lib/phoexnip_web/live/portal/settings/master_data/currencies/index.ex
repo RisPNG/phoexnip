@@ -8,7 +8,9 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    highest_permission_master_data = UserRolesService.fetch_level_two_user_permissions(user, "SET3")
+
+    highest_permission_master_data =
+      UserRolesService.fetch_level_two_user_permissions(user, "SET3")
 
     socket =
       Phoexnip.AuthenticationUtils.check_level_two_permissions(

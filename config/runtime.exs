@@ -61,7 +61,9 @@ if config_env() == :prod do
 
   check_origin_env =
     case System.get_env("CHECK_ORIGIN") do
-      nil -> ["//#{host}", "//localhost"]
+      nil ->
+        ["//#{host}", "//localhost"]
+
       csv ->
         csv
         |> String.split([",", " "], trim: true)

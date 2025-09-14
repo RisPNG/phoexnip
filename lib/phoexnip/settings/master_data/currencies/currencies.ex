@@ -59,7 +59,9 @@ defmodule Phoexnip.Masterdata.Currencies do
     |> unique_constraint(:sort, name: :master_data_currencies_sort_index)
     |> unique_constraint(:code, name: :master_data_currencies_code_index)
     |> unique_constraint(:name, name: :master_data_currencies_name_index)
-    |> unique_constraint([:code, :name, :sort], name: :master_data_currencies_code_name_sort_index)
+    |> unique_constraint([:code, :name, :sort],
+      name: :master_data_currencies_code_name_sort_index
+    )
   end
 
   @doc """
@@ -76,6 +78,8 @@ defmodule Phoexnip.Masterdata.Currencies do
     |> unique_constraint(:sort, name: :master_data_currencies_sort_index)
     |> unique_constraint(:code, name: :master_data_currencies_code_index)
     |> unique_constraint(:name, name: :master_data_currencies_name_index)
-    |> unique_constraint([:code, :name, :sort], name: :master_data_currencies_code_name_sort_index)
+    |> unique_constraint([:code, :name, :sort],
+      name: :master_data_currencies_code_name_sort_index
+    )
   end
 end

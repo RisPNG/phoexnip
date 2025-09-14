@@ -1,5 +1,6 @@
 defmodule PhoexnipWeb.UsersLive.Show do
   use PhoexnipWeb, :live_view
+
   @moduledoc """
   LiveView for viewing, updating, and deleting a single user.
 
@@ -13,8 +14,7 @@ defmodule PhoexnipWeb.UsersLive.Show do
   def mount(_params, _session, socket) do
     socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET1", 1)
 
-    {:ok,
-     socket}
+    {:ok, socket}
   end
 
   @impl true
@@ -57,7 +57,7 @@ defmodule PhoexnipWeb.UsersLive.Show do
     {:noreply,
      socket
      |> assign(:page_title, "Update User")
-     |> assign(:image_url, Phoexnip.ImageUtils.image_for(user))
+     |> assign(:upload_url, Phoexnip.UploadUtils.image_for(user))
      |> assign(:user, user)
      |> assign(:user_id, user.id)
      |> assign(:form, changeset)

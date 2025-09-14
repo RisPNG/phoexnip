@@ -2,7 +2,6 @@
   <.simple_form
     :let={f}
     for={@form}
-    image_url={@image_url}
     multipart={true}
     user_id={@user_id}
     phx-submit="save"
@@ -55,7 +54,7 @@
           <% end %>
         <% else %>
           <div class="w-full flex justify-center items-center">
-            <img src={@image_url} class="h-[300px] w-[300px] user-image mt-6" id="" />
+            <img src={@upload_url} class="h-[300px] w-[300px] user-image mt-6" id="" />
           </div>
         <% end %>
         <label class="flex justify-center items-center mt-4 rounded-lg py-2 px-3 font-semibold leading-6 border border-borderStrong hover:bg-themePrimary focus:bg-themePrimary">
@@ -63,21 +62,26 @@
           <.live_file_input upload={@uploads.avatar} class="upload hidden" />
         </label>
       </div>
-      <div class="w-[70%] flex-wrap grid grid-cols-3 gap-1 items-center">
+      <div class="w-[70%] flex-wrap grid grid-cols-3 gap-1">
         <.input field={f[:name]} type="text" label="Name" />
-        <.input
-          field={f[:email]}
-          type="text"
-          label="Email"
-          class={(@user_id > 0 && "readonly") || ""}
-          readonly={@user_id > 0}
-        />
-        <.input field={f[:phone]} type="text" label="Phone"/>
+        <.input field={f[:username]} type="text" label="Username" />
+        <.input field={f[:email]} type="text" label="Email" class="readonly" readonly />
+        <.input field={f[:phone]} type="text" label="Phone" class="mt-4" />
         <div class="mt-4">
           <.live_select
             label="Group"
             id="live-single-select-group"
             field={f[:group]}
+            placeholder="Type to search..."
+            phx-focus="live_select_change"
+          />
+        </div>
+
+        <div class="mt-4">
+          <.live_select
+            label="Location"
+            id="live-single-select-location"
+            field={f[:location]}
             placeholder="Type to search..."
             phx-focus="live_select_change"
           />
@@ -89,22 +93,12 @@
           label="Confirm Password"
           class="mt-4"
         />
-
-        <div class="mt-4">
-          <.live_select
-            label="Location"
-            id="live-single-select-location"
-            field={f[:location]}
-            placeholder="Type to search..."
-            phx-focus="live_select_change"
-          />
-        </div>
         <div class="mt-4"></div>
       </div>
     </div>
 
     <div class="w-full title">User Roles</div>
-    <div class="w-full flex-wrap grid grid-cols-4 gap-1 items-center">
+    <div class="w-full flex-wrap grid grid-cols-6 gap-2 items-center">
       <.inputs_for :let={item_f} field={f[:user_roles]}>
         <div class="mb-8">
           <.input class="hidden" field={item_f[:role_name]} type="text" />

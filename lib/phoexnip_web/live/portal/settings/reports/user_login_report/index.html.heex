@@ -242,7 +242,7 @@
                 <img
                   class="h-11 w-11 rounded-full me-2 border-2 "
                   src={
-                    Phoexnip.ImageUtils.fetch_image_for_by_object_identifier(request.user_name)
+                    Phoexnip.UploadUtils.fetch_image_for_by_object_identifier(request.user_name)
                   }
                 /> {request.user_name}
               </div>
@@ -413,7 +413,7 @@
                     <div class="flex items-center bg-success w-[18rem] justify-center text-white p-2 rounded-l-[2rem] rounded-r-2xl shadow-md">
                       <img
                         class="h-[3.5rem] w-[3.5rem] me-2 rounded-full border-2 justify-self-start"
-                        src={Phoexnip.ImageUtils.image_for(user)}
+                        src={Phoexnip.UploadUtils.image_for(user)}
                       />
                       <div class="w-full text-center text-[1.15rem]">
                         {user.name}

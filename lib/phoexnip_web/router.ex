@@ -159,6 +159,7 @@ defmodule PhoexnipWeb.Router do
 
       scope "/settings_reports" do
         live "/", SettingsReports.Index, :index
+
         scope "/user_login_report" do
           live "/", UsersLoginReport.Index, :index
         end

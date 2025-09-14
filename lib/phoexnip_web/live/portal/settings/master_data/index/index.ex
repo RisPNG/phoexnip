@@ -6,7 +6,9 @@ defmodule PhoexnipWeb.MasterDataIndexLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    highest_permission_master_data = UserRolesService.fetch_level_two_user_permissions(user, "SET3")
+
+    highest_permission_master_data =
+      UserRolesService.fetch_level_two_user_permissions(user, "SET3")
 
     socket =
       if length(highest_permission_master_data) > 0 do
