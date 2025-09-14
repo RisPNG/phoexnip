@@ -372,6 +372,8 @@ input.input-checkbox:focus {
 [id^="live-"] > ul {
   position: absolute;
   top: 2.7rem;
+  /* Add a small offset so the dropdown clears the input */
+  margin-top: 0.5rem;
   max-height: 150px;
   overflow-y: auto;
   background-color: var(--color-surface);

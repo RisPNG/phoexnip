@@ -104,6 +104,10 @@
     </div>
 
     <div class="w-full title">User Roles</div>
+
+    <%= for msg <- PhoexnipWeb.CoreComponents.translate_errors(f.errors, :user_roles) do %>
+      <.error>{msg}</.error>
+    <% end %>
     <div class="w-full flex-wrap grid grid-cols-6 gap-2 items-center">
       <.inputs_for :let={item_f} field={f[:user_roles]}>
         <div class="mb-8">

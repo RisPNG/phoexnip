@@ -111,5 +111,10 @@
       "foldEnd": "// endregion",
       "foldEndRegex": "//\\s*[Ee][Nn][Dd][Rr][Ee][Gg][Ii][Oo][Nn]"
     }
-  }
+  },
+
+  // CSS language server: ignore Tailwind/PostCSS at-rules like @apply/@tailwind
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore"
 }

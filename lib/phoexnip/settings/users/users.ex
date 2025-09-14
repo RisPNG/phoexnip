@@ -190,7 +190,8 @@ defmodule Phoexnip.Users.User do
     )
     |> maybe_hash_password(opts: true)
     |> maybe_encrypt_credentials()
-    |> cast_assoc(:user_roles, with: &Phoexnip.UserRoles.changeset/2)
+    |> cast_assoc(:user_roles, with: &Phoexnip.UserRoles.changeset/2, required: true)
+    |> validate_user_roles_required()
   end
 
   @doc """
@@ -218,6 +219,42 @@ defmodule Phoexnip.Users.User do
     |> maybe_hash_password(opts: true)
     |> maybe_encrypt_credentials()
     |> cast_assoc(:user_roles, with: &Phoexnip.UserRoles.changeset/2)
+    |> validate_user_roles_required()
+  end
+
+  defp validate_user_roles_required(changeset) do
+    roles = get_field(changeset, :user_roles)
+
+    cond do
+      match?(%Ecto.Association.NotLoaded{}, roles) ->
+        # Association not loaded and not being cast; skip to avoid false negatives
+        changeset
+
+      is_list(roles) ->
+        selected_count =
+          Enum.count(roles, fn
+            %Ecto.Changeset{action: :delete} ->
+              false
+
+            %Ecto.Changeset{} = cs ->
+              Ecto.Changeset.get_field(cs, :belongs_in_role) == true
+
+            %{belongs_in_role: bir} ->
+              bir == true
+
+            _ ->
+              false
+          end)
+
+        if selected_count < 1 do
+          add_error(changeset, :user_roles, "select at least one role")
+        else
+          changeset
+        end
+
+      true ->
+        changeset
+    end
   end
 
   @spec validate_email(Ecto.Changeset.t(), keyword()) :: Ecto.Changeset.t()
