@@ -225,13 +225,13 @@ defmodule Phoexnip.ImportUtils do
       iex> parse_datetime(nil)
       nil
   """
-  @spec parse_datetime(input :: any()) :: {:ok, DateTime.t()} | nil
+  @spec parse_datetime(input :: any()) :: {:ok, DateTime.t()} | {:ok, nil}
 
   def parse_datetime(input) do
     cond do
       # ───── nil ─────
       is_nil(input) ->
-        nil
+        {:ok, nil}
 
       # ───── Already DateTime ─────
       match?(%DateTime{}, input) ->
@@ -269,17 +269,33 @@ defmodule Phoexnip.ImportUtils do
         {:ok, elem(DateTime.from_iso8601(input), 1)}
         |> then(fn {:ok, dt} -> {:ok, DateTime.shift_zone!(dt, "UTC")} end)
 
-      # ───── "YYYY-MM-DD HH:MM:SS" ─────
+      # ───── Valid Binary ─────
       is_binary(input) ->
-        with {:ok, ndt} <- Timex.parse(input, "{YYYY}-{0M}-{0D} {h24}:{m}:{s}") do
-          {:ok, Timex.to_datetime(ndt, "UTC")}
-        else
-          _ -> nil
-        end
+        formats_to_try = [
+          "{YYYY}-{0M}-{0D} {h24}:{m}:{s}",
+          # dd/mm/yyyy
+          "{0D}/{0M}/{YYYY}",
+          # yyyy/mm/dd
+          "{YYYY}/{0M}/{0D}",
+          # yyyy-mm-dd
+          "{YYYY}-{0M}-{0D}",
+          # dd-mm-yyyy
+          "{0D}-{0M}-{YYYY}"
+        ]
+
+        Enum.find_value(formats_to_try, fn format ->
+          case Timex.parse(input, format) do
+            {:ok, ndt} ->
+              {:ok, Timex.to_datetime(ndt, "UTC")}
+
+            _ ->
+              nil
+          end
+        end) || {:ok, nil}
 
       # ───── Fallback ─────
       true ->
-        nil
+        {:ok, nil}
     end
   end
 
@@ -308,6 +324,155 @@ defmodule Phoexnip.ImportUtils do
     case product_number do
       num when is_number(num) -> trunc(num) |> Integer.to_string()
       _ -> nil
+    end
+  end
+
+  @doc """
+  Converts various data types into a float representation.
+
+  ## Details
+
+    * Floats: Returned as-is.
+    * Integers: Converted to float (e.g. `123 -> 123.0`).
+    * Binaries: Parsed as float if valid, otherwise returns `0.0`.
+    * Lists: If single numeric element, converts that element. Otherwise returns `0.0`.
+    * Booleans: `true` becomes `1.0`, `false` becomes `0.0`.
+    * `DateTime`: Returns Unix timestamp as float.
+    * `Date`: Returns days since Unix epoch as float.
+    * Any other type or `nil`: Returns `0.0`.
+
+  ## Examples
+
+      iex> parse_to_float(10)
+      10.0
+
+      iex> parse_to_float("10.5")
+      10.5
+
+      iex> parse_to_float("invalid")
+      0.0
+
+      iex> parse_to_float([42])
+      42.0
+
+      iex> parse_to_float(true)
+      1.0
+
+      iex> parse_to_float(nil)
+      0.0
+  """
+  @spec parse_to_float(value :: any()) :: float()
+
+  def parse_to_float(value) do
+    case value do
+      value when is_float(value) ->
+        value
+
+      value when is_integer(value) ->
+        value / 1
+
+      value when is_binary(value) ->
+        case Float.parse(String.trim(value)) do
+          {float_val, _} -> float_val
+          :error -> 0.0
+        end
+
+      value when is_list(value) ->
+        case value do
+          [single_value] -> parse_to_float(single_value)
+          _ -> 0.0
+        end
+
+      value when is_boolean(value) ->
+        if value, do: 1.0, else: 0.0
+
+      %DateTime{} = datetime ->
+        datetime |> DateTime.to_unix() |> parse_to_float()
+
+      %Date{} = date ->
+        date |> Date.to_erl() |> :calendar.date_to_gregorian_days() |> parse_to_float()
+
+      _ ->
+        0.0
+    end
+  end
+
+  @doc """
+  Converts various data types into an integer representation.
+
+  ## Details
+
+    * Integers: Returned as-is.
+    * Floats: Truncated to integer (e.g. `10.9 -> 10`).
+    * Binaries: Parsed as integer if valid, otherwise returns `0`.
+    * Lists: If single numeric element, converts that element. Otherwise returns `0`.
+    * Booleans: `true` becomes `1`, `false` becomes `0`.
+    * `DateTime`: Returns Unix timestamp as integer.
+    * `Date`: Returns days since Unix epoch as integer.
+    * Any other type or `nil`: Returns `0`.
+
+  ## Examples
+
+      iex> parse_to_integer(10.9)
+      10
+
+      iex> parse_to_integer("123")
+      123
+
+      iex> parse_to_integer("invalid")
+      0
+
+      iex> parse_to_integer([42.5])
+      42
+
+      iex> parse_to_integer(false)
+      0
+
+      iex> parse_to_integer(nil)
+      0
+  """
+  @spec parse_to_integer(value :: any()) :: integer()
+
+  def parse_to_integer(value) do
+    case value do
+      value when is_integer(value) ->
+        value
+
+      value when is_float(value) ->
+        trunc(value)
+
+      value when is_binary(value) ->
+        trimmed = String.trim(value)
+
+        case Integer.parse(trimmed) do
+          {int_val, _} ->
+            int_val
+
+          :error ->
+            # Try parsing as float first, then truncate
+            case Float.parse(trimmed) do
+              {float_val, _} -> trunc(float_val)
+              :error -> 0
+            end
+        end
+
+      value when is_list(value) ->
+        case value do
+          [single_value] -> parse_to_integer(single_value)
+          _ -> 0
+        end
+
+      value when is_boolean(value) ->
+        if value, do: 1, else: 0
+
+      %DateTime{} = datetime ->
+        DateTime.to_unix(datetime)
+
+      %Date{} = date ->
+        date |> Date.to_erl() |> :calendar.date_to_gregorian_days()
+
+      _ ->
+        0
     end
   end
 
@@ -344,43 +509,46 @@ defmodule Phoexnip.ImportUtils do
   @spec parse_to_string(value :: any()) :: String.t()
 
   def parse_to_string(value) do
-    case value do
-      value when is_float(value) ->
-        if value == trunc(value) do
-          # If decimal part is zero, truncate and convert to integer string
-          value |> trunc() |> Integer.to_string()
-        else
-          # If decimal part exists, convert float directly to string
-          Float.to_string(value)
-        end
+    value =
+      case value do
+        value when is_float(value) ->
+          if value == trunc(value) do
+            # If decimal part is zero, truncate and convert to integer string
+            value |> trunc() |> Integer.to_string()
+          else
+            # If decimal part exists, convert float directly to string
+            Float.to_string(value)
+          end
 
-      value when is_integer(value) ->
-        # Convert integer to string
-        Integer.to_string(value)
+        value when is_integer(value) ->
+          # Convert integer to string
+          Integer.to_string(value)
 
-      value when is_binary(value) ->
-        # If it's already text, leave it as is
-        value
+        value when is_binary(value) ->
+          # If it's already text, leave it as is
+          value
 
-      value when is_list(value) ->
-        # Convert list to a comma-separated string
-        Enum.join(value, ", ")
+        value when is_list(value) ->
+          # Convert list to a comma-separated string
+          Enum.join(value, ", ")
 
-      value when is_boolean(value) ->
-        # Convert true/false to "true"/"false"
-        to_string(value)
+        value when is_boolean(value) ->
+          # Convert true/false to "true"/"false"
+          to_string(value)
 
-      %DateTime{} = datetime ->
-        # Convert DateTime to a string
-        DateTime.to_string(datetime)
+        %DateTime{} = datetime ->
+          # Convert DateTime to a string
+          DateTime.to_string(datetime)
 
-      %Date{} = date ->
-        Date.to_string(date)
+        %Date{} = date ->
+          Date.to_string(date)
 
-      _ ->
-        # Default to "0" or any placeholder if the value is nil or an unknown type
-        ""
-    end
+        _ ->
+          # Default to "0" or any placeholder if the value is nil or an unknown type
+          ""
+      end
+
+    value |> String.trim()
   end
 
   @doc """
