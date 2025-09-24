@@ -12,6 +12,8 @@ defmodule PhoexnipWeb.SitemapController do
   use PhoexnipWeb, :controller
   use PhoenixSwagger
 
+  alias Phoexnip.{ServiceUtils, Sitemap}
+
   @doc """
   Retrieves the full sitemap structure.
 
@@ -26,7 +28,7 @@ defmodule PhoexnipWeb.SitemapController do
   """
   @spec index(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def index(conn, _params) do
-    sitemap_list = Phoexnip.SitemapService.list()
+    sitemap_list = ServiceUtils.list(Sitemap)
     render(conn, :index, sitemap_list: sitemap_list)
   end
 

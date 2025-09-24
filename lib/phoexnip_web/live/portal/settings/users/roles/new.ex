@@ -1,7 +1,7 @@
 defmodule PhoexnipWeb.RolesLive.New do
   use PhoexnipWeb, :live_view
 
-  alias Phoexnip.SitemapService
+  alias Phoexnip.Sitemap
   alias Phoexnip.Roles
   alias Phoexnip.ServiceUtils
   alias Phoexnip.UserRolesService
@@ -13,7 +13,7 @@ defmodule PhoexnipWeb.RolesLive.New do
       socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET2", 2)
 
       # Fetch the sitemap data
-      sitemap_entries = SitemapService.list() |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       # Transform sitemap data into RolesPermission structs
       role_permissions =
@@ -68,7 +68,7 @@ defmodule PhoexnipWeb.RolesLive.New do
           [role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)]
         )
 
-      sitemap_entries = SitemapService.list() |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       # 1. Build a map from sitemap_code → the existing permission struct
       existing_by_code =

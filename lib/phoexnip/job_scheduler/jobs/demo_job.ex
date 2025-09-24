@@ -9,6 +9,11 @@ defmodule Phoexnip.DemoJob do
     * `demo_api_job/0` – retrieves pending tasks, calls an external API (PokeAPI), and marks each task succeeded or failed.
   """
 
+  alias Phoexnip.SearchUtils
+  alias Phoexnip.ServiceUtils
+  alias Phoexnip.Settings.Tasks
+  alias Phoexnip.Settings.TasksHistory
+
   @doc """
   Prints a demo message indicating that this job runs every minute.
 
@@ -69,14 +74,13 @@ defmodule Phoexnip.DemoJob do
         task_entity = "Products"
         IO.inspect("START API JOB")
 
-        tasks_to_process =
-          Phoexnip.Settings.TasksService.get_tasks_for_job(task_entity, task_type)
+        tasks_to_process = fetch_tasks(task_entity, task_type)
 
         if length(tasks_to_process) > 0 do
           IO.inspect("Start processing: #{length(tasks_to_process)} jobs")
 
           Enum.each(tasks_to_process, fn task ->
-            {:ok, task} = Phoexnip.Settings.TasksService.start_task(task)
+            {:ok, task} = start_task(task)
             IO.inspect(task, label: "task")
 
             url = "https://pokeapi.co/api/v2/pokemon/bulbasaur"
@@ -86,26 +90,20 @@ defmodule Phoexnip.DemoJob do
                 case Jason.decode(body) do
                   {:ok, data} ->
                     IO.inspect(body, label: "body")
-                    Phoexnip.Settings.TasksService.success_task(task, body)
+                    success_task(task, body)
                     IO.inspect(data["name"])
                     IO.inspect(data["id"])
                     IO.inspect(data["types"])
 
                   {:error, decode_err} ->
-                    Phoexnip.Settings.TasksService.fail_task(task, "#{decode_err}")
+                    fail_task(task, "#{decode_err}")
                 end
 
               {:ok, %HTTPoison.Response{status_code: status}} ->
-                Phoexnip.Settings.TasksService.fail_task(
-                  task,
-                  "Request failed with status #{status}"
-                )
+                fail_task(task, "Request failed with status #{status}")
 
               {:error, %HTTPoison.Error{reason: reason}} ->
-                Phoexnip.Settings.TasksService.fail_task(
-                  task,
-                  "HTTP request error: #{inspect(reason)}"
-                )
+                fail_task(task, "HTTP request error: #{inspect(reason)}")
             end
           end)
 
@@ -114,5 +112,53 @@ defmodule Phoexnip.DemoJob do
           IO.inspect("Completed processing: 0 jobs")
         end
     end
+  end
+
+  defp fetch_tasks(task_entity, task_type, max_tasks \\ 10) do
+    SearchUtils.search(
+      args: %{
+        task_entity: task_entity,
+        task_type: task_type,
+        task_retry_date: [DateTime.utc_now() |> DateTime.truncate(:second), "before"],
+        task_status: 0
+      },
+      pagination: %{page: 1, per_page: max_tasks},
+      module: Tasks
+    )[:entries]
+  end
+
+  defp start_task(%Tasks{} = task) do
+    create_task_history(task, "Starting Task")
+    ServiceUtils.update(task, %{task_status: 1})
+  end
+
+  defp fail_task(%Tasks{} = task, message) when is_binary(message) do
+    retry_date =
+      DateTime.utc_now()
+      |> DateTime.add(30, :minute)
+      |> DateTime.truncate(:second)
+
+    create_task_history(task, message)
+    ServiceUtils.update(task, %{task_status: 0, task_retry_date: retry_date})
+  end
+
+  defp success_task(%Tasks{} = task, message) when is_binary(message) do
+    create_task_history(task, message)
+    ServiceUtils.update(task, %{task_status: 2})
+  end
+
+  defp create_task_history(%Tasks{} = task, message) when is_binary(message) do
+    history_attrs = %{
+      task_id: task.id,
+      task_entity: task.task_entity,
+      task_entity_id: task.task_entity_id,
+      task_entity_identifier: task.task_entity_identifier,
+      task_type: task.task_type,
+      task_status: task.task_status,
+      task_retry_date: task.task_retry_date,
+      message: message
+    }
+
+    ServiceUtils.create(TasksHistory, history_attrs)
   end
 end

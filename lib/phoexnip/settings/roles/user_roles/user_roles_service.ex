@@ -7,7 +7,7 @@ defmodule Phoexnip.UserRolesService do
   """
 
   import Ecto.Query, warn: false
-  alias Phoexnip.{Repo, SitemapService, RolesPermission, UserRoles, Roles}
+  alias Phoexnip.{Repo, RolesPermission, Roles, ServiceUtils, Sitemap, UserRoles}
 
   # Internal: fetch roles a user belongs to (with permissions preloaded)
   @spec fetch_roles_users_belongs_too(user :: struct()) :: [Roles.t()]
@@ -32,7 +32,7 @@ defmodule Phoexnip.UserRolesService do
   @spec fetch_highest_permission_for_users(user :: struct()) :: [RolesPermission.t()]
   def fetch_highest_permission_for_users(user) do
     if user.super_user do
-      sitemap_entries = SitemapService.list() |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       Enum.map(sitemap_entries, fn entry ->
         %RolesPermission{
@@ -68,7 +68,7 @@ defmodule Phoexnip.UserRolesService do
   @spec fetch_user_permissions(user :: struct()) :: list(map() | RolesPermission.t())
   def fetch_user_permissions(user) do
     if user.super_user do
-      sitemap_entries = SitemapService.list() |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       all_role_permissions =
         Enum.map(sitemap_entries, fn entry ->
@@ -160,7 +160,7 @@ defmodule Phoexnip.UserRolesService do
         ]
   def fetch_level_two_user_permissions(user, parent) do
     if user.super_user do
-      sitemap_entries = SitemapService.list()
+      sitemap_entries = ServiceUtils.list(Sitemap)
 
       sitemap_entries
       |> Enum.map(fn entry ->
