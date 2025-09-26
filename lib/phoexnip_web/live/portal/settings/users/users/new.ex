@@ -18,7 +18,7 @@ defmodule PhoexnipWeb.UsersLive.New do
     if params == %{} do
       socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET1", 2)
 
-      roles = ServiceUtils.list_ordered(Phoexnip.Roles, [asc: :id])
+      roles = ServiceUtils.list_ordered(Phoexnip.Roles, asc: :id)
 
       user_roles =
         Enum.map(roles, fn role ->
@@ -56,7 +56,7 @@ defmodule PhoexnipWeb.UsersLive.New do
 
       user = UserService.get!(String.to_integer(params["id"]))
 
-      roles = ServiceUtils.list_ordered(Phoexnip.Roles, [asc: :id])
+      roles = ServiceUtils.list_ordered(Phoexnip.Roles, asc: :id)
       existing_user_roles = user.user_roles
 
       # Create a map of existing roles for quick lookup

@@ -20,7 +20,9 @@ defmodule Phoexnip.AuditLogService do
   - `:id` – integer ID
   - `:unique_identifier` – alternative identifier
   """
-  @spec get_log_for_entity_type(assigns :: %{optional(atom()) => any()} | map()) :: [AuditLogs.t()]
+  @spec get_log_for_entity_type(assigns :: %{optional(atom()) => any()} | map()) :: [
+          AuditLogs.t()
+        ]
   def get_log_for_entity_type(assigns) when is_map(assigns) do
     entity_type_val = Map.get(assigns, :entity_type) || Map.get(assigns, "entity_type", "")
 
@@ -85,9 +87,16 @@ defmodule Phoexnip.AuditLogService do
         previous_data \\ %{},
         meta_data \\ %{}
       ) do
-    changes_json = if is_map(changes) and map_size(changes) > 0, do: Jason.encode!(changes), else: ""
-    previous_json = if is_map(previous_data) and map_size(previous_data) > 0, do: Jason.encode!(previous_data), else: ""
-    meta_json = if is_map(meta_data) and map_size(meta_data) > 0, do: Jason.encode!(meta_data), else: ""
+    changes_json =
+      if is_map(changes) and map_size(changes) > 0, do: Jason.encode!(changes), else: ""
+
+    previous_json =
+      if is_map(previous_data) and map_size(previous_data) > 0,
+        do: Jason.encode!(previous_data),
+        else: ""
+
+    meta_json =
+      if is_map(meta_data) and map_size(meta_data) > 0, do: Jason.encode!(meta_data), else: ""
 
     user_id =
       case user do
@@ -99,7 +108,7 @@ defmodule Phoexnip.AuditLogService do
     user_name =
       case user do
         nil -> ""
-        %{} -> (Map.get(user, :name) || Map.get(user, "name") || "")
+        %{} -> Map.get(user, :name) || Map.get(user, "name") || ""
         _ -> ""
       end
 

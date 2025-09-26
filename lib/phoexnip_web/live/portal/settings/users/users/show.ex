@@ -22,7 +22,7 @@ defmodule PhoexnipWeb.UsersLive.Show do
   def handle_params(%{"id" => id}, _, socket) do
     user = UserService.get!(id)
 
-    roles = ServiceUtils.list_ordered(Phoexnip.Roles, [asc: :id])
+    roles = ServiceUtils.list_ordered(Phoexnip.Roles, asc: :id)
     existing_user_roles = user.user_roles
 
     # Create a map of existing roles for quick lookup

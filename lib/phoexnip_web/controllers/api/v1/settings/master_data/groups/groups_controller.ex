@@ -47,7 +47,7 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> halt()
     end
 
-    masterdatas = ServiceUtils.list_ordered(Groups, [asc: :sort])
+    masterdatas = ServiceUtils.list_ordered(Groups, asc: :sort)
     render(conn, :index, masterdatas: masterdatas)
   end
 

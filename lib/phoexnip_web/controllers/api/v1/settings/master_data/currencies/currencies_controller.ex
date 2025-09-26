@@ -46,7 +46,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
       |> halt()
     end
 
-    masterdatas = ServiceUtils.list_ordered(Currencies, [asc: :sort])
+    masterdatas = ServiceUtils.list_ordered(Currencies, asc: :sort)
     render(conn, :index, masterdatas: masterdatas)
   end
 

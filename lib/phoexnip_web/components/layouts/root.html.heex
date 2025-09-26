@@ -19,57 +19,77 @@
             <img src={~p"/images/logo.svg"} width="75" class="p-2" />
           </.link>
         </div>
+
         <div class="flex items-center gap-6 font-semibold leading-6">
           <%= if @current_user do %>
             <%= for permission <- @permissions do %>
               <%= if (permission.sitemap_level == 0 && Enum.any?(permission.children, fn child -> child.permission > 0 end)) || permission.sitemap_code == "H" do %>
-                <div class="relative inline-block text-left">
-                  <div class="group">
+                
+                <%= if !Enum.empty?(permission.children) do %>
+                  <div class="relative inline-block text-left dropdown">
                     <button
                       type="button"
                       class="dropdown-toggle inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-themePrimary hover:underline"
                       data-dropdown-target={"menu-" <> to_string(permission.sitemap_code)}
                       onclick="toggleDropdown(event)"
+                      aria-haspopup="true"
+                      aria-expanded="false"
                     >
-                      <%= if !Enum.empty?(permission.children) do %>
-                        <%= if permission.sitemap_url do %>
-                          <.link href={~p"/" <> permission.sitemap_url} class="">
-                            {permission.sitemap_name}
-                          </.link>
-                        <% else %>
-                          {permission.sitemap_name}
-                        <% end %>
-                      <% end %>
-                      <%= if Enum.empty?(permission.children) do %>
-                        <.link href={~p"/"} class="">
-                          {permission.sitemap_name}
-                        </.link>
-                      <% end %>
-                    </button>
-                    <%= if !Enum.empty?(permission.children) do %>
-                      <!-- Dropdown menu -->
-                      <div
-                        id={"menu-" <> to_string(permission.sitemap_code)}
-                        onclick="hideAllMenu(event)"
-                        class="dropdown-menu dropdown-menu-child absolute z-50 md:right-[-4rem] w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300"
+                      {permission.sitemap_name}
+                      <svg
+                        class="w-4 h-4 ml-2 -mr-1"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
                       >
-                        <%= for child <- permission.children do %>
-                          <%= if child.permission > 0 do %>
-                            <div class="py-2 w-full inline-flex justify-start pl-2 items-center hover:text-themePrimary hover:underline">
-                              <.link patch={~p"/" <> child.sitemap_url} class="w-full">
-                                {child.sitemap_name}
-                              </.link>
-                            </div>
-                          <% end %>
+                        <path fill-rule="evenodd" d="M10 12l-5-5h10l-5 5z" />
+                      </svg>
+                    </button>
+                    
+<!-- Dropdown menu -->
+                    <div
+                      id={"menu-" <> to_string(permission.sitemap_code)}
+                      class="dropdown-menu dropdown-menu-child absolute z-50 md:right-[-4rem] w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible transition duration-300"
+                      role="menu"
+                      aria-hidden="true"
+                      onclick="hideAllMenu()"
+                    >
+                      <%= for child <- permission.children do %>
+                        <%= if child.permission > 0 do %>
+                          <div class="py-2 w-full inline-flex justify-start pl-2 items-center hover:text-themePrimary hover:underline">
+                            <.link patch={~p"/" <> child.sitemap_url} class="w-full">
+                              {child.sitemap_name}
+                            </.link>
+                          </div>
                         <% end %>
-                      </div>
+                      <% end %>
+                    </div>
+                  </div>
+
+                <% else %>
+                  <div class="relative inline-block text-left">
+                    <%= if permission.sitemap_url do %>
+                      <.link
+                        href={~p"/" <> permission.sitemap_url}
+                        class="inline-flex items-center w-full py-2 text-sm font-medium hover:text-themePrimary hover:underline"
+                      >
+                        {permission.sitemap_name}
+                      </.link>
+                    <% else %>
+                      <.link
+                        href={~p"/"}
+                        class="inline-flex items-center w-full py-2 text-sm font-medium hover:text-themePrimary hover:underline"
+                      >
+                        {permission.sitemap_name}
+                      </.link>
                     <% end %>
                   </div>
-                </div>
+                <% end %>
               <% end %>
             <% end %>
 
-            <%!-- User Icon plus user account action --%>
+            <%!-- User Icon plus user account action (unchanged: hover-driven) --%>
             <div class="border-r-2 border-borderStrong" style="height:28px"></div>
             <div class="relative inline-block text-left">
               <div class="group">
@@ -81,7 +101,6 @@
                     src={Phoexnip.UploadUtils.image_for(@current_user)}
                     class="mr-1 rounded-full size-7"
                   /> {@current_user.name}
-                  <!-- Dropdown arrow -->
                   <svg
                     class="w-4 h-4 ml-2 -mr-1"
                     xmlns="http://www.w3.org/2000/svg"
@@ -91,7 +110,6 @@
                     <path fill-rule="evenodd" d="M10 12l-5-5h10l-5 5z" />
                   </svg>
                 </button>
-                <!-- Dropdown menu -->
                 <div class="absolute right-[-4rem] md:right-0 z-50 w-[11rem] origin-top-right p-2 bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-300">
                   <div class="py-1 inline-flex justify-center items-center hover:text-themePrimary hover:underline ">
                     <div class="pr-2">
@@ -166,40 +184,51 @@
     </header>
 
     {@inner_content}
+
     <script>
       function toggleDropdown(event) {
         const button = event.currentTarget;
-        const dropdownMenuId = button.getAttribute('data-dropdown-target');
-        const dropdownMenu = document.getElementById(dropdownMenuId);
+        const menuId = button.getAttribute('data-dropdown-target');
+        const menu = document.getElementById(menuId);
 
-        // Check if the dropdown menu is currently visible
-        const isVisible = dropdownMenu.classList.contains('opacity-100');
+        const isOpen = menu.classList.contains('opacity-100');
 
-        // Close all open dropdown menus
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        menu.classList.remove('opacity-100', 'visible');
-        menu.classList.add('opacity-0', 'invisible');
+        // Close all menus
+        document.querySelectorAll('.dropdown-menu').forEach(m => {
+          m.classList.remove('opacity-100', 'visible');
+          m.classList.add('opacity-0', 'invisible');
+          const btn = document.querySelector(`[data-dropdown-target="${m.id}"]`);
+          if (btn) btn.setAttribute('aria-expanded', 'false');
         });
 
-        // If the clicked menu wasn't already open, open it
-        if (!isVisible) {
-        dropdownMenu.classList.remove('opacity-0', 'invisible');
-        dropdownMenu.classList.add('opacity-100', 'visible');
+        // Open if it wasn't already open
+        if (!isOpen) {
+          menu.classList.remove('opacity-0', 'invisible');
+          menu.classList.add('opacity-100', 'visible');
+          button.setAttribute('aria-expanded', 'true');
         }
       }
 
       function hideAllMenu() {
-        // Get all elements with the class 'dropdown-menu'
-        const dropdownMenus = document.querySelectorAll('.dropdown-menu');
-
-        // Iterate over each dropdown menu and hide it
-        dropdownMenus.forEach(menu => {
-          if (menu.classList.contains('opacity-100')) {
-            menu.classList.remove('opacity-100', 'visible');
-            menu.classList.add('opacity-0', 'invisible');
-          }
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+          menu.classList.remove('opacity-100', 'visible');
+          menu.classList.add('opacity-0', 'invisible');
+          const btn = document.querySelector(`[data-dropdown-target="${menu.id}"]`);
+          if (btn) btn.setAttribute('aria-expanded', 'false');
         });
       }
+
+      // Close when clicking outside any dropdown
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown') && !e.target.closest('.dropdown-menu')) {
+          hideAllMenu();
+        }
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideAllMenu();
+      });
     </script>
   </body>
 </html>

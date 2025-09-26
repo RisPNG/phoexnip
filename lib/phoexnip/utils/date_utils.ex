@@ -216,7 +216,7 @@ defmodule Phoexnip.DateUtils do
       iex> next_weekday(:all)
       ~D[2025-07-26]
 
-      iex> next_weekday(5)  # Friday
+      iex> next_weekday(5)
       ~D[2025-07-25]
 
       iex> next_weekday("funday")
@@ -317,7 +317,7 @@ defmodule Phoexnip.DateUtils do
       ~D[2025-07-21]
 
       iex> next_or_same_weekday_after_date(~D[2025-07-20], "monday")
-      ~D[2025-07-20]  # same day
+      ~D[2025-07-20]
 
       iex> next_or_same_weekday_after_date(~D[2025-07-18], "all")
       ~D[2025-07-19]

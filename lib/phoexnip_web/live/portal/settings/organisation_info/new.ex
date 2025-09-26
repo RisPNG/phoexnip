@@ -21,7 +21,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     changeset = ServiceUtils.change(organisation_information)
 
     currency =
-      ServiceUtils.list_ordered(Currencies, [asc: :sort]) |> Enum.map(&{"#{&1.name}", &1.code})
+      ServiceUtils.list_ordered(Currencies, asc: :sort) |> Enum.map(&{"#{&1.name}", &1.code})
 
     {:ok,
      socket
@@ -229,7 +229,9 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
       )
 
     case result.entries do
-      [info | _] -> info
+      [info | _] ->
+        info
+
       [] ->
         %OrganisationInfo{
           address: [

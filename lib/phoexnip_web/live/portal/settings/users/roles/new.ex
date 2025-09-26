@@ -65,7 +65,7 @@ defmodule PhoexnipWeb.RolesLive.New do
         ServiceUtils.get_with_preload!(
           Phoexnip.Roles,
           String.to_integer(params["id"]),
-          [role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)]
+          role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)
         )
 
       sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)

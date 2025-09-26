@@ -80,7 +80,9 @@ defmodule PhoexnipWeb.RolesController do
       |> halt()
     end
 
-    case ServiceUtils.get_with_preload(Phoexnip.Roles, id, [role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)]) do
+    case ServiceUtils.get_with_preload(Phoexnip.Roles, id,
+           role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)
+         ) do
       %Roles{} = role ->
         render(conn, :show, role: role)
 

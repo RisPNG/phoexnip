@@ -48,7 +48,7 @@ defmodule Phoexnip.ServiceUtils do
   def list_paginated(module, opts \\ []) do
     page = Keyword.get(opts, :page)
     per_page = Keyword.get(opts, :per_page)
-    order_by = Keyword.get(opts, :order_by, [asc: :id])
+    order_by = Keyword.get(opts, :order_by, asc: :id)
 
     base_query = from(m in module, order_by: ^order_by)
 
@@ -278,7 +278,7 @@ defmodule Phoexnip.ServiceUtils do
   """
   @spec list_where(module(), keyword() | map(), keyword()) :: [struct()]
   def list_where(module, conditions, opts \\ []) do
-    order_by = Keyword.get(opts, :order_by, [asc: :id])
+    order_by = Keyword.get(opts, :order_by, asc: :id)
 
     module
     |> where(^Enum.to_list(conditions))

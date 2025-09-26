@@ -66,7 +66,7 @@ defmodule Phoexnip.JobStarter do
   """
   @spec handle_info(:init_jobs, list()) :: {:noreply, list()}
   def handle_info(:init_jobs, state) do
-    active_scheduler = ServiceUtils.list_where(Schedulers, [status: 1])
+    active_scheduler = ServiceUtils.list_where(Schedulers, status: 1)
     Enum.each(active_scheduler, &JobExecutor.start_job_from_db/1)
     {:noreply, state}
   end
