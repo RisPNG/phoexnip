@@ -30,7 +30,7 @@
     <div class="title">Permissions</div>
 
     <.inputs_for :let={item_f} field={f[:role_permissions]}>
-      <%= if item_f[:sitemap_level].value  == 0 do %>
+      <%= if item_f[:sitemap_level].value == 0 do %>
         <%!-- LVL 0 --%>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
           <div class="w-[100%] flex items-center mt-5 flex-wrap pb-2 border-b-2 border-muted/50">
@@ -88,7 +88,7 @@
         <% end %>
       <% end %>
 
-      <%= if item_f[:sitemap_level].value  == 1 do %>
+      <%= if item_f[:sitemap_level].value == 1 do %>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
           <%!-- LVL 1 --%>
           <div class="w-[100%] flex items-center border-b-2 border-muted/50 pb-2">
@@ -179,7 +179,7 @@
           </div>
         <% end %>
       <% end %>
-      <%= if item_f[:sitemap_level].value  == 2 do %>
+      <%= if item_f[:sitemap_level].value == 2 do %>
         <%= if length(Enum.filter(@highest_permission, fn rp -> rp.sitemap_code == item_f[:sitemap_code].value end)) > 0 do %>
           <%!-- LVL 2 --%>
           <div class="w-[100%] flex items-center border-b-2 border-muted/50 pb-2">

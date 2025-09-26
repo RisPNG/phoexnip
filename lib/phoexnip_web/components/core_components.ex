@@ -142,7 +142,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <.flash_group flash={@flash} />
 
         <div class="flex justify-center w-full mt-14">
-          <div class={"max-w-[83%] p-4 sm:p-6 lg:py-8 " <>  @class}>
+          <div class={"max-w-[83%] p-4 sm:p-6 lg:py-8 " <> @class}>
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
@@ -825,7 +825,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class={@class} class="block  font-semibold leading-6">
+    <label for={@for} class={@class} class="block font-semibold leading-6">
       {render_slot(@inner_block)}
     </label>
     """
@@ -842,7 +842,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   def error(assigns) do
     ~H"""
-    <p class="mt-3 flex gap-3  leading-6 text-danger phx-no-feedback:hidden">
+    <p class="mt-3 flex gap-3 leading-6 text-danger phx-no-feedback:hidden">
       <.icon name="hero-exclamation-circle-mini" class="mt-0.5 h-5 w-5 flex-none" />
       {render_slot(@inner_block)}
     </p>
@@ -869,7 +869,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <h1 class="text-lg font-semibold leading-8 ">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="mt-2  leading-6 ">
+        <p :if={@subtitle != []} class="mt-2 leading-6 ">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -979,7 +979,7 @@ defmodule PhoexnipWeb.CoreComponents do
     ~H"""
     <div class="mt-14">
       <dl class="-my-4 divide-y divide-border">
-        <div :for={item <- @item} class="flex gap-4 py-4  leading-6 sm:gap-8">
+        <div :for={item <- @item} class="flex gap-4 py-4 leading-6 sm:gap-8">
           <dt class="w-1/4 flex-none">{item.title}</dt>
           <dd class="">{render_slot(item)}</dd>
         </div>

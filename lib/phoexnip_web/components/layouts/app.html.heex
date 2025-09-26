@@ -8,7 +8,7 @@
         <% end %>
         <%= if @breadcrumb_second_segment != nil do %>
           <.icon name="hero-chevron-right" class="ms-1 h-5" />
-          <%= if  @breadcrumb_second_link != nil do %>
+          <%= if @breadcrumb_second_link != nil do %>
             <.link
               patch={~p"/" <> @breadcrumb_second_link}
               class=" hover:underline text-themePrimary"
@@ -26,7 +26,7 @@
         <% end %> --%>
         <%= if @breadcrumb_third_segment != nil do %>
           <.icon name="hero-chevron-right" class="ms-1 h-5" />
-          <%= if  @breadcrumb_third_link != nil do %>
+          <%= if @breadcrumb_third_link != nil do %>
             <.link
               patch={~p"/" <> @breadcrumb_third_link}
               class=" hover:underline text-themePrimary"
