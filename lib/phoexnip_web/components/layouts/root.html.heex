@@ -10,6 +10,7 @@
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
+    {Application.get_env(:live_debugger, :live_debugger_tags)}
   </head>
   <body class="">
     <header class="px-4 sm:px-6 lg:px-8">
@@ -24,7 +25,6 @@
           <%= if @current_user do %>
             <%= for permission <- @permissions do %>
               <%= if (permission.sitemap_level == 0 && Enum.any?(permission.children, fn child -> child.permission > 0 end)) || permission.sitemap_code == "H" do %>
-                
                 <%= if !Enum.empty?(permission.children) do %>
                   <div class="relative inline-block text-left dropdown">
                     <button
@@ -66,7 +66,6 @@
                       <% end %>
                     </div>
                   </div>
-
                 <% else %>
                   <div class="relative inline-block text-left">
                     <%= if permission.sitemap_url do %>
