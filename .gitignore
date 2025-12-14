@@ -57,3 +57,4 @@ priv/plts/*.plt.hash
 priv/static/**/*-[a-f0-9]*.*
 priv/static/**/*.gz
 TODO.json
+.reference

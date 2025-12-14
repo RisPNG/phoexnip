@@ -6,10 +6,10 @@ defmodule Phoexnip.SearchUtils do
 
     * **`search/1`** – construct and execute an Ecto query from a map of filters (`args`),
       with support for:
-        - scalar and list filters (with “range”, “before/after”, “and”/“or” modifiers),
+        - scalar and list filters (with "range", "before/after", "and"/"or" modifiers),
         - nested OR groups (`:_or`, `:_multi_or`),
         - pagination (`page`/`per_page`) or unpaged results,
-        - ordering by any field and direction,
+        - ordering by multiple fields and directions, including association fields,
         - automatic dropping of sensitive params,
         - timezone‑aware parsing for date and datetime filters,
         - optional association preloading (all or selected),
@@ -18,16 +18,16 @@ defmodule Phoexnip.SearchUtils do
     * **`detect_schema_field?/2`** – introspect an Ecto schema to get the type of a given field.
 
     * **`convert_value_to_field/4`** – convert arbitrary input (string, struct) into the appropriate
-      Ecto type (date, datetime, integer, float, decimal, boolean, etc.), applying the user’s timezone
+      Ecto type (date, datetime, integer, float, decimal, boolean, etc.), applying the user's timezone
       when parsing.
 
     * **`ensure_loaded_associations/2`** – preload any not‑loaded associations on a schema struct,
       either all or a specified subset.
 
-    * **`construct_date_map/3`** and **`construct_date_list/2`** – helpers to build “range”,
-      “after_equal”, or “before_equal” filters for date queries.
+    * **`construct_date_map/3`** and **`construct_date_list/2`** – helpers to build "range",
+      "after_equal", or "before_equal" filters for date queries.
 
-    * **`extract_square_bracket_from_string/2`** – pull out the Nth “[…]” segment from a string.
+    * **`extract_square_bracket_from_string/2`** – pull out the Nth "[…]" segment from a string.
 
   These utilities centralize and standardize how we build, execute, and post‑process complex search
   queries across the application, ensuring consistent filtering, pagination, and type safety.
@@ -37,6 +37,22 @@ defmodule Phoexnip.SearchUtils do
   alias Phoexnip.Repo
   alias Phoexnip.ImportUtils
 
+  # =============================================================================
+  # Module Attributes / Constants
+  # =============================================================================
+
+  @sensitive_fields [:hashed_password, :password, :current_password, :password_confirmation]
+
+  @exact_types [:integer, :float, :decimal, :date, :utc_datetime, :boolean, :id]
+
+  @list_keywords ~w(range not_range after after_equal before before_equal and or exact exact_and exact_or exact_not not not_empty empty)
+
+  @temporal_keywords ~w(after after_equal before before_equal)
+
+  # =============================================================================
+  # Public API - search/1
+  # =============================================================================
+
   @doc """
   ## Parameters
 
@@ -45,7 +61,7 @@ defmodule Phoexnip.SearchUtils do
     • Lists may carry a trailing keyword (`"range"`, `"after"`, `"after_equal"`, `"before"`, `"before_equal"`, `"and"`, `"or"`) to control comparison logic.
     * Special keys:
       - `:_or`       – map of field→value to OR together at the top level
-      - `:_multi_or` – list of maps; each map’s filters are ANDed together, then ORed with the others
+      - `:_multi_or` – list of maps; each map's filters are ANDed together, then ORed with the others
 
   * `pagination` (`%{page: integer, per_page: integer}` or any other map) –
     If it includes `:page` and `:per_page`, returns a paged result; otherwise returns all matches.
@@ -56,7 +72,11 @@ defmodule Phoexnip.SearchUtils do
 
   * `drop_args` (`[atom]`) – additional keys to remove from `args` (beyond default sensitive fields) before filtering.
 
-  * `order_by` (`atom`) – field to sort by (default `:id`).
+  * `order_by` (`atom() | [atom()] | [{atom(), :asc | :desc}]`) – field(s) to sort by.
+    - Single atom: `order_by: :name`
+    - Multiple fields with same direction: `order_by: [:name, :created_at]`
+    - Multiple fields with different directions: `order_by: [{:name, :asc}, {:created_at, :desc}]`
+    - Association fields: `order_by: :supplier_code@purchase_order` or `order_by: [:supplier_code@purchase_order, :number@purchase_order]`
 
   * `user_timezone` (`String.t`) – timezone for converting string inputs to `:date`/`:utc_datetime` (default `"Etc/UTC"`).
 
@@ -65,7 +85,7 @@ defmodule Phoexnip.SearchUtils do
     - a non-empty list preloads only those associations,
     - `false` or `[]` means no preloading.
 
-  * `order_method` (`:asc | :desc`) – sort direction (default `:asc`).
+  * `order_method` (`:asc | :desc`) – sort direction when `order_by` is a single atom or list of atoms (default `:asc`).
 
   ## Description
 
@@ -76,7 +96,8 @@ defmodule Phoexnip.SearchUtils do
 
   * **Pagination & Ordering**
     - Page results via `page`/`per_page` or return all entries
-    - Sort by any field/direction
+    - Sort by multiple fields with individual directions
+    - Support for ordering by association fields
 
   * **Argument Sanitization**
     - Drops `[:hashed_password, :password, :current_password, :password_confirmation]` plus any in `drop_args`
@@ -103,24 +124,46 @@ defmodule Phoexnip.SearchUtils do
   ## Examples
 
   ```elixir
-  # OR‐based list filter, custom drop_args, preload comments+author
-  SearchModule.search(
-  %{status: "open", tags: ["elixir", "phoenix", "or"]},
-  %{page: 2, per_page: 10},
-  MyApp.Post,
-  true,
-  [:secret_flag],
-  :inserted_at,
-  "UTC",
-  [:comments, :author],
-  :desc
+  # Basic ILIKE filter with pagination
+  SearchUtils.search(
+    module: MyApp.Customer,
+    args: %{name: "Acme"},
+    pagination: %{page: 2, per_page: 25}
   )
 
-  # No pagination, no preloads
-  SearchModule.search(%{}, %{}, MyApp.User, false, [], :id, "UTC", [], :asc)
+  # Range filters, OR groups, and custom ordering
+  SearchUtils.search(
+    module: MyApp.Invoice,
+    args: %{
+      issued_at: ["2023-01-01", "2023-01-31", "range"],
+      status: ["paid", "overdue", "or"],
+      _or: %{reference: "INV-", notes: "priority"}
+    },
+    order_by: [{:issued_at, :desc}]
+  )
 
-  # Preload everything
-  SearchModule.search(%{}, %{}, MyApp.User, false, [], :id, "UTC", true)
+  # Association ordering with selective preloading
+  SearchUtils.search(
+    module: MyApp.Order,
+    args: %{status: "active"},
+    preload: [:supplier, line_items: :product],
+    order_by: [
+      {:supplier_code@purchase_order, :asc},
+      {:total_amount, :desc}
+    ]
+  )
+
+  # Multi-OR groups with list filters
+  SearchUtils.search(
+    module: MyApp.Product,
+    args: %{
+      _multi_or: [
+        %{category: "hardware", tags: ["server", "networking", "or"]},
+        %{category: "software", price: ["100", "200", "range"]}
+      ]
+    },
+    use_or: true
+  )
   ```
   """
   @spec search(
@@ -130,7 +173,7 @@ defmodule Phoexnip.SearchUtils do
             pagination: %{optional(:page) => pos_integer(), optional(:per_page) => pos_integer()},
             use_or: boolean(),
             drop_args: [atom()],
-            order_by: atom(),
+            order_by: atom() | [atom()] | [{atom(), :asc | :desc}],
             user_timezone: String.t(),
             preload: boolean() | [atom()],
             order_method: :asc | :desc
@@ -143,9 +186,10 @@ defmodule Phoexnip.SearchUtils do
           total_pages: pos_integer()
         }
   def search(opts) do
+    # Extract options
+    module = Keyword.fetch!(opts, :module)
     args = Keyword.get(opts, :args, %{})
     pagination = Keyword.get(opts, :pagination, %{})
-    module = Keyword.fetch!(opts, :module)
     use_or = Keyword.get(opts, :use_or, false)
     drop_args = Keyword.get(opts, :drop_args, [])
     order_by = Keyword.get(opts, :order_by, :id)
@@ -153,288 +197,232 @@ defmodule Phoexnip.SearchUtils do
     preload = Keyword.get(opts, :preload, [])
     order_method = Keyword.get(opts, :order_method, :asc)
 
-    # Clean and parse arguments
-    cleaned_args = clean_and_parse_args(args, drop_args)
-    {or_filters, remaining_filters} = Map.pop(cleaned_args, :_or)
-    {multi_or_filters, remaining_filters} = Map.pop(remaining_filters, :_multi_or)
+    ctx = %{module: module, user_timezone: user_timezone, use_or: use_or}
+    normalized_order_by = normalize_order_by(order_by, order_method)
 
+    # Clean and parse arguments, then extract special filter keys
+    cleaned_args = clean_and_parse_args(args, drop_args)
+    {or_filters, remaining} = Map.pop(cleaned_args, :_or)
+    {multi_or_filters, remaining} = Map.pop(remaining, :_multi_or)
+
+    # Build query pipeline
     base_query = from(p in module, as: :p)
 
-    # Apply regular filters
-    {filtered_query, joined_associations} =
-      apply_filters(remaining_filters, base_query, module, user_timezone, use_or)
+    {query, joined} = apply_filters(remaining, base_query, ctx)
+    {query, joined} = apply_or_filters(or_filters, query, joined, ctx)
+    {query, joined} = apply_multi_or_filters(multi_or_filters, query, joined, ctx)
+    {final_query, count_query} = prepare_final_query(query, joined, normalized_order_by)
 
-    # Apply OR filters
-    {query_with_or, joined_associations} =
-      apply_or_filters(or_filters, filtered_query, joined_associations, module, user_timezone)
-
-    # Apply multi-OR filters
-    {query_with_multi_or, joined_associations} =
-      apply_multi_or_filters(
-        multi_or_filters,
-        query_with_or,
-        joined_associations,
-        module,
-        user_timezone
-      )
-
-    # Handle ordering
-    {final_query, total_count_query} =
-      prepare_final_query(
-        query_with_multi_or,
-        joined_associations,
-        module,
-        order_by,
-        order_method
-      )
-
-    # Execute query with pagination
-    execute_query_with_pagination(final_query, total_count_query, pagination, preload, module)
+    execute_query(final_query, count_query, pagination, preload, module)
   end
 
-  # Helper function to clean and parse arguments
-  defp clean_and_parse_args(args, drop_args) do
-    drop_fields =
-      [:hashed_password, :password, :current_password, :password_confirmation] ++ drop_args
+  # =============================================================================
+  # Argument Parsing
+  # =============================================================================
 
+  defp clean_and_parse_args(args, drop_args) do
     args
-    |> Map.drop(drop_fields)
+    |> Map.drop(@sensitive_fields ++ drop_args)
     |> parse_association_keys()
   end
 
-  # Helper function to parse association keys (field@association)
   defp parse_association_keys(args) do
     Enum.into(args, %{}, fn {key, value} ->
-      if String.contains?(to_string(key), "@") do
-        [field, association] = String.split(to_string(key), "@", parts: 2)
-        {{String.to_atom(field), String.to_atom(association)}, value}
+      key_str = to_string(key)
+
+      if String.contains?(key_str, "@") do
+        [field, assoc] = String.split(key_str, "@", parts: 2)
+        {{String.to_existing_atom(field), String.to_existing_atom(assoc)}, value}
       else
         {key, value}
       end
     end)
   end
 
-  # Helper function to apply regular filters
-  defp apply_filters(filters, base_query, module, user_timezone, use_or) do
-    Enum.reduce(filters, {base_query, MapSet.new()}, fn
-      {{field, association}, value}, {acc_query, joined} ->
-        if non_value?(value) do
-          {acc_query, joined}
-        else
-          query_with_join = ensure_association_joined(acc_query, association, joined)
-          assoc_module = get_assoc_module(module, association)
+  # =============================================================================
+  # Order By Normalization
+  # =============================================================================
 
-          new_query =
-            build_field_query(
-              query_with_join,
-              assoc_module,
-              association,
-              field,
-              value,
-              user_timezone,
-              use_or
-            )
+  defp normalize_order_by(order_by, default_method) do
+    case order_by do
+      field when is_atom(field) ->
+        [{field, default_method}]
 
-          {new_query, MapSet.put(joined, association)}
-        end
+      {field, method} when is_atom(field) and method in [:asc, :desc] ->
+        [{field, method}]
 
-      {field, value}, {acc_query, joined} ->
-        if non_value?(value) do
-          {acc_query, joined}
-        else
-          new_query =
-            build_field_query(
-              acc_query,
-              module,
-              :p,
-              field,
-              value,
-              user_timezone,
-              use_or
-            )
+      fields when is_list(fields) ->
+        Enum.map(fields, fn
+          field when is_atom(field) -> {field, default_method}
+          {field, method} when is_atom(field) and method in [:asc, :desc] -> {field, method}
+          _ -> {:id, default_method}
+        end)
 
-          {new_query, joined}
-        end
-    end)
-  end
-
-  # Helper function to apply OR filters
-  defp apply_or_filters(nil, query, joined_associations, _module, _user_timezone) do
-    {query, joined_associations}
-  end
-
-  defp apply_or_filters(or_filters, query, joined_associations, module, user_timezone) do
-    parsed_or_filters = parse_association_keys(or_filters)
-
-    # Drop association filters whose values are blank to avoid unnecessary joins
-    filtered_or_filters = drop_blank_assoc_filters(parsed_or_filters)
-
-    # If nothing meaningful remains, do not alter the query
-    if map_size(filtered_or_filters) == 0 do
-      {query, joined_associations}
-    else
-      # Ensure only needed associations are joined
-      {query_with_joins, updated_joined} =
-        ensure_or_associations_joined(query, filtered_or_filters, joined_associations)
-
-      # Build OR dynamic query from filtered map
-      or_dynamic = build_or_dynamic(filtered_or_filters, module, user_timezone)
-
-      {from(r in query_with_joins, where: ^or_dynamic), updated_joined}
+      _ ->
+        [{:id, default_method}]
     end
   end
 
-  # Helper function to apply multi-OR filters
-  defp apply_multi_or_filters(nil, query, joined_associations, _module, _user_timezone) do
-    {query, joined_associations}
+  # =============================================================================
+  # Filter Application - Regular Filters
+  # =============================================================================
+
+  defp apply_filters(filters, query, ctx) do
+    Enum.reduce(filters, {query, MapSet.new()}, fn filter, {acc_query, joined} ->
+      apply_single_filter(filter, acc_query, joined, ctx)
+    end)
   end
 
-  defp apply_multi_or_filters(multi_or_filters, query, joined_associations, module, user_timezone) do
-    parsed_multi_or = Enum.map(multi_or_filters, &parse_association_keys/1)
+  defp apply_single_filter({{field, assoc}, value}, query, joined, ctx) when not is_nil(assoc) do
+    if non_value?(value) do
+      {query, joined}
+    else
+      query = ensure_association_joined(query, assoc, joined)
+      assoc_module = get_assoc_module(ctx.module, assoc)
+      new_query = build_field_query(query, assoc_module, assoc, field, value, ctx)
+      {new_query, MapSet.put(joined, assoc)}
+    end
+  end
 
-    # Drop blank association filters within each group; remove empty groups entirely
-    filtered_groups =
-      parsed_multi_or
-      |> Enum.map(&drop_blank_assoc_filters/1)
+  defp apply_single_filter({field, value}, query, joined, ctx) do
+    if non_value?(value) do
+      {query, joined}
+    else
+      new_query = build_field_query(query, ctx.module, :p, field, value, ctx)
+      {new_query, joined}
+    end
+  end
+
+  # =============================================================================
+  # Filter Application - OR Filters
+  # =============================================================================
+
+  defp apply_or_filters(nil, query, joined, _ctx), do: {query, joined}
+
+  defp apply_or_filters(or_filters, query, joined, ctx) do
+    parsed = or_filters |> parse_association_keys() |> drop_blank_filters()
+
+    if map_size(parsed) == 0 do
+      {query, joined}
+    else
+      {query, joined} = ensure_filter_associations_joined(query, parsed, joined)
+      or_dynamic = build_or_dynamic(parsed, ctx)
+      {from(r in query, where: ^or_dynamic), joined}
+    end
+  end
+
+  # =============================================================================
+  # Filter Application - Multi-OR Filters
+  # =============================================================================
+
+  defp apply_multi_or_filters(nil, query, joined, _ctx), do: {query, joined}
+
+  defp apply_multi_or_filters(multi_or_filters, query, joined, ctx) do
+    parsed_groups =
+      multi_or_filters
+      |> Enum.map(&(&1 |> parse_association_keys() |> drop_blank_filters()))
       |> Enum.reject(&(map_size(&1) == 0))
 
-    if filtered_groups == [] do
-      {query, joined_associations}
+    if parsed_groups == [] do
+      {query, joined}
     else
-      # Ensure only needed associations are joined
-      {query_with_joins, updated_joined} =
-        ensure_multi_or_associations_joined(query, filtered_groups, joined_associations)
+      {query, joined} =
+        Enum.reduce(parsed_groups, {query, joined}, fn group, {q, j} ->
+          ensure_filter_associations_joined(q, group, j)
+        end)
 
-      # Build multi-OR dynamic query
-      or_dynamic = build_multi_or_dynamic(filtered_groups, module, user_timezone)
-
-      {from(r in query_with_joins, where: ^or_dynamic), updated_joined}
+      or_dynamic = build_multi_or_dynamic(parsed_groups, ctx)
+      {from(r in query, where: ^or_dynamic), joined}
     end
   end
 
-  # Helper function to ensure association is joined
-  defp ensure_association_joined(query, association, joined) do
-    if MapSet.member?(joined, association) do
+  # =============================================================================
+  # Association Handling
+  # =============================================================================
+
+  defp ensure_association_joined(query, assoc, joined) do
+    if MapSet.member?(joined, assoc) do
       query
     else
-      from(q in query, join: a in assoc(q, ^association), as: ^association)
+      from(q in query, join: a in assoc(q, ^assoc), as: ^assoc)
     end
   end
 
-  # Helper function to ensure OR filter associations are joined
-  defp ensure_or_associations_joined(query, parsed_or_filters, joined_associations) do
-    # Only consider associations with non-blank values
-    or_associations = extract_associations_from_filters(parsed_or_filters)
+  defp ensure_filter_associations_joined(query, filters, joined) do
+    needed_assocs = extract_associations_from_filters(filters)
 
-    Enum.reduce(MapSet.to_list(or_associations), {query, joined_associations}, fn assoc,
-                                                                                  {q, joined} ->
-      if MapSet.member?(joined, assoc) do
-        {q, joined}
+    Enum.reduce(MapSet.to_list(needed_assocs), {query, joined}, fn assoc, {q, j} ->
+      if MapSet.member?(j, assoc) do
+        {q, j}
       else
-        {from(sq in q, join: a in assoc(sq, ^assoc), as: ^assoc), MapSet.put(joined, assoc)}
+        {from(sq in q, join: a in assoc(sq, ^assoc), as: ^assoc), MapSet.put(j, assoc)}
       end
     end)
   end
 
-  # Helper function to ensure multi-OR filter associations are joined
-  defp ensure_multi_or_associations_joined(query, parsed_multi_or, joined_associations) do
-    multi_or_associations =
-      parsed_multi_or
-      |> Enum.flat_map(&extract_associations_from_filters/1)
-      |> MapSet.new()
-
-    Enum.reduce(MapSet.to_list(multi_or_associations), {query, joined_associations}, fn assoc,
-                                                                                        {q,
-                                                                                         joined} ->
-      if MapSet.member?(joined, assoc) do
-        {q, joined}
-      else
-        {from(sq in q, join: a in assoc(sq, ^assoc), as: ^assoc), MapSet.put(joined, assoc)}
-      end
-    end)
-  end
-
-  # Helper function to extract associations from filters
   defp extract_associations_from_filters(filters) do
-    filters
-    |> Enum.reduce(MapSet.new(), fn
-      {{_field, assoc}, value}, acc ->
-        if non_value?(value) do
-          acc
-        else
-          MapSet.put(acc, assoc)
-        end
-
-      {_k, _v}, acc ->
-        acc
+    Enum.reduce(filters, MapSet.new(), fn
+      {{_field, assoc}, value}, acc -> if non_value?(value), do: acc, else: MapSet.put(acc, assoc)
+      {_field, _value}, acc -> acc
     end)
   end
 
-  # Helper function to build OR dynamic query
-  defp build_or_dynamic(parsed_or_filters, module, user_timezone) do
-    Enum.reduce(parsed_or_filters, dynamic(false), fn
-      {{field, association}, value}, acc ->
-        # Skip building conditions for non-values
-        if non_value?(value) do
-          acc
-        else
-          assoc_module = get_assoc_module(module, association)
-          comp = build_field_condition(assoc_module, association, field, value, user_timezone)
-          dynamic([p], ^acc or ^comp)
-        end
+  defp get_assoc_module(module, assoc) do
+    case module.__schema__(:association, assoc) do
+      nil -> raise "Association :#{assoc} not found on module #{module}"
+      association -> association.related
+    end
+  end
 
-      {field, value}, acc ->
-        if non_value?(value) do
-          acc
-        else
-          comp = build_field_condition(module, :p, field, value, user_timezone)
+  # =============================================================================
+  # Dynamic Query Builders - OR/Multi-OR
+  # =============================================================================
+
+  defp build_or_dynamic(filters, ctx) do
+    Enum.reduce(filters, dynamic(false), fn filter, acc ->
+      case filter do
+        {{field, assoc}, value} when not non_value?(value) ->
+          assoc_module = get_assoc_module(ctx.module, assoc)
+          comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
           dynamic([p], ^acc or ^comp)
-        end
+
+        {field, value} when not non_value?(value) ->
+          comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
+          dynamic([p], ^acc or ^comp)
+
+        _ ->
+          acc
+      end
     end)
   end
 
-  # Helper function to build multi-OR dynamic query
-  defp build_multi_or_dynamic(parsed_multi_or, module, user_timezone) do
-    Enum.reduce(parsed_multi_or, dynamic(false), fn group_map, or_acc ->
-      group_dynamic = build_group_and_dynamic(group_map, module, user_timezone)
+  defp build_multi_or_dynamic(groups, ctx) do
+    Enum.reduce(groups, dynamic(false), fn group, or_acc ->
+      group_dynamic = build_group_and_dynamic(group, ctx)
       dynamic([p], ^or_acc or ^group_dynamic)
     end)
   end
 
-  # Helper function to build group AND dynamic query
-  defp build_group_and_dynamic(group_map, module, user_timezone) do
-    Enum.reduce(group_map, dynamic(true), fn
-      {{field, association}, value}, and_acc ->
-        # Skip non-values to avoid unnecessary joins and tautologies
-        if non_value?(value) do
-          and_acc
-        else
-          assoc_module = get_assoc_module(module, association)
-          comp = build_field_condition(assoc_module, association, field, value, user_timezone)
+  defp build_group_and_dynamic(group, ctx) do
+    Enum.reduce(group, dynamic(true), fn filter, and_acc ->
+      case filter do
+        {{field, assoc}, value} when not non_value?(value) ->
+          assoc_module = get_assoc_module(ctx.module, assoc)
+          comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
           dynamic([p], ^and_acc and ^comp)
-        end
 
-      {field, value}, and_acc ->
-        if non_value?(value) do
-          and_acc
-        else
-          comp = build_field_condition(module, :p, field, value, user_timezone)
+        {field, value} when not non_value?(value) ->
+          comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
           dynamic([p], ^and_acc and ^comp)
-        end
+
+        _ ->
+          and_acc
+      end
     end)
   end
 
-  # Helper function to build field condition dynamic
   defp build_field_condition(module, binding, field, value, user_timezone) do
-    if detect_schema_field?(module, field) in [
-         :integer,
-         :float,
-         :decimal,
-         :date,
-         :utc_datetime,
-         :boolean,
-         :id
-       ] do
+    if exact_type_field?(module, field) do
       dynamic(
         [{^binding, a}],
         field(a, ^field) == ^convert_value_to_field(module, field, value, user_timezone)
@@ -442,249 +430,416 @@ defmodule Phoexnip.SearchUtils do
     else
       dynamic(
         [{^binding, a}],
-        fragment("? ILIKE ?", field(a, ^field), ^("%" <> to_string(value) <> "%"))
+        fragment("? ILIKE ?", field(a, ^field), ^("%#{value}%"))
       )
     end
   end
 
-  # Helper function to prepare final query with ordering
-  defp prepare_final_query(query, joined_associations, module, order_by, order_method) do
-    {order_by_field, order_by_binding, preliminary_query, _joined_associations} =
-      handle_order_by_association(query, joined_associations, module, order_by)
+  # =============================================================================
+  # Query Preparation & Ordering
+  # =============================================================================
 
-    final_query =
-      optimize_query_with_joins(
-        preliminary_query,
-        joined_associations,
-        module,
-        order_by_binding
-      )
+  defp prepare_final_query(query, joined, order_by_list) do
+    # Ensure associations needed for ordering are joined
+    {query, _joined} =
+      Enum.reduce(order_by_list, {query, joined}, fn {order_by, _method}, {acc_query, acc_joined} ->
+        order_str = to_string(order_by)
 
-    ordered_query =
-      from p in final_query,
-        order_by: [{^order_method, field(as(^order_by_binding), ^order_by_field)}]
+        if String.contains?(order_str, "@") do
+          [_field, assoc_str] = String.split(order_str, "@", parts: 2)
+          assoc = String.to_existing_atom(assoc_str)
+          query = ensure_association_joined(acc_query, assoc, acc_joined)
+          {query, MapSet.put(acc_joined, assoc)}
+        else
+          {acc_query, acc_joined}
+        end
+      end)
 
-    # Return both the final query and the query for counting
-    {ordered_query, query}
+    # Build order clauses
+    order_clauses =
+      Enum.map(order_by_list, fn {order_by, method} ->
+        order_str = to_string(order_by)
+
+        if String.contains?(order_str, "@") do
+          [field_str, assoc_str] = String.split(order_str, "@", parts: 2)
+          field = String.to_existing_atom(field_str)
+          assoc = String.to_existing_atom(assoc_str)
+          {method, dynamic([{^assoc, a}], field(a, ^field))}
+        else
+          {method, dynamic([p], field(p, ^order_by))}
+        end
+      end)
+
+    final_query = from(q in query, order_by: ^order_clauses)
+    {final_query, query}
   end
 
-  # Helper function to handle order by association
-  defp handle_order_by_association(query, joined_associations, _module, order_by) do
-    if String.contains?(to_string(order_by), "@") do
-      [field_str, assoc_str] = String.split(to_string(order_by), "@", parts: 2)
-      field = String.to_atom(field_str)
-      association = String.to_atom(assoc_str)
+  # =============================================================================
+  # Query Execution & Pagination
+  # =============================================================================
 
-      query_with_join = ensure_association_joined(query, association, joined_associations)
-      {field, association, query_with_join, MapSet.put(joined_associations, association)}
-    else
-      {order_by, :p, query, joined_associations}
-    end
-  end
-
-  # Helper function to optimize query with joins for ordering
-  defp optimize_query_with_joins(preliminary_query, joined_associations, module, order_by_binding) do
-    if MapSet.size(joined_associations) > 0 and order_by_binding != :p do
-      ids_subq =
-        from q in preliminary_query,
-          select: %{id: field(as(:p), :id)},
-          distinct: true
-
-      from p in module,
-        as: :p,
-        join: s in subquery(ids_subq),
-        on: p.id == s.id,
-        join: a in assoc(p, ^order_by_binding),
-        as: ^order_by_binding
-    else
-      if MapSet.size(joined_associations) > 0 do
-        from q in preliminary_query, distinct: true
-      else
-        preliminary_query
-      end
-    end
-  end
-
-  # Helper function to execute query with pagination
-  defp execute_query_with_pagination(final_query, count_query, pagination, preload, module) do
+  defp execute_query(final_query, count_query, pagination, preload, module) do
     case pagination do
       %{page: page, per_page: per_page} ->
-        total_entries =
-          Repo.one(from q in count_query, select: count(field(as(:p), :id), :distinct))
+        total = Repo.one(from(q in count_query, select: count(field(as(:p), :id), :distinct)))
 
-        results =
+        entries =
           final_query
           |> offset(^((page - 1) * per_page))
           |> limit(^per_page)
           |> Repo.all()
           |> apply_preload(preload, module)
 
-        total_pages = max(ceil(total_entries / per_page), 1)
-
         %{
-          entries: results,
+          entries: entries,
           page_number: page,
           page_size: per_page,
-          total_entries: total_entries,
-          total_pages: total_pages
+          total_entries: total,
+          total_pages: max(ceil(total / per_page), 1)
         }
 
       _ ->
-        results =
-          final_query
-          |> Repo.all()
-          |> apply_preload(preload, module)
-
-        total_entries =
-          Repo.one(from q in count_query, select: count(field(as(:p), :id), :distinct))
+        entries = final_query |> Repo.all() |> apply_preload(preload, module)
+        total = Repo.one(from(q in count_query, select: count(field(as(:p), :id), :distinct)))
 
         %{
-          entries: results,
+          entries: entries,
           page_number: 1,
-          page_size: length(results),
-          total_entries: total_entries,
+          page_size: length(entries),
+          total_entries: total,
           total_pages: 1
         }
     end
   end
 
-  # Helper function to apply preload
   defp apply_preload(results, preload, module) do
     cond do
-      preload === true ->
-        results |> Repo.preload(ImportUtils.preload_all(module))
-
-      is_list(preload) and length(preload) > 0 ->
-        results |> Repo.preload(preload)
-
-      true ->
-        results
+      preload === true -> Repo.preload(results, ImportUtils.preload_all(module))
+      is_list(preload) and preload != [] -> Repo.preload(results, preload)
+      true -> results
     end
   end
 
-  defp get_assoc_module(module, assoc_atom) do
-    case module.__schema__(:association, assoc_atom) do
-      nil ->
-        raise "Association :#{assoc_atom} not found on module #{module}"
+  # =============================================================================
+  # Field Query Building - Main Dispatcher
+  # =============================================================================
 
-      assoc ->
-        assoc.related
-    end
-  end
-
-  # Keep the existing build_field_query function for complex field operations
-  defp build_field_query(acc_query, module, binding, field, value, user_timezone, use_or) do
+  defp build_field_query(query, module, binding, field, value, ctx) do
     cond do
       field in [:_fields_diff, :_fields_sum] and is_list(value) ->
-        handle_fields_operation(acc_query, module, binding, field, value, user_timezone, use_or)
+        handle_fields_operation(query, module, binding, field, value, ctx)
 
       non_value?(value) ->
-        acc_query
+        query
 
       is_list(value) ->
-        handle_list_value(acc_query, module, binding, field, value, user_timezone, use_or)
+        handle_list_value(query, module, binding, field, value, ctx)
 
       true ->
-        handle_single_value(acc_query, module, binding, field, value, user_timezone, use_or)
+        handle_single_value(query, module, binding, field, value, ctx)
     end
   end
 
-  # Treat these values as "blank" for filter and association-join purposes
-  defp non_value?(value) do
-    case value do
-      nil ->
-        true
+  # =============================================================================
+  # Single Value Handling
+  # =============================================================================
 
-      "" ->
-        true
+  defp handle_single_value(query, module, binding, field, value, ctx) do
+    condition =
+      if exact_type_field?(module, field) do
+        dynamic(
+          [{^binding, r}],
+          field(r, ^field) == ^convert_value_to_field(module, field, value, ctx.user_timezone)
+        )
+      else
+        dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^("%#{value}%")))
+      end
 
-      [] ->
-        true
+    if ctx.use_or do
+      from(r in query, or_where: ^condition)
+    else
+      from(r in query, where: ^condition)
+    end
+  end
 
-      -1 ->
-        true
+  # =============================================================================
+  # List Value Handling
+  # =============================================================================
 
-      "-1" ->
-        true
+  defp handle_list_value(query, module, binding, field, value, ctx) do
+    filtered = Enum.reject(value, &non_value?/1)
+    if filtered == [], do: query, else: do_handle_list_value(query, module, binding, field, value, ctx)
+  end
 
-      list when is_list(list) ->
-        # Check if list only contains non-values
-        Enum.all?(list, &non_value?/1)
+  defp do_handle_list_value(query, module, binding, field, value, ctx) do
+    {keyword, values} = extract_list_keyword(value)
+
+    if values == [] and keyword not in ["not_empty", "empty"] do
+      query
+    else
+      apply_list_keyword(query, module, binding, field, keyword, values, ctx)
+    end
+  end
+
+  defp extract_list_keyword(value) do
+    last = List.last(value)
+
+    if is_binary(last) and last in @list_keywords do
+      {last, Enum.drop(value, -1)}
+    else
+      {nil, value}
+    end
+  end
+
+  defp apply_list_keyword(query, module, binding, field, keyword, values, ctx) do
+    case keyword do
+      # Range operations
+      "range" ->
+        apply_range(query, module, binding, field, values, ctx, false)
+
+      "not_range" ->
+        apply_range(query, module, binding, field, values, ctx, true)
+
+      # Temporal operations
+      k when k in @temporal_keywords ->
+        apply_temporal(query, module, binding, field, k, values, ctx)
+
+      # Empty checks
+      "not_empty" ->
+        from(r in query,
+          where: fragment("? IS NOT NULL OR ? != ''", field(r, ^field), field(r, ^field))
+        )
+
+      "empty" ->
+        from(r in query,
+          where: fragment("? IS NULL OR ? = ''", field(r, ^field), field(r, ^field))
+        )
+
+      # Match operations - dispatch to unified handler
+      _ ->
+        condition = build_match_condition(binding, module, field, keyword, values, ctx.user_timezone)
+        from(r in query, where: ^condition)
+    end
+  end
+
+  # =============================================================================
+  # Match Condition Builder (and/or/exact/not variants)
+  # =============================================================================
+
+  defp build_match_condition(binding, module, field, keyword, values, user_timezone) do
+    is_exact = exact_type_field?(module, field)
+
+    case keyword do
+      "exact" -> build_exact_single(binding, module, field, values, user_timezone)
+      "exact_or" -> build_multi_match(binding, module, field, values, user_timezone, :or, :exact)
+      "exact_and" -> build_multi_match(binding, module, field, values, user_timezone, :and, :exact)
+      "exact_not" -> build_not_match(binding, module, field, values, user_timezone, :exact)
+      "or" -> build_multi_match(binding, module, field, values, user_timezone, :or, if(is_exact, do: :exact, else: :ilike))
+      "and" -> build_multi_match(binding, module, field, values, user_timezone, :and, if(is_exact, do: :exact, else: :ilike))
+      "not" -> build_not_match(binding, module, field, values, user_timezone, if(is_exact, do: :exact, else: :ilike))
+      _ -> build_multi_match(binding, module, field, values, user_timezone, :and, if(is_exact, do: :exact, else: :ilike))
+    end
+  end
+
+  defp build_exact_single(binding, module, field, values, user_timezone) do
+    case values do
+      [nil] ->
+        dynamic([{^binding, r}], is_nil(field(r, ^field)))
+
+      [v] ->
+        converted = convert_value_to_field(module, field, v, user_timezone)
+        dynamic([{^binding, r}], field(r, ^field) == ^converted)
 
       _ ->
-        false
+        dynamic(true)
     end
   end
 
-  # Remove association-based filters (like {field, assoc}) whose value is blank
-  defp drop_blank_assoc_filters(filters) when is_map(filters) do
-    filters
-    |> Enum.reject(fn
-      # Remove association-based filters with blank values
-      {{_field, _assoc}, value} -> non_value?(value)
-      # Remove regular field filters with blank values
-      {_field, value} -> non_value?(value)
+  defp build_multi_match(binding, module, field, values, user_timezone, combinator, match_type) do
+    base = if combinator == :or, do: dynamic(false), else: dynamic(true)
+
+    Enum.reduce(values, base, fn v, acc ->
+      cond do
+        is_nil(v) -> acc
+        match_type == :exact ->
+          converted = convert_value_to_field(module, field, v, user_timezone)
+          condition = dynamic([{^binding, r}], field(r, ^field) == ^converted)
+          combine_dynamic(acc, condition, combinator, binding)
+        true ->
+          pattern = "%#{v}%"
+          condition = dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^pattern))
+          combine_dynamic(acc, condition, combinator, binding)
+      end
     end)
-    |> Enum.into(%{})
   end
 
-  # Helper functions for specific field operations (keeping the existing complex logic)
-  defp handle_fields_operation(acc_query, module, binding, field, value, user_timezone, use_or) do
-    # Keep existing _fields_diff and _fields_sum logic
+  defp build_not_match(binding, module, field, values, user_timezone, match_type) do
+    if match_type == :exact do
+      build_exact_not(binding, module, field, values, user_timezone)
+    else
+      build_ilike_not(binding, module, field, values)
+    end
+  end
+
+  defp build_exact_not(binding, module, field, values, user_timezone) do
+    converted = Enum.map(values, &convert_value_to_field(module, field, &1, user_timezone))
+    has_nil? = Enum.any?(converted, &is_nil/1)
+    non_nils = converted |> Enum.reject(&is_nil/1) |> Enum.uniq()
+
+    cond do
+      has_nil? and non_nils == [] ->
+        dynamic([{^binding, r}], not is_nil(field(r, ^field)))
+
+      has_nil? ->
+        dynamic([{^binding, r}], not is_nil(field(r, ^field)) and field(r, ^field) not in ^non_nils)
+
+      non_nils != [] ->
+        dynamic([{^binding, r}], field(r, ^field) not in ^non_nils)
+
+      true ->
+        dynamic(true)
+    end
+  end
+
+  defp build_ilike_not(binding, _module, field, values) do
+    {dyn, has_nil?} =
+      Enum.reduce(values, {dynamic(true), false}, fn v, {acc, nil_flag} ->
+        cond do
+          is_nil(v) -> {acc, true}
+          true ->
+            pattern = "%#{v}%"
+            new_acc = dynamic([{^binding, r}], ^acc and not fragment("? ILIKE ?", field(r, ^field), ^pattern))
+            {new_acc, nil_flag}
+        end
+      end)
+
+    if has_nil? do
+      dynamic([{^binding, r}], ^dyn and not is_nil(field(r, ^field)))
+    else
+      dyn
+    end
+  end
+
+  defp combine_dynamic(acc, condition, :or, binding) do
+    dynamic([{^binding, _r}], ^acc or ^condition)
+  end
+
+  defp combine_dynamic(acc, condition, :and, binding) do
+    dynamic([{^binding, _r}], ^acc and ^condition)
+  end
+
+  # =============================================================================
+  # Range Operations
+  # =============================================================================
+
+  defp apply_range(query, module, binding, field, values, ctx, negate?) do
+    if length(values) != 2 do
+      query
+    else
+      [v1, v2] = values
+      low = convert_value_to_field(module, field, v1, ctx.user_timezone)
+      high = handle_datetime_range_end(module, field, v2, ctx.user_timezone)
+
+      condition =
+        if negate? do
+          dynamic([{^binding, r}], not fragment("? BETWEEN ? AND ?", field(r, ^field), ^low, ^high))
+        else
+          dynamic([{^binding, r}], fragment("? BETWEEN ? AND ?", field(r, ^field), ^low, ^high))
+        end
+
+      from(r in query, where: ^condition)
+    end
+  end
+
+  # =============================================================================
+  # Temporal Operations (after/before)
+  # =============================================================================
+
+  defp apply_temporal(query, module, binding, field, keyword, values, ctx) do
+    if length(values) != 1 do
+      query
+    else
+      value = List.first(values)
+
+      converted =
+        if keyword in ["before", "before_equal"] do
+          handle_datetime_range_end(module, field, value, ctx.user_timezone)
+        else
+          convert_value_to_field(module, field, value, ctx.user_timezone)
+        end
+
+      {op, frag} =
+        case keyword do
+          "after" -> {:gt, "? > ?"}
+          "after_equal" -> {:gte, "? >= ?"}
+          "before" -> {:lt, "? < ?"}
+          "before_equal" -> {:lte, "? <= ?"}
+        end
+
+      condition = dynamic([{^binding, r}], fragment(^frag, field(r, ^field), ^converted))
+      from(r in query, where: ^condition)
+    end
+  end
+
+  defp handle_datetime_range_end(module, field, value, user_timezone) do
+    converted = convert_value_to_field(module, field, value, user_timezone)
+
+    case detect_schema_field?(module, field) do
+      :utc_datetime -> Timex.set(converted, second: 59)
+      _ -> converted
+    end
+  end
+
+  # =============================================================================
+  # Fields Operations (_fields_diff, _fields_sum)
+  # =============================================================================
+
+  defp handle_fields_operation(query, module, binding, field, value, ctx) do
     allowed = ~w(after after_equal before before_equal equal range)
     last = List.last(value)
     has_comp = is_binary(last) and last in allowed
 
-    {comp, raw_vals} =
-      if has_comp do
-        {last, Enum.drop(value, -1)}
-      else
-        {"equal", value}
-      end
-
+    {comp, raw_vals} = if has_comp, do: {last, Enum.drop(value, -1)}, else: {"equal", value}
     {field_atoms, thresholds} = Enum.split_while(raw_vals, &is_atom/1)
 
-    cond do
-      field == :_fields_diff and length(field_atoms) < 2 ->
-        acc_query
+    valid? =
+      case field do
+        :_fields_diff -> length(field_atoms) >= 2
+        :_fields_sum -> field_atoms != []
+      end
 
-      field == :_fields_sum and field_atoms == [] ->
-        acc_query
+    if not valid? do
+      query
+    else
+      first_field = hd(field_atoms)
+      convert = fn v -> convert_value_to_field(module, first_field, v, ctx.user_timezone) end
 
-      true ->
-        first_field = hd(field_atoms)
-        convert = fn v -> convert_value_to_field(module, first_field, v, user_timezone) end
-
-        expr =
-          if field == :_fields_diff do
-            [a, b | _] = field_atoms
-            dynamic([{^binding, r}], field(r, ^a) - field(r, ^b))
-          else
-            Enum.reduce(field_atoms, dynamic([{^binding, r}], 0), fn f, acc ->
-              dynamic([{^binding, r}], ^acc + field(r, ^f))
-            end)
-          end
-
-        cond_dynamic = build_comparison_dynamic(binding, expr, comp, thresholds, convert)
-
-        if use_or do
-          from r in acc_query, or_where: ^cond_dynamic
+      expr =
+        if field == :_fields_diff do
+          [a, b | _] = field_atoms
+          dynamic([{^binding, r}], field(r, ^a) - field(r, ^b))
         else
-          from r in acc_query, where: ^cond_dynamic
+          Enum.reduce(field_atoms, dynamic([{^binding, r}], 0), fn f, acc ->
+            dynamic([{^binding, r}], ^acc + field(r, ^f))
+          end)
         end
+
+      cond_dynamic = build_comparison_dynamic(binding, expr, comp, thresholds, convert)
+
+      if ctx.use_or do
+        from(r in query, or_where: ^cond_dynamic)
+      else
+        from(r in query, where: ^cond_dynamic)
+      end
     end
   end
 
   defp build_comparison_dynamic(binding, expr, comp, thresholds, convert) do
     case comp do
-      "range" ->
-        if length(thresholds) >= 2 do
-          low = convert.(Enum.at(thresholds, 0))
-          high = convert.(Enum.at(thresholds, 1))
-          dynamic([{^binding, r}], ^expr >= ^low and ^expr <= ^high)
-        else
-          dynamic(true)
-        end
+      "range" when length(thresholds) >= 2 ->
+        low = convert.(Enum.at(thresholds, 0))
+        high = convert.(Enum.at(thresholds, 1))
+        dynamic([{^binding, r}], ^expr >= ^low and ^expr <= ^high)
 
       "after" ->
         th = convert.(List.first(thresholds) || 0)
@@ -702,402 +857,47 @@ defmodule Phoexnip.SearchUtils do
         th = convert.(List.first(thresholds) || 0)
         dynamic([{^binding, r}], ^expr <= ^th)
 
-      "equal" ->
+      _ ->
         th = convert.(List.first(thresholds) || 0)
         dynamic([{^binding, r}], ^expr == ^th)
     end
   end
 
-  defp handle_list_value(acc_query, module, binding, field, value, user_timezone, use_or) do
-    filtered_value = Enum.reject(value, &non_value?/1)
+  # =============================================================================
+  # Value Helpers
+  # =============================================================================
 
-    if filtered_value == [] do
-      acc_query
-    else
-      {keywords, values} = extract_list_keywords(value)
-
-      if values == [] do
-        acc_query
-      else
-        field_condition =
-          build_list_field_condition(binding, module, field, keywords, values, user_timezone)
-
-        apply_list_condition(
-          acc_query,
-          field_condition,
-          keywords,
-          values,
-          use_or,
-          module,
-          field,
-          binding,
-          user_timezone
-        )
-      end
+  defp non_value?(value) do
+    case value do
+      nil -> true
+      "" -> true
+      [] -> true
+      -1 -> true
+      "-1" -> true
+      list when is_list(list) -> Enum.all?(list, &non_value?/1)
+      _ -> false
     end
   end
 
-  defp extract_list_keywords(value) do
-    case List.last(value) do
-      "range" -> {"range", Enum.drop(value, -1)}
-      "not_range" -> {"not_range", Enum.drop(value, -1)}
-      "after" -> {"after", Enum.drop(value, -1)}
-      "after_equal" -> {"after_equal", Enum.drop(value, -1)}
-      "before" -> {"before", Enum.drop(value, -1)}
-      "before_equal" -> {"before_equal", Enum.drop(value, -1)}
-      "and" -> {"and", Enum.drop(value, -1)}
-      "or" -> {"or", Enum.drop(value, -1)}
-      "exact_and" -> {"exact_and", Enum.drop(value, -1)}
-      "exact_or" -> {"exact_or", Enum.drop(value, -1)}
-      "exact_not" -> {"exact_not", Enum.drop(value, -1)}
-      "not" -> {"not", Enum.drop(value, -1)}
-      _ -> {nil, value}
-    end
+  defp drop_blank_filters(filters) when is_map(filters) do
+    filters
+    |> Enum.reject(fn {_key, value} -> non_value?(value) end)
+    |> Enum.into(%{})
   end
 
-  defp build_list_field_condition(binding, module, field, keywords, values, user_timezone) do
-    cond do
-      keywords == "not_range" ->
-        build_not_range_condition(binding, module, field, values, user_timezone)
-
-      keywords == "not" ->
-        build_not_condition(binding, module, field, values, user_timezone)
-
-      keywords == "exact_not" ->
-        build_exact_not_condition(binding, module, field, values, user_timezone)
-
-      keywords == "or" ->
-        build_or_condition(binding, module, field, values, user_timezone)
-
-      keywords == "exact_or" ->
-        build_exact_or_condition(binding, module, field, values, user_timezone)
-
-      keywords == "exact_and" ->
-        build_exact_and_condition(binding, module, field, values, user_timezone)
-
-      true ->
-        build_and_condition(binding, module, field, values, user_timezone)
-    end
+  defp exact_type_field?(module, field) do
+    detect_schema_field?(module, field) in @exact_types
   end
 
-  defp build_not_range_condition(binding, module, field, values, user_timezone) do
-    if length(values) == 2 do
-      dynamic(
-        [{^binding, r}],
-        not fragment(
-          "? BETWEEN ? AND ?",
-          field(r, ^field),
-          ^convert_value_to_field(module, field, List.first(values), user_timezone),
-          ^handle_datetime_range_end(module, field, List.last(values), user_timezone)
-        )
-      )
-    else
-      dynamic(true)
-    end
-  end
+  # =============================================================================
+  # Public Utilities - Type Detection & Conversion
+  # =============================================================================
 
-  defp build_not_condition(binding, module, field, values, user_timezone) do
-    if length(values) == 1 and is_exact_type_field?(module, field) do
-      dynamic(
-        [{^binding, r}],
-        field(r, ^field) !=
-          ^convert_value_to_field(module, field, List.first(values), user_timezone)
-      )
-    else
-      if is_exact_type_field?(module, field) do
-        converted_values =
-          Enum.map(values, fn v ->
-            convert_value_to_field(module, field, v, user_timezone)
-          end)
-
-        dynamic([{^binding, r}], field(r, ^field) not in ^converted_values)
-      else
-        Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
-          dynamic(
-            [{^binding, r}],
-            ^dyn_acc and
-              not fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(v) <> "%"))
-          )
-        end)
-      end
-    end
-  end
-
-  defp build_exact_not_condition(binding, module, field, values, user_timezone) do
-    if is_exact_type_field?(module, field) do
-      converted_values =
-        Enum.map(values, fn v ->
-          convert_value_to_field(module, field, v, user_timezone)
-        end)
-
-      dynamic([{^binding, r}], field(r, ^field) not in ^converted_values)
-    else
-      # Force exact match exclusion for string fields
-      Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc and field(r, ^field) != ^v
-        )
-      end)
-    end
-  end
-
-  defp build_or_condition(binding, module, field, values, user_timezone) do
-    Enum.reduce(values, dynamic(false), fn v, dyn_acc ->
-      if is_exact_type_field?(module, field) do
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc or field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
-        )
-      else
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc or fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(v) <> "%"))
-        )
-      end
-    end)
-  end
-
-  defp build_exact_or_condition(binding, module, field, values, user_timezone) do
-    Enum.reduce(values, dynamic(false), fn v, dyn_acc ->
-      if is_exact_type_field?(module, field) do
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc or field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
-        )
-      else
-        # Force exact match for string fields
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc or field(r, ^field) == ^v
-        )
-      end
-    end)
-  end
-
-  defp build_and_condition(binding, module, field, values, user_timezone) do
-    Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
-      if is_exact_type_field?(module, field) do
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc and
-            field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
-        )
-      else
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc and fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(v) <> "%"))
-        )
-      end
-    end)
-  end
-
-  defp build_exact_and_condition(binding, module, field, values, user_timezone) do
-    Enum.reduce(values, dynamic(true), fn v, dyn_acc ->
-      if is_exact_type_field?(module, field) do
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc and
-            field(r, ^field) == ^convert_value_to_field(module, field, v, user_timezone)
-        )
-      else
-        # Force exact match for string fields
-        dynamic(
-          [{^binding, r}],
-          ^dyn_acc and field(r, ^field) == ^v
-        )
-      end
-    end)
-  end
-
-  defp apply_list_condition(
-         acc_query,
-         field_condition,
-         keywords,
-         values,
-         use_or,
-         module,
-         field,
-         binding,
-         user_timezone
-       ) do
-    case keywords do
-      "not_range" ->
-        if length(values) == 2 do
-          from r in acc_query, where: ^field_condition
-        else
-          acc_query
-        end
-
-      "not" ->
-        from r in acc_query, where: ^field_condition
-
-      "exact_not" ->
-        from r in acc_query, where: ^field_condition
-
-      "range" ->
-        apply_range_condition(acc_query, values, module, field, binding, user_timezone)
-
-      keyword when keyword in ["after", "after_equal", "before", "before_equal"] ->
-        apply_temporal_condition(
-          acc_query,
-          keyword,
-          values,
-          module,
-          field,
-          binding,
-          user_timezone
-        )
-
-      "or" ->
-        from r in acc_query, where: ^field_condition
-
-      "exact_or" ->
-        from r in acc_query, where: ^field_condition
-
-      "and" ->
-        from r in acc_query, where: ^field_condition
-
-      "exact_and" ->
-        from r in acc_query, where: ^field_condition
-
-      _ ->
-        if use_or do
-          from r in acc_query, or_where: ^field_condition
-        else
-          from r in acc_query, where: ^field_condition
-        end
-    end
-  end
-
-  defp apply_range_condition(acc_query, values, module, field, binding, user_timezone) do
-    if length(values) == 2 do
-      from [{^binding, r}] in acc_query,
-        where:
-          fragment(
-            "? BETWEEN ? AND ?",
-            field(r, ^field),
-            ^convert_value_to_field(module, field, List.first(values), user_timezone),
-            ^handle_datetime_range_end(module, field, List.last(values), user_timezone)
-          )
-    else
-      acc_query
-    end
-  end
-
-  defp apply_temporal_condition(acc_query, keyword, values, module, field, binding, user_timezone) do
-    case keyword do
-      "after" ->
-        if length(values) == 1 do
-          from [{^binding, r}] in acc_query,
-            where:
-              fragment(
-                "? > ?",
-                field(r, ^field),
-                ^convert_value_to_field(module, field, List.first(values), user_timezone)
-              )
-        else
-          acc_query
-        end
-
-      "after_equal" ->
-        if length(values) == 1 do
-          from [{^binding, r}] in acc_query,
-            where:
-              fragment(
-                "? >= ?",
-                field(r, ^field),
-                ^convert_value_to_field(module, field, List.first(values), user_timezone)
-              )
-        else
-          acc_query
-        end
-
-      "before" ->
-        if length(values) == 1 do
-          from [{^binding, r}] in acc_query,
-            where:
-              fragment(
-                "? < ?",
-                field(r, ^field),
-                ^handle_datetime_range_end(module, field, List.first(values), user_timezone)
-              )
-        else
-          acc_query
-        end
-
-      "before_equal" ->
-        if length(values) == 1 do
-          from [{^binding, r}] in acc_query,
-            where:
-              fragment(
-                "? <= ?",
-                field(r, ^field),
-                ^handle_datetime_range_end(module, field, List.first(values), user_timezone)
-              )
-        else
-          acc_query
-        end
-
-      _ ->
-        acc_query
-    end
-  end
-
-  defp handle_single_value(acc_query, module, binding, field, value, user_timezone, use_or) do
-    single_condition = build_single_value_condition(binding, module, field, value, user_timezone)
-
-    if use_or do
-      from r in acc_query, or_where: ^single_condition
-    else
-      from r in acc_query, where: ^single_condition
-    end
-  end
-
-  defp build_single_value_condition(binding, module, field, value, user_timezone) do
-    if is_exact_type_field?(module, field) do
-      dynamic(
-        [{^binding, r}],
-        field(r, ^field) == ^convert_value_to_field(module, field, value, user_timezone)
-      )
-    else
-      dynamic(
-        [{^binding, r}],
-        fragment("? ILIKE ?", field(r, ^field), ^("%" <> to_string(value) <> "%"))
-      )
-    end
-  end
-
-  # Helper functions for field type checking
-  defp is_exact_type_field?(module, field) do
-    detect_schema_field?(module, field) in [
-      :integer,
-      :float,
-      :decimal,
-      :date,
-      :utc_datetime,
-      :boolean,
-      :id
-    ]
-  end
-
-  defp handle_datetime_range_end(module, field, value, user_timezone) do
-    case detect_schema_field?(module, field) do
-      :utc_datetime ->
-        Timex.set(convert_value_to_field(module, field, value, user_timezone), second: 59)
-
-      _ ->
-        convert_value_to_field(module, field, value, user_timezone)
-    end
-  end
-
-  # Keep all existing utility functions unchanged
   @spec detect_schema_field?(schema :: module(), field :: atom()) :: atom() | nil
   def detect_schema_field?(schema, field) do
     schema.__schema__(:type, field)
   end
 
-  # Keep existing convert_value_to_field function unchanged
   @spec convert_value_to_field(
           module :: module(),
           field :: atom(),
@@ -1116,141 +916,123 @@ defmodule Phoexnip.SearchUtils do
           | map()
           | nil
   def convert_value_to_field(module, field, value, user_timezone \\ "Etc/UTC") do
-    case detect_schema_field?(module, field) do
-      # Date conversion
-      :date ->
-        cond do
-          is_struct(value, Date) ->
-            value
+    type = detect_schema_field?(module, field)
+    do_convert_value(type, value, user_timezone)
+  end
 
-          is_binary(value) and String.trim(value) != "" ->
-            case Date.from_iso8601(value) do
-              {:ok, d} -> d
-              _ -> nil
-            end
-
-          true ->
-            nil
-        end
-
-      # UTC DateTime conversion
-      :utc_datetime ->
-        cond do
-          is_struct(value, DateTime) ->
-            DateTime.shift_zone!(value, "Etc/UTC")
-
-          is_struct(value, NaiveDateTime) ->
-            value
-            |> DateTime.from_naive!(user_timezone)
-            |> DateTime.shift_zone!("Etc/UTC")
-
-          is_binary(value) and String.trim(value) != "" ->
-            value
-            |> Phoexnip.DateUtils.ensure_datetime_format()
-            |> Timex.parse("{ISO:Extended}")
-            |> case do
-              {:ok, dt} ->
-                Timex.to_datetime(dt, user_timezone)
-                |> DateTime.shift_zone!("Etc/UTC")
-
-              _ ->
-                nil
-            end
-
-          true ->
-            nil
-        end
-
-      # Naive DateTime conversion
-      :naive_datetime ->
-        cond do
-          is_struct(value, NaiveDateTime) ->
-            value
-
-          is_binary(value) and String.trim(value) != "" ->
-            case NaiveDateTime.from_iso8601(value) do
-              {:ok, ndt} -> ndt
-              _ -> nil
-            end
-
-          true ->
-            nil
-        end
-
-      # Time conversion
-      :time ->
-        cond do
-          is_struct(value, Time) ->
-            value
-
-          is_binary(value) and String.trim(value) != "" ->
-            case Time.from_iso8601(value) do
-              {:ok, t} -> t
-              _ -> nil
-            end
-
-          true ->
-            nil
-        end
-
-      # Integer conversion
-      :integer when is_binary(value) ->
-        case Integer.parse(value) do
-          {int, _} -> int
+  defp do_convert_value(:date, value, _tz) do
+    cond do
+      is_struct(value, Date) -> value
+      is_binary(value) and String.trim(value) != "" ->
+        case Date.from_iso8601(value) do
+          {:ok, d} -> d
           _ -> nil
         end
-
-      # Float conversion
-      :float when is_binary(value) ->
-        case Float.parse(value) do
-          {flt, _} -> flt
-          _ -> nil
-        end
-
-      # Decimal conversion
-      :decimal when is_binary(value) ->
-        case Decimal.parse(value) do
-          {dec, _} -> dec
-          _ -> nil
-        end
-
-      :decimal when is_number(value) ->
-        Decimal.new(to_string(value))
-
-      # Boolean conversion
-      :boolean ->
-        cond do
-          is_boolean(value) ->
-            value
-
-          is_binary(value) ->
-            case String.downcase(String.trim(value)) do
-              "true" -> true
-              "false" -> false
-              _ -> nil
-            end
-
-          true ->
-            nil
-        end
-
-      # String conversion
-      :string ->
-        if is_binary(value), do: value, else: to_string(value)
-
-      # For binary fields, leave as is if already a binary
-      :binary ->
-        if is_binary(value), do: value, else: value
-
-      # For map fields, assume value is already a map (or leave unchanged)
-      :map ->
-        if is_map(value), do: value, else: value
-
-      # Catch-all: return the value unmodified
-      _ ->
-        value
+      true -> nil
     end
   end
+
+  defp do_convert_value(:utc_datetime, value, user_timezone) do
+    cond do
+      is_struct(value, DateTime) ->
+        DateTime.shift_zone!(value, "Etc/UTC")
+
+      is_struct(value, NaiveDateTime) ->
+        value
+        |> DateTime.from_naive!(user_timezone)
+        |> DateTime.shift_zone!("Etc/UTC")
+
+      is_binary(value) and String.trim(value) != "" ->
+        value
+        |> Phoexnip.DateUtils.ensure_datetime_format()
+        |> Timex.parse("{ISO:Extended}")
+        |> case do
+          {:ok, dt} ->
+            Timex.to_datetime(dt, user_timezone)
+            |> DateTime.shift_zone!("Etc/UTC")
+
+          _ ->
+            nil
+        end
+
+      true ->
+        nil
+    end
+  end
+
+  defp do_convert_value(:naive_datetime, value, _tz) do
+    cond do
+      is_struct(value, NaiveDateTime) -> value
+      is_binary(value) and String.trim(value) != "" ->
+        case NaiveDateTime.from_iso8601(value) do
+          {:ok, ndt} -> ndt
+          _ -> nil
+        end
+      true -> nil
+    end
+  end
+
+  defp do_convert_value(:time, value, _tz) do
+    cond do
+      is_struct(value, Time) -> value
+      is_binary(value) and String.trim(value) != "" ->
+        case Time.from_iso8601(value) do
+          {:ok, t} -> t
+          _ -> nil
+        end
+      true -> nil
+    end
+  end
+
+  defp do_convert_value(:integer, value, _tz) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, _} -> int
+      _ -> nil
+    end
+  end
+
+  defp do_convert_value(:float, value, _tz) when is_binary(value) do
+    case Float.parse(value) do
+      {flt, _} -> flt
+      _ -> nil
+    end
+  end
+
+  defp do_convert_value(:decimal, value, _tz) when is_binary(value) do
+    case Decimal.parse(value) do
+      {dec, _} -> dec
+      _ -> nil
+    end
+  end
+
+  defp do_convert_value(:decimal, value, _tz) when is_number(value) do
+    Decimal.new(to_string(value))
+  end
+
+  defp do_convert_value(:boolean, value, _tz) do
+    cond do
+      is_boolean(value) -> value
+      is_binary(value) ->
+        case String.downcase(String.trim(value)) do
+          "true" -> true
+          "false" -> false
+          _ -> nil
+        end
+      true -> nil
+    end
+  end
+
+  defp do_convert_value(:string, value, _tz) do
+    if is_binary(value), do: value, else: to_string(value)
+  end
+
+  defp do_convert_value(:binary, value, _tz), do: value
+  defp do_convert_value(:map, value, _tz), do: value
+  defp do_convert_value(_, value, _tz), do: value
+
+  # =============================================================================
+  # Public Utilities - Association Loading
+  # =============================================================================
 
   @spec ensure_loaded_associations(
           schema :: Ecto.Schema.t(),
@@ -1262,16 +1044,8 @@ defmodule Phoexnip.SearchUtils do
     |> Enum.reduce(schema, fn {key, value}, acc ->
       case value do
         %Ecto.Association.NotLoaded{} ->
-          # If specific preloads are provided, only preload those
-          preloads_to_load =
-            if preloads == [] or key in preloads do
-              [key]
-            else
-              []
-            end
-
-          if preloads_to_load != [] do
-            Repo.preload(acc, preloads_to_load)
+          if preloads == [] or key in preloads do
+            Repo.preload(acc, [key])
           else
             acc
           end
@@ -1282,20 +1056,28 @@ defmodule Phoexnip.SearchUtils do
     end)
   end
 
+  # =============================================================================
+  # Public Utilities - Date Helpers
+  # =============================================================================
+
   @spec construct_date_map(
           from_date :: String.t() | nil,
           to_date :: String.t() | nil,
-          key :: atom()
+          key :: atom() | String.t()
         ) :: %{optional(atom()) => [String.t()]}
+  def construct_date_map(from_date, to_date, key) when is_binary(key) do
+    construct_date_map(from_date, to_date, String.to_existing_atom(key))
+  end
+
   def construct_date_map(from_date, to_date, key) when is_atom(key) do
     cond do
       from_date not in ["", nil] and to_date not in ["", nil] ->
         %{key => [from_date, to_date, "range"]}
 
-      from_date not in ["", nil] and to_date in ["", nil] ->
+      from_date not in ["", nil] ->
         %{key => [from_date, "after_equal"]}
 
-      from_date in ["", nil] and to_date not in ["", nil] ->
+      to_date not in ["", nil] ->
         %{key => [to_date, "before_equal"]}
 
       true ->
@@ -1303,28 +1085,16 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  @spec construct_date_map(
-          from_date :: String.t() | nil,
-          to_date :: String.t() | nil,
-          key :: String.t()
-        ) :: %{optional(atom()) => [String.t()]}
-  def construct_date_map(from_date, to_date, key) when is_binary(key) do
-    construct_date_map(from_date, to_date, String.to_existing_atom(key))
-  end
-
-  @spec construct_date_list(
-          from_date :: String.t() | nil,
-          to_date :: String.t() | nil
-        ) :: [String.t()]
+  @spec construct_date_list(from_date :: String.t() | nil, to_date :: String.t() | nil) :: [String.t()]
   def construct_date_list(from_date, to_date) do
     cond do
       from_date not in ["", nil] and to_date not in ["", nil] ->
         [from_date, to_date, "range"]
 
-      from_date not in ["", nil] and to_date in ["", nil] ->
+      from_date not in ["", nil] ->
         [from_date, "after_equal"]
 
-      from_date in ["", nil] and to_date not in ["", nil] ->
+      to_date not in ["", nil] ->
         [to_date, "before_equal"]
 
       true ->
@@ -1332,16 +1102,15 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  @spec extract_square_bracket_from_string(
-          id :: String.t(),
-          at :: non_neg_integer()
-        ) :: String.t() | nil
+  # =============================================================================
+  # Public Utilities - String Helpers
+  # =============================================================================
+
+  @spec extract_square_bracket_from_string(id :: String.t(), at :: non_neg_integer()) :: String.t() | nil
   def extract_square_bracket_from_string(id, at) do
     regex = ~r/\[([^\]]*)\]/
 
-    matches = Regex.scan(regex, id)
-
-    case Enum.at(matches, at) do
+    case Enum.at(Regex.scan(regex, id), at) do
       [_, ""] -> nil
       [_, val] -> val
       nil -> nil
