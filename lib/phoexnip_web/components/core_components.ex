@@ -577,12 +577,14 @@ defmodule PhoexnipWeb.CoreComponents do
     <div phx-feedback-for={@name} class={@class}>
       <label class={
         [
-          "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground bg-surface flex items-center justify-between px-3",
+          "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
           "phx-no-feedback:border-muted",
-          # Hover border - show primary color on hover regardless of checked state
-          "hover:border-themePrimary",
+          if(@disabled,
+            do: "bg-disabledSurface cursor-not-allowed",
+            else: "bg-surface hover:border-themePrimary"
+          ),
           @errors != [] && "border-danger",
-          @errors == [] && ((@checked && "border-muted") || "border-muted")
+          @errors == [] && "border-muted"
         ]
       }>
         <input type="hidden" name={@name} value="false" />

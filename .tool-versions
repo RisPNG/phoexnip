@@ -1,6 +1,6 @@
 age 1.2.1
-elixir 1.18.4-otp-28
-erlang 28.0.3
-node 24.7.0
-postgres 17.6
-sops 3.10.2
+elixir 1.19.4-otp-28
+erlang 28.2
+node 25.2.1
+postgres 18.1
+sops 3.11.0

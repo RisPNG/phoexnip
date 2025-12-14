@@ -1,89 +1,65 @@
 # Phoexnip
 
-An opinionated Phoenix + LiveView template with authentication, roles/permissions, Swagger API docs, and a handful of utilities (job scheduler, audit logs, mailer, etc.). Use this as a starting point for new apps.
-
-## Requirements
-
-- Elixir/Erlang (see `.tool-versions` or `mise.toml` if present)
-- PostgreSQL 14+
-- Node.js 18+ (for assets)
-
-You can manage versions with `asdf` or `mise` if you prefer. The project includes Mix aliases to streamline common tasks.
-
-## Quick Start
-
-1) Install dependencies and set up the database
+## Development Setup
 
 ```bash
-mix deps.get
-mix ecto.setup
-cd assets && npm install && cd -
+sudo apt purge erlang* elixir* postgres*
+mise install
+mise use --global $(awk '{printf "%s@%s ",$1,$2}' .tool-versions)
+
+rm -rf ~/.local/share/postgres/data
+mkdir -p ~/.local/share/postgres/data
+initdb -D ~/.local/share/postgres/data --username=postgres --auth-local=trust --auth-host=md5
+grep -qxF 'export PGHOST=/tmp/' ~/.bashrc || echo 'export PGHOST=/tmp/' >> ~/.bashrc
+eval export PGHOST=/tmp/
+source ~/.bashrc
+mkdir -p ~/.config/autostart/ && echo -e "[Desktop Entry]\nType=Application\nExec=bash -c \"mise exec -- pg_ctl -D ~/.local/share/postgres/data -l ~/logfile start\"\nHidden=false\nNoDisplay=false\nX-GNOME-Autostart-enabled=true\nName=Start Postgres" > ~/.config/autostart/postgres-startup.desktop
+mise exec -- pg_ctl -D ~/.local/share/postgres/data -l ~/logfile start
+psql -U postgres -c "SET password_encryption = 'scram-sha-256';"
+psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+mix reset.hard
 ```
 
-2) Run the server
+* Run ``mix phx.server`` to start the server at [`localhost:4000`](http://localhost:4000) for your browser.
+
+### Updating mise.toml
+
+Specify the new versions in mise.toml:
+
+* Open the terminal in the repository directory and run the following command to set your global environment to follow the mise.toml:
 
 ```bash
-mix phx.server
+mise use --global $(awk '{printf "%s@%s ",$1,$2}' mise.toml)
 ```
 
-App runs at `http://localhost:4000`.
+* Run the following in order **only if** `postgres` version is updated in terminal to re-init / migrate the database for the new version:
 
-## Common Tasks
+```bash
+mkdir -p ~/.local/share/pg/dumps
+pg_dumpall -U postgres > ~/.local/share/pg/dumps/$(date +%Y%m%d%H%M).sql
 
-- Setup everything: `mix setup`
-- Reset DB: `mix ecto.reset`
-- Run tests: `mix test`
-- Build assets: `mix assets.build`
-- Deploy assets: `mix assets.deploy`
+pg_ctl -D ~/.local/share/postgres/data -l ~/logfile stop
+rm -rf ~/.local/share/postgres/data
+mkdir -p ~/.local/share/postgres/data
+initdb -D ~/.local/share/postgres/data --username=postgres --auth-local=trust --auth-host=md5
+pg_ctl -D ~/.local/share/postgres/data -l ~/logfile start -o "-k /tmp"
+psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
-See `mix.exs` for additional aliases such as `assets.rebuild` and `reset.*`.
+psql -U postgres -f $(ls -1t ~/.local/share/pg/dumps/*.sql | head -1)
+```
 
-## Configuration
+* You can continue with the development normally.
 
-- Environment-specific config is in `config/*.exs`.
-- Swagger host is configured via `config/runtime.exs` under `:phoexnip, :swagger_host`.
-- Update mailer, storage, and URLs per environment as needed.
+### Renaming the project
 
-## API Docs (Swagger)
-
-- Swagger UI is available at `/api/v1/swagger/` when configured.
-- Security: API endpoints expect an `x-api-key` header where required.
-
-## Auth, Roles, and Permissions
-
-- Authentication utilities live under `lib/phoexnip_web/user_auth.ex` and `lib/phoexnip/utils/authentication_utils.ex`.
-- Roles/permissions are under `lib/phoexnip/settings/roles/*`.
-
-## Schedulers
-
-- Quantum-based scheduler is configured under `:phoexnip, Phoexnip.JobSchedulers`.
-- Add or manage jobs in config files; see `lib/phoexnip/job_scheduler/*`.
-
-## Code Quality
-
-- Security scanning: `mix sobelow` (dev/test only)
-- Dialyzer: configured in `mix.exs` (may require PLTs build)
-- Docs: `mix docs` (outputs to `doc/`)
-
-## Contributing
-
-- Follow existing code style and module documentation patterns.
-- Update or add module docs (`@moduledoc`/`@doc`) when changing behavior.
-
-## Notes
-
-This repository was generalized from an internal project. Any brand- or environment-specific references are intentionally removed from documentation; if you find one in code or UI strings, feel free to update it to suit your deployment.
-
-## Development Workflow
-
-1. Create a new branch from the latest master with ``git switch -c <YOUR NEW FEATURE/UPDATE>``. Commit to this branch as you please.
-2. Once you feel confident this features or update go to our gitlab and create a merge request. Ensure we squash commits to keep the master branch clean. And write a proper commit message summarizing all your changes.
-3. When approved, you are allowed to merge it to master.
-
-To approve a request the reviewer has to do the following
-
-1. Test the feature / update.
-2. Check if any documentation is updated if nessasry (techincal or user manual using Scribe)
-3. Ensure the API and Swagger documentation are updated if required.
-4. Check if any new tests are updated / added and make sure they succeed.
-5. Ensure the CI/CD pipeline successed any fails is an automatic non approved.
+```bash
+sudo ack -l Phoexnip | xargs sudo sed -i -e "s/Phoexnip/Projectname/g"
+sudo ack -l phoexnip | xargs sudo sed -i -e "s/phoexnip/projectname/g"
+sudo mv lib/phoexnip lib/projectname
+sudo mv lib/phoexnip.ex lib/projectname.ex
+sudo mv lib/phoexnip_web lib/projectname_web
+sudo mv lib/phoexnip_web.ex lib/projectname_web.ex
+sudo mv test/phoexnip test/projectname
+sudo mv test/phoexnip_web test/projectname_web
+```

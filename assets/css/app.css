@@ -3,8 +3,6 @@
 @import "tailwindcss/utilities";
 @import "./flatpickr.css";
 
-
-
 /* Theme variables: central control for app colors */
 :root {
   /* Main colors */
@@ -43,6 +41,12 @@
   --color-warn-border: #eab308ff;
   --color-warn-bg: #fef3c7ff;
   --color-warn-fg: #854d0eff;
+
+  /* Brand + shared effects */
+  --color-brand: #fd4f00ff;
+  --color-shadow-soft: rgba(0, 0, 0, 0.2);
+  --color-shadow-strong: rgba(0, 0, 0, 0.3);
+  --color-highlight-soft: rgba(255, 255, 255, 0.3);
 }
 
 /* Scrollbar (Global) */
@@ -107,12 +111,20 @@ input[type="date"] {
 body {
   background: var(--color-page);
   color: var(--color-foreground) !important;
-  font-family: Noto Sans, Ubuntu, Arial, sans-serif;
+  font-family:
+    Noto Sans,
+    Ubuntu,
+    Arial,
+    sans-serif;
 }
 
 @keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .animate-fade-out {
@@ -248,7 +260,7 @@ input.input-checkbox {
 /* Checked state: success bg + inline SVG check */
 input.input-checkbox:checked {
   background-color: var(--color-success);
-  background-image: url('/images/check.svg');
+  background-image: url("/images/check.svg");
   background-repeat: no-repeat;
   background-position: center;
 }
@@ -399,7 +411,7 @@ input.input-checkbox:focus {
 
 /* Styles for tag mode Live Select tags group */
 [id^="live-select"] > div:has(.flex) {
- margin-top: 0.25rem;
+  margin-top: 0.25rem;
 }
 
 /* Styles for tag mode Live Select individual tags */
@@ -555,7 +567,7 @@ button[phx-click="clear"] {
 }
 
 /* to make the empty search headers not bold. */
-.py-2.px-4.border-b{
+.py-2.px-4.border-b {
   font-weight: normal;
 }
 

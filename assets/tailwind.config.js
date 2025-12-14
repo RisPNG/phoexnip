@@ -25,7 +25,7 @@ module.exports = {
       colors: {
         // Keep default palettes available
         primary: colors.blue,
-        brand: "#fd4f00ff",
+        brand: "var(--color-brand)",
 
         // Semantic theme tokens backed by 8-digit hex CSS variables
         page: "var(--color-page)",
