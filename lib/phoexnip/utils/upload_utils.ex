@@ -22,7 +22,6 @@ defmodule Phoexnip.UploadUtils do
 
     * `image_for/2` – Pick a URL or default based on an object’s `image` or `image_url`.
     * `fetch_image_for_by_object_identifier/2` – Lookup a user/machine/product by ID and return its image URL or default.
-    * `attachment_for/2` – Return a product’s `attachment` or `""`.
     * `detect_mime_type/1` – Inspect the first bytes to map to an extension/mIME.
     * `validate_mime_type/2` – Check that a binary’s detected type is allowed.
     * `read_file/2` – Read and return file bytes only if its type (or ZIP for `.xlsx`) is permitted.
@@ -134,37 +133,6 @@ defmodule Phoexnip.UploadUtils do
         else
           "/images/default-user.png"
         end
-    end
-  end
-
-  @doc """
-  Returns the attachment for a product object, or an empty string if none is present.
-
-  ## Parameters
-
-    * `object` — a map/struct (or `nil`) that may contain an `:attachment` field.
-    * `type` — one of `"product"` or any other type. Defaults to `"product"`.
-
-  ## Behavior
-
-    * If `type` is `"product"` and `object.attachment` is neither `nil` nor an empty string, returns `object.attachment`.
-    * Otherwise, returns an empty string.
-
-  ## Returns
-
-    * A `String.t()` containing the attachment or `""`.
-  """
-  @spec attachment_for(
-          object :: nil,
-          type :: String.t()
-        ) :: String.t()
-  def attachment_for(object \\ nil, type \\ nil) do
-    cond do
-      type == "" and object.attachment not in ["", nil] ->
-        ""
-
-      true ->
-        ""
     end
   end
 

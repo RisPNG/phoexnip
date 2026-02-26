@@ -575,18 +575,16 @@ defmodule PhoexnipWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
-      <label class={
-        [
-          "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
-          "phx-no-feedback:border-muted",
-          if(@disabled,
-            do: "bg-disabledSurface cursor-not-allowed",
-            else: "bg-surface hover:border-themePrimary"
-          ),
-          @errors != [] && "border-danger",
-          @errors == [] && "border-muted"
-        ]
-      }>
+      <label class={[
+        "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
+        "phx-no-feedback:border-muted",
+        if(@disabled,
+          do: "bg-disabledSurface cursor-not-allowed",
+          else: "bg-surface hover:border-themePrimary"
+        ),
+        @errors != [] && "border-danger",
+        @errors == [] && "border-muted"
+      ]}>
         <input type="hidden" name={@name} value="false" />
         <span class="flex items-center gap-2">
           <.icon :if={@icon} name={@icon} class="h-5 w-5" />

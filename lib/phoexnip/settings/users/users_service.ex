@@ -15,6 +15,12 @@ defmodule Phoexnip.Users.UserService do
     * Retrieve and decrypt credentials (`get_credentials/1`, `decrypt_credentials/1`, `update_nike_acs_credentails/2`)
   """
 
+  @dialyzer {:nowarn_function,
+             user_email_multi: 3,
+             update_user_password: 3,
+             confirm_user_multi: 1,
+             reset_user_password: 2}
+
   import Ecto.Query, warn: false
   alias Phoexnip.Repo
   alias Phoexnip.Users.{User, UserToken, UserNotifier}

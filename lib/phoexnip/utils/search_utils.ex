@@ -1,45 +1,11 @@
 defmodule Phoexnip.SearchUtils do
   @moduledoc """
-  Dynamic query builder and helper functions for flexible Ecto searches.
-
-  Provides:
-
-    * **`search/1`** – construct and execute an Ecto query from a map of filters (`args`),
-      with support for:
-        - scalar and list filters (with "range", "before/after", "and"/"or" modifiers),
-        - nested OR groups (`:_or`, `:_multi_or`),
-        - pagination (`page`/`per_page`) or unpaged results,
-        - ordering by multiple fields and directions, including association fields,
-        - automatic dropping of sensitive params,
-        - timezone‑aware parsing for date and datetime filters,
-        - optional association preloading (all or selected),
-      returning a map with `:entries`, `:page_number`, `:page_size`, `:total_entries`, and `:total_pages`.
-
-    * **`detect_schema_field?/2`** – introspect an Ecto schema to get the type of a given field.
-
-    * **`convert_value_to_field/4`** – convert arbitrary input (string, struct) into the appropriate
-      Ecto type (date, datetime, integer, float, decimal, boolean, etc.), applying the user's timezone
-      when parsing.
-
-    * **`ensure_loaded_associations/2`** – preload any not‑loaded associations on a schema struct,
-      either all or a specified subset.
-
-    * **`construct_date_map/3`** and **`construct_date_list/2`** – helpers to build "range",
-      "after_equal", or "before_equal" filters for date queries.
-
-    * **`extract_square_bracket_from_string/2`** – pull out the Nth "[…]" segment from a string.
-
-  These utilities centralize and standardize how we build, execute, and post‑process complex search
-  queries across the application, ensuring consistent filtering, pagination, and type safety.
+  TBA
   """
   import Ecto.Query, warn: false
 
   alias Phoexnip.Repo
   alias Phoexnip.ImportUtils
-
-  # =============================================================================
-  # Module Attributes / Constants
-  # =============================================================================
 
   @sensitive_fields [:hashed_password, :password, :current_password, :password_confirmation]
 
@@ -49,122 +15,8 @@ defmodule Phoexnip.SearchUtils do
 
   @temporal_keywords ~w(after after_equal before before_equal)
 
-  # =============================================================================
-  # Public API - search/1
-  # =============================================================================
-
   @doc """
-  ## Parameters
-
-  * `args` (`%{field => value}`) – filters to apply.
-    • Scalars become `WHERE field ILIKE '%value%'` for string‐like types, or `field == value` for numeric/date/boolean fields.
-    • Lists may carry a trailing keyword (`"range"`, `"after"`, `"after_equal"`, `"before"`, `"before_equal"`, `"and"`, `"or"`) to control comparison logic.
-    * Special keys:
-      - `:_or`       – map of field→value to OR together at the top level
-      - `:_multi_or` – list of maps; each map's filters are ANDed together, then ORed with the others
-
-  * `pagination` (`%{page: integer, per_page: integer}` or any other map) –
-    If it includes `:page` and `:per_page`, returns a paged result; otherwise returns all matches.
-
-  * `module` (`Ecto.Schema` module) – the schema to query.
-
-  * `use_or` (`boolean`) – when `true`, list filters default to OR rather than AND (for un‐keyworded lists).
-
-  * `drop_args` (`[atom]`) – additional keys to remove from `args` (beyond default sensitive fields) before filtering.
-
-  * `order_by` (`atom() | [atom()] | [{atom(), :asc | :desc}]`) – field(s) to sort by.
-    - Single atom: `order_by: :name`
-    - Multiple fields with same direction: `order_by: [:name, :created_at]`
-    - Multiple fields with different directions: `order_by: [{:name, :asc}, {:created_at, :desc}]`
-    - Association fields: `order_by: :supplier_code@purchase_order` or `order_by: [:supplier_code@purchase_order, :number@purchase_order]`
-
-  * `user_timezone` (`String.t`) – timezone for converting string inputs to `:date`/`:utc_datetime` (default `"Etc/UTC"`).
-
-  * `preload` (`true | false | [] | [assoc | {assoc, opts}]`) –
-    - `true` preloads **all** associations via `ImportUtils.preload_all(module)`,
-    - a non-empty list preloads only those associations,
-    - `false` or `[]` means no preloading.
-
-  * `order_method` (`:asc | :desc`) – sort direction when `order_by` is a single atom or list of atoms (default `:asc`).
-
-  ## Description
-
-  * **Field Filters**
-    - Scalars → simple equality or ILIKE
-    - Lists → range, before/after, AND/OR combinators
-    - Nested grouping via `:_or` and `:_multi_or`
-
-  * **Pagination & Ordering**
-    - Page results via `page`/`per_page` or return all entries
-    - Sort by multiple fields with individual directions
-    - Support for ordering by association fields
-
-  * **Argument Sanitization**
-    - Drops `[:hashed_password, :password, :current_password, :password_confirmation]` plus any in `drop_args`
-    - Base64-decodes values via `/1`
-
-  * **Timezone Handling**
-    - Converts string inputs to date/datetime in `user_timezone`
-
-  * **Associations Preload**
-    - `true` → all associations
-    - list → specified only
-    - `false`/`[]` → none
-
-  ## Return
-
-  A map with:
-
-  * `:entries`       – list of `%module{}` structs (preloaded if requested)
-  * `:page_number`   – current page (always `1` if unpaged)
-  * `:page_size`     – number of entries returned
-  * `:total_entries` – total matching rows
-  * `:total_pages`   – total pages (≥ 1)
-
-  ## Examples
-
-  ```elixir
-  # Basic ILIKE filter with pagination
-  SearchUtils.search(
-    module: MyApp.Customer,
-    args: %{name: "Acme"},
-    pagination: %{page: 2, per_page: 25}
-  )
-
-  # Range filters, OR groups, and custom ordering
-  SearchUtils.search(
-    module: MyApp.Invoice,
-    args: %{
-      issued_at: ["2023-01-01", "2023-01-31", "range"],
-      status: ["paid", "overdue", "or"],
-      _or: %{reference: "INV-", notes: "priority"}
-    },
-    order_by: [{:issued_at, :desc}]
-  )
-
-  # Association ordering with selective preloading
-  SearchUtils.search(
-    module: MyApp.Order,
-    args: %{status: "active"},
-    preload: [:supplier, line_items: :product],
-    order_by: [
-      {:supplier_code@purchase_order, :asc},
-      {:total_amount, :desc}
-    ]
-  )
-
-  # Multi-OR groups with list filters
-  SearchUtils.search(
-    module: MyApp.Product,
-    args: %{
-      _multi_or: [
-        %{category: "hardware", tags: ["server", "networking", "or"]},
-        %{category: "software", price: ["100", "200", "range"]}
-      ]
-    },
-    use_or: true
-  )
-  ```
+  TBA
   """
   @spec search(
           opts :: [
@@ -216,10 +68,6 @@ defmodule Phoexnip.SearchUtils do
     execute_query(final_query, count_query, pagination, preload, module)
   end
 
-  # =============================================================================
-  # Argument Parsing
-  # =============================================================================
-
   defp clean_and_parse_args(args, drop_args) do
     args
     |> Map.drop(@sensitive_fields ++ drop_args)
@@ -238,10 +86,6 @@ defmodule Phoexnip.SearchUtils do
       end
     end)
   end
-
-  # =============================================================================
-  # Order By Normalization
-  # =============================================================================
 
   defp normalize_order_by(order_by, default_method) do
     case order_by do
@@ -262,10 +106,6 @@ defmodule Phoexnip.SearchUtils do
         [{:id, default_method}]
     end
   end
-
-  # =============================================================================
-  # Filter Application - Regular Filters
-  # =============================================================================
 
   defp apply_filters(filters, query, ctx) do
     Enum.reduce(filters, {query, MapSet.new()}, fn filter, {acc_query, joined} ->
@@ -293,10 +133,6 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # Filter Application - OR Filters
-  # =============================================================================
-
   defp apply_or_filters(nil, query, joined, _ctx), do: {query, joined}
 
   defp apply_or_filters(or_filters, query, joined, ctx) do
@@ -310,10 +146,6 @@ defmodule Phoexnip.SearchUtils do
       {from(r in query, where: ^or_dynamic), joined}
     end
   end
-
-  # =============================================================================
-  # Filter Application - Multi-OR Filters
-  # =============================================================================
 
   defp apply_multi_or_filters(nil, query, joined, _ctx), do: {query, joined}
 
@@ -335,10 +167,6 @@ defmodule Phoexnip.SearchUtils do
       {from(r in query, where: ^or_dynamic), joined}
     end
   end
-
-  # =============================================================================
-  # Association Handling
-  # =============================================================================
 
   defp ensure_association_joined(query, assoc, joined) do
     if MapSet.member?(joined, assoc) do
@@ -374,24 +202,25 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # Dynamic Query Builders - OR/Multi-OR
-  # =============================================================================
-
   defp build_or_dynamic(filters, ctx) do
     Enum.reduce(filters, dynamic(false), fn filter, acc ->
       case filter do
-        {{field, assoc}, value} when not non_value?(value) ->
-          assoc_module = get_assoc_module(ctx.module, assoc)
-          comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
-          dynamic([p], ^acc or ^comp)
+        {{field, assoc}, value} ->
+          if non_value?(value) do
+            acc
+          else
+            assoc_module = get_assoc_module(ctx.module, assoc)
+            comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
+            dynamic([p], ^acc or ^comp)
+          end
 
-        {field, value} when not non_value?(value) ->
-          comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
-          dynamic([p], ^acc or ^comp)
-
-        _ ->
-          acc
+        {field, value} ->
+          if non_value?(value) do
+            acc
+          else
+            comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
+            dynamic([p], ^acc or ^comp)
+          end
       end
     end)
   end
@@ -406,17 +235,22 @@ defmodule Phoexnip.SearchUtils do
   defp build_group_and_dynamic(group, ctx) do
     Enum.reduce(group, dynamic(true), fn filter, and_acc ->
       case filter do
-        {{field, assoc}, value} when not non_value?(value) ->
-          assoc_module = get_assoc_module(ctx.module, assoc)
-          comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
-          dynamic([p], ^and_acc and ^comp)
+        {{field, assoc}, value} ->
+          if non_value?(value) do
+            and_acc
+          else
+            assoc_module = get_assoc_module(ctx.module, assoc)
+            comp = build_field_condition(assoc_module, assoc, field, value, ctx.user_timezone)
+            dynamic([p], ^and_acc and ^comp)
+          end
 
-        {field, value} when not non_value?(value) ->
-          comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
-          dynamic([p], ^and_acc and ^comp)
-
-        _ ->
-          and_acc
+        {field, value} ->
+          if non_value?(value) do
+            and_acc
+          else
+            comp = build_field_condition(ctx.module, :p, field, value, ctx.user_timezone)
+            dynamic([p], ^and_acc and ^comp)
+          end
       end
     end)
   end
@@ -430,19 +264,16 @@ defmodule Phoexnip.SearchUtils do
     else
       dynamic(
         [{^binding, a}],
-        fragment("? ILIKE ?", field(a, ^field), ^("%#{value}%"))
+        fragment("? ILIKE ?", field(a, ^field), ^"%#{value}%")
       )
     end
   end
 
-  # =============================================================================
-  # Query Preparation & Ordering
-  # =============================================================================
-
   defp prepare_final_query(query, joined, order_by_list) do
     # Ensure associations needed for ordering are joined
     {query, _joined} =
-      Enum.reduce(order_by_list, {query, joined}, fn {order_by, _method}, {acc_query, acc_joined} ->
+      Enum.reduce(order_by_list, {query, joined}, fn {order_by, _method},
+                                                     {acc_query, acc_joined} ->
         order_str = to_string(order_by)
 
         if String.contains?(order_str, "@") do
@@ -473,10 +304,6 @@ defmodule Phoexnip.SearchUtils do
     final_query = from(q in query, order_by: ^order_clauses)
     {final_query, query}
   end
-
-  # =============================================================================
-  # Query Execution & Pagination
-  # =============================================================================
 
   defp execute_query(final_query, count_query, pagination, preload, module) do
     case pagination do
@@ -520,10 +347,6 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # Field Query Building - Main Dispatcher
-  # =============================================================================
-
   defp build_field_query(query, module, binding, field, value, ctx) do
     cond do
       field in [:_fields_diff, :_fields_sum] and is_list(value) ->
@@ -540,10 +363,6 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # Single Value Handling
-  # =============================================================================
-
   defp handle_single_value(query, module, binding, field, value, ctx) do
     condition =
       if exact_type_field?(module, field) do
@@ -552,7 +371,7 @@ defmodule Phoexnip.SearchUtils do
           field(r, ^field) == ^convert_value_to_field(module, field, value, ctx.user_timezone)
         )
       else
-        dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^("%#{value}%")))
+        dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^"%#{value}%"))
       end
 
     if ctx.use_or do
@@ -562,13 +381,12 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # List Value Handling
-  # =============================================================================
-
   defp handle_list_value(query, module, binding, field, value, ctx) do
     filtered = Enum.reject(value, &non_value?/1)
-    if filtered == [], do: query, else: do_handle_list_value(query, module, binding, field, value, ctx)
+
+    if filtered == [],
+      do: query,
+      else: do_handle_list_value(query, module, binding, field, value, ctx)
   end
 
   defp do_handle_list_value(query, module, binding, field, value, ctx) do
@@ -617,27 +435,71 @@ defmodule Phoexnip.SearchUtils do
 
       # Match operations - dispatch to unified handler
       _ ->
-        condition = build_match_condition(binding, module, field, keyword, values, ctx.user_timezone)
+        condition =
+          build_match_condition(binding, module, field, keyword, values, ctx.user_timezone)
+
         from(r in query, where: ^condition)
     end
   end
-
-  # =============================================================================
-  # Match Condition Builder (and/or/exact/not variants)
-  # =============================================================================
 
   defp build_match_condition(binding, module, field, keyword, values, user_timezone) do
     is_exact = exact_type_field?(module, field)
 
     case keyword do
-      "exact" -> build_exact_single(binding, module, field, values, user_timezone)
-      "exact_or" -> build_multi_match(binding, module, field, values, user_timezone, :or, :exact)
-      "exact_and" -> build_multi_match(binding, module, field, values, user_timezone, :and, :exact)
-      "exact_not" -> build_not_match(binding, module, field, values, user_timezone, :exact)
-      "or" -> build_multi_match(binding, module, field, values, user_timezone, :or, if(is_exact, do: :exact, else: :ilike))
-      "and" -> build_multi_match(binding, module, field, values, user_timezone, :and, if(is_exact, do: :exact, else: :ilike))
-      "not" -> build_not_match(binding, module, field, values, user_timezone, if(is_exact, do: :exact, else: :ilike))
-      _ -> build_multi_match(binding, module, field, values, user_timezone, :and, if(is_exact, do: :exact, else: :ilike))
+      "exact" ->
+        build_exact_single(binding, module, field, values, user_timezone)
+
+      "exact_or" ->
+        build_multi_match(binding, module, field, values, user_timezone, :or, :exact)
+
+      "exact_and" ->
+        build_multi_match(binding, module, field, values, user_timezone, :and, :exact)
+
+      "exact_not" ->
+        build_not_match(binding, module, field, values, user_timezone, :exact)
+
+      "or" ->
+        build_multi_match(
+          binding,
+          module,
+          field,
+          values,
+          user_timezone,
+          :or,
+          if(is_exact, do: :exact, else: :ilike)
+        )
+
+      "and" ->
+        build_multi_match(
+          binding,
+          module,
+          field,
+          values,
+          user_timezone,
+          :and,
+          if(is_exact, do: :exact, else: :ilike)
+        )
+
+      "not" ->
+        build_not_match(
+          binding,
+          module,
+          field,
+          values,
+          user_timezone,
+          if(is_exact, do: :exact, else: :ilike)
+        )
+
+      _ ->
+        build_multi_match(
+          binding,
+          module,
+          field,
+          values,
+          user_timezone,
+          :and,
+          if(is_exact, do: :exact, else: :ilike)
+        )
     end
   end
 
@@ -660,11 +522,14 @@ defmodule Phoexnip.SearchUtils do
 
     Enum.reduce(values, base, fn v, acc ->
       cond do
-        is_nil(v) -> acc
+        is_nil(v) ->
+          acc
+
         match_type == :exact ->
           converted = convert_value_to_field(module, field, v, user_timezone)
           condition = dynamic([{^binding, r}], field(r, ^field) == ^converted)
           combine_dynamic(acc, condition, combinator, binding)
+
         true ->
           pattern = "%#{v}%"
           condition = dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^pattern))
@@ -691,7 +556,10 @@ defmodule Phoexnip.SearchUtils do
         dynamic([{^binding, r}], not is_nil(field(r, ^field)))
 
       has_nil? ->
-        dynamic([{^binding, r}], not is_nil(field(r, ^field)) and field(r, ^field) not in ^non_nils)
+        dynamic(
+          [{^binding, r}],
+          not is_nil(field(r, ^field)) and field(r, ^field) not in ^non_nils
+        )
 
       non_nils != [] ->
         dynamic([{^binding, r}], field(r, ^field) not in ^non_nils)
@@ -705,10 +573,18 @@ defmodule Phoexnip.SearchUtils do
     {dyn, has_nil?} =
       Enum.reduce(values, {dynamic(true), false}, fn v, {acc, nil_flag} ->
         cond do
-          is_nil(v) -> {acc, true}
+          is_nil(v) ->
+            {acc, true}
+
           true ->
             pattern = "%#{v}%"
-            new_acc = dynamic([{^binding, r}], ^acc and not fragment("? ILIKE ?", field(r, ^field), ^pattern))
+
+            new_acc =
+              dynamic(
+                [{^binding, r}],
+                ^acc and not fragment("? ILIKE ?", field(r, ^field), ^pattern)
+              )
+
             {new_acc, nil_flag}
         end
       end)
@@ -728,10 +604,6 @@ defmodule Phoexnip.SearchUtils do
     dynamic([{^binding, _r}], ^acc and ^condition)
   end
 
-  # =============================================================================
-  # Range Operations
-  # =============================================================================
-
   defp apply_range(query, module, binding, field, values, ctx, negate?) do
     if length(values) != 2 do
       query
@@ -742,7 +614,10 @@ defmodule Phoexnip.SearchUtils do
 
       condition =
         if negate? do
-          dynamic([{^binding, r}], not fragment("? BETWEEN ? AND ?", field(r, ^field), ^low, ^high))
+          dynamic(
+            [{^binding, r}],
+            not fragment("? BETWEEN ? AND ?", field(r, ^field), ^low, ^high)
+          )
         else
           dynamic([{^binding, r}], fragment("? BETWEEN ? AND ?", field(r, ^field), ^low, ^high))
         end
@@ -750,10 +625,6 @@ defmodule Phoexnip.SearchUtils do
       from(r in query, where: ^condition)
     end
   end
-
-  # =============================================================================
-  # Temporal Operations (after/before)
-  # =============================================================================
 
   defp apply_temporal(query, module, binding, field, keyword, values, ctx) do
     if length(values) != 1 do
@@ -768,15 +639,21 @@ defmodule Phoexnip.SearchUtils do
           convert_value_to_field(module, field, value, ctx.user_timezone)
         end
 
-      {op, frag} =
+      condition =
         case keyword do
-          "after" -> {:gt, "? > ?"}
-          "after_equal" -> {:gte, "? >= ?"}
-          "before" -> {:lt, "? < ?"}
-          "before_equal" -> {:lte, "? <= ?"}
+          "after" ->
+            dynamic([{^binding, r}], field(r, ^field) > ^converted)
+
+          "after_equal" ->
+            dynamic([{^binding, r}], field(r, ^field) >= ^converted)
+
+          "before" ->
+            dynamic([{^binding, r}], field(r, ^field) < ^converted)
+
+          "before_equal" ->
+            dynamic([{^binding, r}], field(r, ^field) <= ^converted)
         end
 
-      condition = dynamic([{^binding, r}], fragment(^frag, field(r, ^field), ^converted))
       from(r in query, where: ^condition)
     end
   end
@@ -789,10 +666,6 @@ defmodule Phoexnip.SearchUtils do
       _ -> converted
     end
   end
-
-  # =============================================================================
-  # Fields Operations (_fields_diff, _fields_sum)
-  # =============================================================================
 
   defp handle_fields_operation(query, module, binding, field, value, ctx) do
     allowed = ~w(after after_equal before before_equal equal range)
@@ -863,10 +736,6 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  # =============================================================================
-  # Value Helpers
-  # =============================================================================
-
   defp non_value?(value) do
     case value do
       nil -> true
@@ -888,10 +757,6 @@ defmodule Phoexnip.SearchUtils do
   defp exact_type_field?(module, field) do
     detect_schema_field?(module, field) in @exact_types
   end
-
-  # =============================================================================
-  # Public Utilities - Type Detection & Conversion
-  # =============================================================================
 
   @spec detect_schema_field?(schema :: module(), field :: atom()) :: atom() | nil
   def detect_schema_field?(schema, field) do
@@ -922,13 +787,17 @@ defmodule Phoexnip.SearchUtils do
 
   defp do_convert_value(:date, value, _tz) do
     cond do
-      is_struct(value, Date) -> value
+      is_struct(value, Date) ->
+        value
+
       is_binary(value) and String.trim(value) != "" ->
         case Date.from_iso8601(value) do
           {:ok, d} -> d
           _ -> nil
         end
-      true -> nil
+
+      true ->
+        nil
     end
   end
 
@@ -962,25 +831,33 @@ defmodule Phoexnip.SearchUtils do
 
   defp do_convert_value(:naive_datetime, value, _tz) do
     cond do
-      is_struct(value, NaiveDateTime) -> value
+      is_struct(value, NaiveDateTime) ->
+        value
+
       is_binary(value) and String.trim(value) != "" ->
         case NaiveDateTime.from_iso8601(value) do
           {:ok, ndt} -> ndt
           _ -> nil
         end
-      true -> nil
+
+      true ->
+        nil
     end
   end
 
   defp do_convert_value(:time, value, _tz) do
     cond do
-      is_struct(value, Time) -> value
+      is_struct(value, Time) ->
+        value
+
       is_binary(value) and String.trim(value) != "" ->
         case Time.from_iso8601(value) do
           {:ok, t} -> t
           _ -> nil
         end
-      true -> nil
+
+      true ->
+        nil
     end
   end
 
@@ -1011,14 +888,18 @@ defmodule Phoexnip.SearchUtils do
 
   defp do_convert_value(:boolean, value, _tz) do
     cond do
-      is_boolean(value) -> value
+      is_boolean(value) ->
+        value
+
       is_binary(value) ->
         case String.downcase(String.trim(value)) do
           "true" -> true
           "false" -> false
           _ -> nil
         end
-      true -> nil
+
+      true ->
+        nil
     end
   end
 
@@ -1029,10 +910,6 @@ defmodule Phoexnip.SearchUtils do
   defp do_convert_value(:binary, value, _tz), do: value
   defp do_convert_value(:map, value, _tz), do: value
   defp do_convert_value(_, value, _tz), do: value
-
-  # =============================================================================
-  # Public Utilities - Association Loading
-  # =============================================================================
 
   @spec ensure_loaded_associations(
           schema :: Ecto.Schema.t(),
@@ -1055,10 +932,6 @@ defmodule Phoexnip.SearchUtils do
       end
     end)
   end
-
-  # =============================================================================
-  # Public Utilities - Date Helpers
-  # =============================================================================
 
   @spec construct_date_map(
           from_date :: String.t() | nil,
@@ -1085,7 +958,9 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  @spec construct_date_list(from_date :: String.t() | nil, to_date :: String.t() | nil) :: [String.t()]
+  @spec construct_date_list(from_date :: String.t() | nil, to_date :: String.t() | nil) :: [
+          String.t()
+        ]
   def construct_date_list(from_date, to_date) do
     cond do
       from_date not in ["", nil] and to_date not in ["", nil] ->
@@ -1099,21 +974,6 @@ defmodule Phoexnip.SearchUtils do
 
       true ->
         []
-    end
-  end
-
-  # =============================================================================
-  # Public Utilities - String Helpers
-  # =============================================================================
-
-  @spec extract_square_bracket_from_string(id :: String.t(), at :: non_neg_integer()) :: String.t() | nil
-  def extract_square_bracket_from_string(id, at) do
-    regex = ~r/\[([^\]]*)\]/
-
-    case Enum.at(Regex.scan(regex, id), at) do
-      [_, ""] -> nil
-      [_, val] -> val
-      nil -> nil
     end
   end
 end
