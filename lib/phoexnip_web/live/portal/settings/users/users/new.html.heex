@@ -69,8 +69,7 @@
           field={f[:email]}
           type="text"
           label="Email"
-          class={if @user_id > 0, do: "readonly", else: ""}
-          readonly={if @user_id > 0, do: true, else: false}
+          render_as={if @user_id > 0, do: "like-disabled", else: "enabled"}
         />
         <.input field={f[:phone]} type="text" label="Phone" class="mt-4" />
         <div class="mt-4">

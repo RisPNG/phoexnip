@@ -356,7 +356,6 @@ input.input-checkbox:focus {
   pointer-events: none;
 }
 
-/* Styles for all Live Select input */
 [id^="live-"] input {
   @apply bg-surface border-2 border-muted rounded-lg;
   color: var(--color-foreground);
@@ -368,73 +367,6 @@ input.input-checkbox:focus {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   position: inherit;
-  min-height: 44px;
-}
-
-[id^="live-"] > div.flex.flex-wrap.gap-1.p-1 {
-  padding: 0;
-}
-
-/* Styles for all Live Select on focus */
-[id^="live-"] input:focus {
-  @apply border-2 border-themePrimary;
-}
-
-/* Styles for all Live Select dropdown */
-[id^="live-"] > ul {
-  position: absolute;
-  top: 2.7rem;
-  /* Add a small offset so the dropdown clears the input */
-  margin-top: 0.5rem;
-  max-height: 150px;
-  overflow-y: auto;
-  background-color: var(--color-surface);
-  @apply border border-muted;
-  color: var(--color-foreground);
-}
-
-/* Styles for all Live Select dropdown on hover */
-[id^="live-"] > ul > li div:hover,
-[id^="live-"] > ul > li div:focus {
-  @apply bg-themePrimary;
-}
-
-/* Styles for all Live Select remove button */
-[id^="live-"] svg {
-  fill: var(--color-danger);
-}
-
-/* Styles for all Live Select remove button on hover */
-[id^="live-"] svg:hover {
-  fill: var(--color-danger-dark);
-}
-
-/* Styles for tag mode Live Select tags group */
-[id^="live-select"] > div:has(.flex) {
-  margin-top: 0.25rem;
-}
-
-/* Styles for tag mode Live Select individual tags */
-[id^="live-select"] > div:has(.flex) div {
-  background-color: var(--color-page);
-  color: var(--color-foreground);
-  border: 1px solid var(--color-border-strong);
-}
-
-/* Styles for single mode Live Select */
-[id^="live-single-select"] {
-  height: auto !important;
-}
-
-/* Live select disabled */
-[phx-hook="LiveSelect"] input[disabled] {
-  background-color: var(--color-disabled-surface) !important;
-  color: var(--color-foreground);
-  cursor: not-allowed;
-}
-
-.single-mode {
-  top: inherit !important;
 }
 
 .no-label-margin div input,
