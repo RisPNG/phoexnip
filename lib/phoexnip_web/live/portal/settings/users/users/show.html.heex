@@ -86,7 +86,7 @@
     </div>
 
     <div class="w-full title">User Roles</div>
-    <div class="w-full flex-wrap grid grid-cols-4 gap-1 items-center">
+    <div class="w-full flex-wrap grid grid-cols-6 gap-2 items-center">
       <.inputs_for :let={item_f} field={f[:user_roles]}>
         <div class="mb-8">
           <.input class="hidden" field={item_f[:role_name]} type="text" />
@@ -95,7 +95,7 @@
             type="checkbox"
             field={item_f[:belongs_in_role]}
             label={item_f[:role_name].value}
-            disabled="true"
+            render_as="disabled"
             value={item_f.params["belongs_in_role"]}
           />
         </div>

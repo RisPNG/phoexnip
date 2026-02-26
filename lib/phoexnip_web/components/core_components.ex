@@ -553,11 +553,45 @@ defmodule PhoexnipWeb.CoreComponents do
   attr :parent, :string, default: ""
   attr :disabled, :string, default: nil
 
+  # Make sure to align this with valid_assigns in LiveSelect.Component module
+  # deps/live_select/lib/live_select/component.ex
+  @live_select_rest_global (if Code.ensure_loaded?(LiveSelect.Component) do
+                              LiveSelect.Component.default_opts()
+                              |> Keyword.keys()
+                              |> Kernel.++([
+                                :field,
+                                :id,
+                                :options,
+                                :"phx-target",
+                                :"phx-blur",
+                                :"phx-focus",
+                                :option,
+                                :tag,
+                                :clear_button,
+                                :hide_dropdown,
+                                :value_mapper,
+                                :form
+                              ])
+                            else
+                              []
+                            end)
   attr :rest, :global,
-    include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
-                 multiple pattern placeholder readonly required rows size step tabindex)
+    include:
+      ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
+                 multiple pattern placeholder readonly required rows size step tabindex) ++
+        (@live_select_rest_global |> Enum.map(&Atom.to_string/1))
 
   slot :inner_block
+
+  attr :render_as, :string,
+    default: "enabled",
+    values: ~w(enabled disabled like-enabled like-disabled hidden hidden-enabled hidden-disabled),
+    doc: "- enabled: displays the input normally.
+  - disabled: displays a span that visually looks like a disabled input without the input field to save performance, values will not persist under normal circumstances.
+  - like-enabled: displays a span that visually looks like an enabled input without the input field to save performance, values will not persist under normal circumstances.
+  - like-disabled: displays a span that visually looks like a disabled input with the input field hidden.
+  - hidden / hidden-enabled: hides the input field.
+  - hidden-disabled: don't render the input field."
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
     assigns
@@ -576,49 +610,157 @@ defmodule PhoexnipWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
-      <label class={[
-        "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
-        "phx-no-feedback:border-muted",
-        if(@disabled,
-          do: "bg-disabledSurface cursor-not-allowed",
-          else: "bg-surface hover:border-themePrimary"
-        ),
-        @errors != [] && "border-danger",
-        @errors == [] && "border-muted"
-      ]}>
-        <input type="hidden" name={@name} value="false" />
-        <span class="flex items-center gap-2">
-          <.icon :if={@icon} name={@icon} class="h-5 w-5" />
-          {@label}
-        </span>
-        <input
-          type="checkbox"
-          id={@id}
-          name={@name}
-          disabled={@disabled}
-          value="true"
-          checked={@checked}
-          class={
-            [
-              "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-pointer focus:ring-0 focus:outline-none",
-              # Hover states - only apply when NOT checked
-              "hover:!bg-surface focus:!bg-surface",
-              "focus:!border-2",
-              # Checked states - override hover/focus
-              "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
-              # Keep checked styles even when hovering/focusing
-              "checked:hover:!bg-success checked:focus:!bg-success",
-              "checked:hover:!border-success checked:focus:!border-success",
-              @errors != [] &&
-                "border-danger focus:!border-danger checked:hover:!border-success checked:focus:!border-success",
-              @errors == [] &&
-                ((@checked && "border-success focus:!border-success") ||
-                   "border-muted focus:!border-muted")
-            ]
-          }
-          {@rest}
-        />
-      </label>
+      <%= case @render_as do %>
+        <% render_as when render_as in ["enabled", "hidden", "hidden-enabled"] -> %>
+          <input type="hidden" name={@name} value="false" />
+          <label class={[
+            "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
+            "phx-no-feedback:border-muted",
+            if(@disabled,
+              do: "bg-disabledSurface cursor-not-allowed",
+              else: "bg-surface hover:border-themePrimary"
+            ),
+            @errors != [] && "border-danger",
+            @errors == [] && "border-muted",
+            render_as in ["hidden", "hidden-enabled"] && "hidden"
+          ]}>
+            <span class="flex items-center gap-2">
+              <.icon :if={@icon} name={@icon} class="h-5 w-5" />
+              {@label}
+            </span>
+            <input
+              type="checkbox"
+              id={@id}
+              name={@name}
+              disabled={@disabled}
+              value="true"
+              checked={@checked}
+              class={
+                [
+                  "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-pointer focus:ring-0 focus:outline-none",
+                  # Hover states - only apply when NOT checked
+                  "hover:!bg-surface focus:!bg-surface",
+                  "focus:!border-2",
+                  # Checked states - override hover/focus
+                  "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
+                  # Keep checked styles even when hovering/focusing
+                  "checked:hover:!bg-success checked:focus:!bg-success",
+                  "checked:hover:!border-success checked:focus:!border-success",
+                  @errors != [] &&
+                    "border-danger focus:!border-danger checked:hover:!border-success checked:focus:!border-success",
+                  @errors == [] &&
+                    ((@checked && "border-success focus:!border-success") ||
+                       "border-muted focus:!border-muted")
+                ]
+              }
+              {@rest}
+            />
+          </label>
+        <% "like-disabled" -> %>
+          <input type="hidden" name={@name} value="false" />
+          <label class={[
+            "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
+            "phx-no-feedback:border-muted",
+            "bg-disabledSurface cursor-not-allowed",
+            "border-muted"
+          ]}>
+            <span class="flex items-center gap-2">
+              <.icon :if={@icon} name={@icon} class="h-5 w-5" />
+              {@label}
+            </span>
+            <input
+              type="checkbox"
+              id={@id}
+              name={@name}
+              disabled={@disabled}
+              value="true"
+              checked={@checked}
+              class={
+                [
+                  "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-not-allowed focus:ring-0 focus:outline-none",
+                  # Hover states - only apply when NOT checked
+                  "hover:!bg-surface focus:!bg-surface",
+                  "focus:!border-2",
+                  # Checked states - override hover/focus
+                  "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
+                  # Keep checked styles even when hovering/focusing
+                  "checked:hover:!bg-success checked:focus:!bg-success",
+                  "checked:hover:!border-success checked:focus:!border-success"
+                ]
+              }
+              {@rest}
+            />
+          </label>
+        <% "disabled" -> %>
+          <label class={[
+            "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
+            "phx-no-feedback:border-muted",
+            "bg-disabledSurface cursor-not-allowed",
+            "border-muted"
+          ]}>
+            <span class="flex items-center gap-2">
+              <.icon :if={@icon} name={@icon} class="h-5 w-5" />
+              {@label}
+            </span>
+            <input
+              type="checkbox"
+              id={@id}
+              name={@name}
+              disabled={@disabled}
+              value="true"
+              checked={@checked}
+              class={
+                [
+                  "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-not-allowed focus:ring-0 focus:outline-none",
+                  # Hover states - only apply when NOT checked
+                  "hover:!bg-surface focus:!bg-surface",
+                  "focus:!border-2",
+                  # Checked states - override hover/focus
+                  "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
+                  # Keep checked styles even when hovering/focusing
+                  "checked:hover:!bg-success checked:focus:!bg-success",
+                  "checked:hover:!border-success checked:focus:!border-success"
+                ]
+              }
+              {@rest}
+            />
+          </label>
+        <% "like-enabled" -> %>
+          <label class={[
+            "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
+            "phx-no-feedback:border-muted",
+            "bg-surface hover:border-themePrimary",
+            "border-muted cursor-pointer"
+          ]}>
+            <span class="flex items-center gap-2">
+              <.icon :if={@icon} name={@icon} class="h-5 w-5" />
+              {@label}
+            </span>
+            <span
+              type="checkbox"
+              id={@id}
+              name={@name}
+              disabled={@disabled}
+              value="true"
+              checked={@checked}
+              class={
+                [
+                  "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface hover:cursor-pointer focus:ring-0 focus:outline-none",
+                  # Hover states - only apply when NOT checked
+                  "hover:!bg-surface focus:!bg-surface",
+                  "focus:!border-2",
+                  # Checked states - override hover/focus
+                  "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
+                  # Keep checked styles even when hovering/focusing
+                  "checked:hover:!bg-success checked:focus:!bg-success",
+                  "checked:hover:!border-success checked:focus:!border-success"
+                ]
+              }
+              {@rest}
+            />
+          </label>
+        <% _ -> %>
+      <% end %>
 
       <.error :for={msg <- @errors}>{msg}</.error>
     </div>
