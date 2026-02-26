@@ -408,6 +408,7 @@ defmodule PhoexnipWeb.CoreComponents do
   """
   attr :for, :any, required: true, doc: "the data structure for the form"
   attr :as, :any, default: nil, doc: "the server side parameter to collect all input under"
+  attr :id, :any, default: nil
   attr :current_user_admin, :any, default: false
   attr :class, :string, default: ""
   attr :image_url, :string, required: false
@@ -423,7 +424,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   def simple_form(assigns) do
     ~H"""
-    <.form :let={f} for={@for} as={@as} autocomplete="off" {@rest}>
+    <.form :let={f} for={@for} as={@as} id={@id} autocomplete="off" {@rest}>
       <div class={@class}>
         <div :for={top_actions <- @top_actions} class="mt-2 flex items-center justify-end gap-2">
           {render_slot(top_actions, f)}
@@ -554,7 +555,7 @@ defmodule PhoexnipWeb.CoreComponents do
 
   attr :rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
-                 multiple pattern placeholder readonly required rows size step)
+                 multiple pattern placeholder readonly required rows size step tabindex)
 
   slot :inner_block
 
@@ -680,6 +681,7 @@ defmodule PhoexnipWeb.CoreComponents do
         name={@name}
         id={@id}
         disabled={@disabled}
+        step="any"
         phx-debounce="blur"
         autocomplete="off"
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
