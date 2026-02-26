@@ -111,7 +111,8 @@
               <div class="w-full flex justify-between mt-2">
                 <.input field={item_f[:state]} type="text" label="State:" class="w-[49%] mt-2" />
                 <div class="w-[49%] mt-2">
-                  <.live_select
+                  <.input
+                    type="live-select"
                     label="Country:"
                     id={"live-single-select-country" <> to_string(item_f[:category].value) <>  to_string(item_f[:sequence].value)}
                     field={item_f[:country]}
@@ -181,7 +182,8 @@
               <div class="w-full flex justify-between mt-2">
                 <.input field={item_f[:state]} type="text" label="State:" class="w-[49%] mt-2" />
                 <div class="w-[49%] mt-2">
-                  <.live_select
+                  <.input
+                    type="live-select"
                     label="Country:"
                     id={"live-single-select-country" <> to_string(item_f[:category].value) <>  to_string(item_f[:sequence].value)}
                     field={item_f[:country]}

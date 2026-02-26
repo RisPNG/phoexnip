@@ -73,7 +73,8 @@
         />
         <.input field={f[:phone]} type="text" label="Phone" class="mt-4" />
         <div class="mt-4">
-          <.live_select
+          <.input
+            type="live-select"
             label="Group"
             id="live-single-select-group"
             field={f[:group]}
@@ -83,7 +84,8 @@
         </div>
 
         <div class="mt-4">
-          <.live_select
+          <.input
+            type="live-select"
             label="Location"
             id="live-single-select-location"
             field={f[:location]}

@@ -539,8 +539,9 @@ defmodule PhoexnipWeb.CoreComponents do
 
   attr :type, :string,
     default: "text",
-    values: ~w(checkbox color date datetime-local email file month number password
-                range search select tel text textarea time url week radio-wrap radio-inline)
+    values:
+      ~w(checkbox color date datetime-local email file month number password
+                range search select tel text textarea time url week radio-wrap radio-inline live-select)
 
   attr :field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
@@ -732,14 +733,13 @@ defmodule PhoexnipWeb.CoreComponents do
         end)
       end
 
-    placeholder = Map.get(assigns.rest, :placeholder)
-    show_placeholder = display_value == "" && is_binary(placeholder)
-
     span_value =
-      if show_placeholder do
-        placeholder
-      else
-        display_value
+      if is_span do
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if display_value in [nil, ""] && is_binary(placeholder),
+          do: placeholder,
+          else: display_value
       end
 
     class =
@@ -762,19 +762,14 @@ defmodule PhoexnipWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
-      <select
-        :if={@_store_input}
-        id={@id}
-        name={@name}
-        disabled={@disabled}
-        parent={@parent}
-        class="hidden"
-        multiple={@multiple}
-        {@rest}
-      >
-        <option :if={@prompt} value="">{@prompt}</option>
-        {Phoenix.HTML.Form.options_for_select(@options, @value)}
-      </select>
+      <%= if @_store_input do %>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={@value}
+        />
+      <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
         <.label for={@id}>{@label}</.label>
         <select
@@ -841,15 +836,12 @@ defmodule PhoexnipWeb.CoreComponents do
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
       <%= if @_store_input do %>
-        <textarea
-          id={@id}
+        <input
+          type="hidden"
+          id={@id <> "_store"}
           name={@name}
-          disabled={@disabled}
-          phx-hook="AutoResize"
-          phx-debounce="blur"
-          class="hidden"
-          {@rest}
-        ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
+          value={Phoenix.HTML.Form.normalize_value("textarea", @value)}
+        />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
         <.label for={@id}>{@label}</.label>
@@ -890,6 +882,14 @@ defmodule PhoexnipWeb.CoreComponents do
     store_input = render_as in ["enabled", "like-disabled", "hidden", "hidden-enabled"]
     is_span = render_as in ["disabled", "like-disabled", "like-enabled"]
 
+    span_value =
+      if is_span do
+        value = Phoenix.HTML.Form.normalize_value(assigns.type, assigns[:value])
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if value in [nil, ""] && is_binary(placeholder), do: placeholder, else: value
+      end
+
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
@@ -906,6 +906,7 @@ defmodule PhoexnipWeb.CoreComponents do
         _render_as: render_as,
         _store_input: store_input,
         _is_span: is_span,
+        _span_value: span_value,
         _class: class
       )
 
@@ -913,16 +914,10 @@ defmodule PhoexnipWeb.CoreComponents do
     <div phx-feedback-for={@name} class={@class}>
       <%= if @_store_input do %>
         <input
-          type={@type}
+          type="hidden"
           name={@name}
-          id={@id}
-          disabled={@disabled}
-          step="any"
-          phx-debounce="blur"
-          autocomplete="off"
+          id={@id <> "_store"}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class="hidden"
-          {@rest}
         />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
@@ -949,10 +944,11 @@ defmodule PhoexnipWeb.CoreComponents do
           step="any"
           phx-debounce="blur"
           autocomplete="off"
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={@_class}
           {@rest}
-        />
+        >
+          {@_span_value}
+        </span>
 
         <%= if @_has_error do %>
           <.error :for={msg <- @errors}>{msg}</.error>
@@ -985,18 +981,12 @@ defmodule PhoexnipWeb.CoreComponents do
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
       <%= if @_store_input do %>
-        <div :for={{option_label, option_value} <- @options} class="hidden">
-          <input
-            type="radio"
-            id={"#{@id}_#{option_value}"}
-            name={@name}
-            value={option_value}
-            checked={@value == option_value}
-            disabled={@disabled}
-            class="hidden"
-            {@rest}
-          />
-        </div>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={@value}
+        />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
         <.label for={@id}>{@label}</.label>
@@ -1054,18 +1044,12 @@ defmodule PhoexnipWeb.CoreComponents do
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
       <%= if @_store_input do %>
-        <div :for={{option_label, option_value} <- @options} class="hidden">
-          <input
-            type="radio"
-            id={"#{@id}_#{option_value}"}
-            name={@name}
-            value={option_value}
-            checked={@value == option_value}
-            disabled={@disabled}
-            class="hidden"
-            {@rest}
-          />
-        </div>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={@value}
+        />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
         <.label for={@id}>{@label}</.label>
@@ -1144,14 +1128,13 @@ defmodule PhoexnipWeb.CoreComponents do
         end)
       end
 
-    placeholder = Map.get(assigns, :placeholder)
-    show_placeholder = display_value == "" && is_binary(placeholder)
-
     span_value =
-      if show_placeholder do
-        placeholder
-      else
-        display_value
+      if is_span do
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if display_value in [nil, ""] && is_binary(placeholder),
+          do: placeholder,
+          else: display_value
       end
 
     attrs =
@@ -1184,26 +1167,23 @@ defmodule PhoexnipWeb.CoreComponents do
     live_select_attrs =
       live_select_attrs
       |> Keyword.take(@live_select_rest_global)
-
-    live_select_attrs =
-      if assigns.keep_value == false do
-        live_select_attrs |> Keyword.drop([:value])
-      else
-        live_select_attrs
-      end
+      |> Keyword.drop([:value])
 
     live_select_attrs =
       if Keyword.get(live_select_attrs, :mode, nil) == :tags do
         live_select_attrs
-        |> Keyword.drop([:container_extra_class, :dropdown_class, :tags_container_extra_class])
-        |> Keyword.put(:container_extra_class, "flex flex-col")
+        |> Keyword.drop([:dropdown_class])
         |> Keyword.put(
           :dropdown_class,
-          "absolute rounded-md shadow z-50 bg-gray-100 inset-x-0 top-full mt-2"
+          "absolute rounded-md shadow z-50 bg-surface inset-x-0 flex flex-col overflow-y-auto max-h-[9rem] text-foreground top-[3.25rem]"
         )
-        |> Keyword.put(:tags_container_extra_class, "order-last")
       else
         live_select_attrs
+        |> Keyword.drop([:dropdown_class])
+        |> Keyword.put(
+          :dropdown_class,
+          "absolute rounded-md shadow z-50 bg-surface inset-x-0 flex flex-col overflow-y-auto max-h-[9rem] text-foreground top-full"
+        )
       end
 
     assigns =
@@ -1213,7 +1193,6 @@ defmodule PhoexnipWeb.CoreComponents do
       |> assign(:live_select_opts, live_select_attrs)
       |> assign(:div_attrs, div_attrs)
       |> assign(:display_value, display_value)
-      |> assign(:show_placeholder, show_placeholder)
       |> assign(:span_value, span_value)
       |> assign(:field, field)
       |> assign(:hook_wrapper_id, hook_wrapper_id)
@@ -1230,9 +1209,10 @@ defmodule PhoexnipWeb.CoreComponents do
     <div id={@hook_wrapper_id} phx-feedback-for={@field.name} {@div_attrs}>
       <%= if @_store_input do %>
         <input
-          id={@id}
+          type="hidden"
+          id={@id <> "_store"}
+          name={@field.name}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class="hidden"
         />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
@@ -1240,8 +1220,14 @@ defmodule PhoexnipWeb.CoreComponents do
         <LiveSelect.live_select
           field={@field}
           text_input_class={@_class}
-          keep_current_text
-          selected_option_order_first
+          selected_option_class="order-first font-bold hover:bg-amber-600 rounded"
+          tag_class="ml-[-0.25rem] mr-1 p-1.5 text-sm rounded-lg bg-[rgba(0,0,0,0)] border border-muted flex text-foreground"
+          clear_button_extra_class="text-danger hover:text-dangerDark top-5"
+          clear_tag_button_extra_class="text-danger hover:text-dangerDark"
+          option_extra_class="hover:bg-primary"
+          container_extra_class="flex flex-col"
+          tags_container_extra_class="order-last"
+          keep_label_on_select
           {@live_select_opts}
         />
 
@@ -1261,6 +1247,14 @@ defmodule PhoexnipWeb.CoreComponents do
     store_input = render_as in ["enabled", "like-disabled", "hidden", "hidden-enabled"]
     is_span = render_as in ["disabled", "like-disabled", "like-enabled"]
 
+    span_value =
+      if is_span do
+        value = Phoenix.HTML.Form.normalize_value(assigns.type, assigns[:value])
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if value in [nil, ""] && is_binary(placeholder), do: placeholder, else: value
+      end
+
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
@@ -1277,6 +1271,7 @@ defmodule PhoexnipWeb.CoreComponents do
         _render_as: render_as,
         _store_input: store_input,
         _is_span: is_span,
+        _span_value: span_value,
         _class: class
       )
 
@@ -1284,15 +1279,10 @@ defmodule PhoexnipWeb.CoreComponents do
     <div phx-feedback-for={@name} class={@class}>
       <%= if @_store_input do %>
         <input
-          type={@type}
+          type="hidden"
           name={@name}
-          id={@id}
-          disabled={@disabled}
-          phx-debounce="blur"
-          autocomplete="off"
+          id={@id <> "_store"}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-          class="hidden"
-          {@rest}
         />
       <% end %>
       <%= if not String.starts_with?(@_render_as, "hidden") do %>
@@ -1317,44 +1307,16 @@ defmodule PhoexnipWeb.CoreComponents do
           disabled={@disabled}
           phx-debounce="blur"
           autocomplete="off"
-          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={@_class}
           {@rest}
-        />
+        >
+          {@_span_value}
+        </span>
 
         <%= if @_has_error do %>
           <.error :for={msg <- @errors}>{msg}</.error>
         <% end %>
       <% end %>
-    </div>
-    """
-  end
-
-  def live_select(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
-    assigns =
-      assigns
-      |> assign(:errors, Enum.map(field.errors, &translate_error(&1)))
-      |> assign(:live_select_opts, assigns_to_attributes(assigns, [:errors, :label]))
-      |> Map.put_new(:label, "")
-
-    ~H"""
-    <div phx-feedback-for={@field.name}>
-      <%= if @label != "" do %>
-        <.label for={@field.id}>{@label}</.label>
-      <% end %>
-      <LiveSelect.live_select
-        field={@field}
-        text_input_class={[
-          "block w-full mt-2 rounded-lg py-[7px] px-[11px]",
-          "text-foreground focus:outline-none focus:ring-0 sm:leading-6",
-          "phx-no-feedback:border-border phx-no-feedback:focus:border-themePrimary",
-          "border-border focus:border-themePrimary",
-          @errors != [] && "border-danger focus:border-danger focus:ring-danger/10"
-        ]}
-        {@live_select_opts}
-      />
-
-      <.error :for={msg <- @errors}>{msg}</.error>
     </div>
     """
   end
