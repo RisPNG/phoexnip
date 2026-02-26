@@ -904,28 +904,6 @@ defmodule Phoexnip.SearchUtils do
   defp do_convert_value(:map, value, _tz), do: value
   defp do_convert_value(_, value, _tz), do: value
 
-  @spec ensure_loaded_associations(
-          schema :: Ecto.Schema.t(),
-          preloads :: [atom()]
-        ) :: Ecto.Schema.t()
-  def ensure_loaded_associations(schema, preloads \\ []) when is_map(schema) do
-    schema
-    |> Map.from_struct()
-    |> Enum.reduce(schema, fn {key, value}, acc ->
-      case value do
-        %Ecto.Association.NotLoaded{} ->
-          if preloads == [] or key in preloads do
-            Repo.preload(acc, [key])
-          else
-            acc
-          end
-
-        _ ->
-          acc
-      end
-    end)
-  end
-
   @spec construct_date_map(
           from_date :: String.t() | nil,
           to_date :: String.t() | nil,
@@ -951,22 +929,59 @@ defmodule Phoexnip.SearchUtils do
     end
   end
 
-  @spec construct_date_list(from_date :: String.t() | nil, to_date :: String.t() | nil) :: [
-          String.t()
-        ]
+  @doc """
+  Eagerly loads any `Ecto.Association.NotLoaded` associations on the given schema struct.
+
+  If `preloads` is empty, all unloaded associations are preloaded.
+  If `preloads` is a non-empty list of atom keys, only those associations are considered.
+
+  ## Parameters
+    - `schema` — an Ecto schema struct.
+    - `preloads` — a list of association atoms to consider (default: `[]` for all).
+
+  ## Returns
+    - The schema struct with previously-unloaded associations now loaded.
+  """
+  @spec ensure_loaded_associations(schema :: struct(), preloads :: [atom()]) :: struct()
+  def ensure_loaded_associations(schema, preloads \\ []) when is_map(schema) do
+    schema
+    |> Map.from_struct()
+    |> Enum.reduce(schema, fn {key, value}, acc ->
+      case value do
+        %Ecto.Association.NotLoaded{} ->
+          if preloads == [] or key in preloads do
+            Repo.preload(acc, [key])
+          else
+            acc
+          end
+
+        _ ->
+          acc
+      end
+    end)
+  end
+
+  @doc """
+  Constructs a date filter list from optional from/to date values.
+
+  ## Parameters
+    - `from_date` — a date string or nil.
+    - `to_date` — a date string or nil.
+
+  ## Returns
+    - A list suitable for use as a search filter value:
+      - `[from, to, "range"]` if both dates are present.
+      - `[from, "after_equal"]` if only `from_date` is present.
+      - `[to, "before_equal"]` if only `to_date` is present.
+      - `[]` if neither is present.
+  """
+  @spec construct_date_list(from_date :: String.t() | nil, to_date :: String.t() | nil) :: list()
   def construct_date_list(from_date, to_date) do
     cond do
-      from_date not in ["", nil] and to_date not in ["", nil] ->
-        [from_date, to_date, "range"]
-
-      from_date not in ["", nil] ->
-        [from_date, "after_equal"]
-
-      to_date not in ["", nil] ->
-        [to_date, "before_equal"]
-
-      true ->
-        []
+      from_date not in ["", nil] and to_date not in ["", nil] -> [from_date, to_date, "range"]
+      from_date not in ["", nil] -> [from_date, "after_equal"]
+      to_date not in ["", nil] -> [to_date, "before_equal"]
+      true -> []
     end
   end
 end

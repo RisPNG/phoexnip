@@ -94,30 +94,7 @@ defmodule Phoexnip.UploadUtils do
   def image_for(_, _), do: "/images/default-user.png"
 
   @doc """
-  Fetches the image URL for an entity identified by `object_id`, falling back to a default.
-
-  ## Parameters
-
-    * `object_id` — the identifier for the entity:
-      - For `"user"`, this is matched against a `%{name: object_id}` lookup.
-      - For `"machine"` and `"product"`, this is matched against `%{number: object_id}`.
-    * `type` — one of `"user"`, `"machine"`, or `"product"`. Defaults to `"user"`.
-
-  ## Behavior
-
-    * For `"user"`:
-      - Looks up a user via `Phoexnip.Users.UserService.get_user_by!(%{name: object_id})`.
-      - Returns `user.image_url` if present and non-empty; otherwise `"/images/default-user.png"`.
-    * For `"machine"`:
-      - Looks up a machine via `Phoexnip.Manufacturing.MachineService.get_by!(%{number: object_id})`.
-      - Returns `machine.image_url` if present and non-empty; otherwise `"/images/default-machine.png"`.
-    * For `"product"`:
-      - Looks up a product via `Phoexnip.Inventory.ProductService.get_by!(%{number: object_id})`.
-      - Returns the first URL from `product.image` if present and non-empty; otherwise `"/images/default-product.png"`.
-
-  ## Returns
-
-    * A `String.t()` with the resolved image path.
+  Fetches the image URL for a user identified by `object_id`, falling back to a default.
   """
   @spec fetch_image_for_by_object_identifier(
           object_id :: String.t(),
@@ -216,71 +193,6 @@ defmodule Phoexnip.UploadUtils do
       {:ok, extension}
     else
       {:error, "Unsupported file type. Allowed types: #{Enum.join(allowed_extensions, ", ")}"}
-    end
-  end
-
-  @doc """
-  Reads the file at the given `path`, ensuring its MIME type (and, for `.xlsx`, ZIP header) is allowed.
-
-  ## Parameters
-
-    * `path` — a `String.t()` path to the file to read.
-    * `allowed_extensions` — a list of allowed file extensions (e.g. `[".xlsx", ".xls"]`).
-      - If `".xlsx"` is included, ZIP detection is also enabled.
-
-  ## Behavior
-
-    1. If `".xlsx"` is in `allowed_extensions`, adds `".zip"` to the list so ZIP headers can be detected.
-    2. Reads the first 2048 bytes of the file to detect its MIME type via `validate_mime_type/2`.
-    3. If detection returns `{:ok, ext}`:
-       - If `ext == ".zip"` and `".xlsx"` is allowed, returns the full file contents.
-       - If `ext` is in `allowed_extensions`, returns the full file contents.
-       - Otherwise, returns an error tuple noting unsupported type.
-    4. If detection returns `{:error, reason}`, returns that error.
-
-  ## Returns
-
-    * `{:ok, binary()}` with the full file contents on success.
-    * `{:error, String.t()}` if the MIME type (or ZIP header) is not supported.
-  """
-  @spec read_file(
-          path :: String.t(),
-          allowed_extensions :: [String.t()]
-        ) :: {:ok, binary()} | {:error, String.t()}
-  def read_file(path, allowed_extensions \\ [".xlsx", ".xls"]) do
-    # we need to do this or the validate_mime_type will not return with the .zip for us to check further
-    allowed_extensions =
-      if ".xlsx" in allowed_extensions do
-        [".zip" | allowed_extensions] |> Enum.uniq()
-      else
-        allowed_extensions
-      end
-
-    head =
-      File.stream!(path, 2048)
-      |> Enum.to_list()
-      |> IO.iodata_to_binary()
-
-    case validate_mime_type(head, allowed_extensions) do
-      {:ok, ext} ->
-        cond do
-          # 1) ZIP header ⇒ only valid if we allow .xlsx
-          ext == ".zip" and ".xlsx" in allowed_extensions ->
-            IO.inspect(label: "check for xlsx")
-            {:ok, File.read!(path)}
-
-          # 2) any other string ext ⇒ must be in allowed_extensions
-          ext in allowed_extensions ->
-            {:ok, File.read!(path)}
-
-          # 3) got an ext but it isn’t one we allow
-          true ->
-            {:error,
-             "Unsupported file type. Allowed types: #{Enum.join(allowed_extensions, ", ")}"}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 

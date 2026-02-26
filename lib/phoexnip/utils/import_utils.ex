@@ -8,7 +8,6 @@ defmodule Phoexnip.ImportUtils do
       extract header and data rows, handle errors, and normalize column order across multiple files.
     * `parse_datetime/1` — Convert various inputs (Excel serial dates, ISO‑8601 strings, NaiveDateTime, Date)
       into a UTC `DateTime`; returns `{:ok, datetime}` or `nil`.
-    * `parse_product_number/1` — Normalize numeric or numeric‑like inputs into integer strings or return `nil`.
     * `parse_to_string/1` — Render floats, integers, binaries, lists, booleans, `DateTime`/`Date` into string form.
     * `list_submatch?/2` — Case‑insensitive, trimmed substring matching: ensures every string in one list
       appears in at least one string of another list.
@@ -22,14 +21,8 @@ defmodule Phoexnip.ImportUtils do
 
   ## Examples
 
-      iex> ImportUtils.parse_xl_with_header(socket)
-      {:ok, {["id", "name"], [["1", "Alice"], ["2", "Bob"]]}}
-
       iex> ImportUtils.parse_datetime("44601.75")
       {:ok, ~U[2022-01-31 18:00:00Z]}
-
-      iex> ImportUtils.parse_product_number(1234.56)
-      "1234"
 
       iex> ImportUtils.list_submatch?(["foo", "bar"], [" foOBAZ ", "quxBARqux"])
       true
@@ -220,7 +213,7 @@ defmodule Phoexnip.ImportUtils do
   ## Details
 
     * Accepts either a float or a string matching `~r/^\d+(\.\d+)?$/`.
-    * If valid, it’s interpreted as an Excel serial date based on the `1900-01-01` start date.
+    * If valid, it's interpreted as an Excel serial date based on the `1900-01-01` start date.
     * Fractional parts of the input are converted to hours, minutes, and seconds.
     * Returns `{:ok, DateTime}` on success, or `nil` if the input is not valid or cannot be parsed.
 
@@ -386,34 +379,6 @@ defmodule Phoexnip.ImportUtils do
   def parse_date!(input) do
     {:ok, d} = parse_date(input)
     d
-  end
-
-  @doc """
-  Ensures the given product number is returned as a string.
-
-  ## Details
-
-    * If the input is a number (integer or float), it truncates decimals and converts to string.
-    * If the input is not numeric, returns `nil`.
-
-  ## Examples
-
-      iex> parse_product_number(1234)
-      "1234"
-
-      iex> parse_product_number(1234.56)
-      "1234"
-
-      iex> parse_product_number("abcd")
-      nil
-  """
-  @spec parse_product_number(product_number :: any()) :: String.t() | nil
-
-  def parse_product_number(product_number) do
-    case product_number do
-      num when is_number(num) -> trunc(num) |> Integer.to_string()
-      _ -> nil
-    end
   end
 
   @doc """
@@ -802,6 +767,68 @@ defmodule Phoexnip.ImportUtils do
   end
 
   @doc """
+  Recursively generates a list of associations for preloading from the given Ecto schema,
+  excluding `belongs_to` associations, and optionally applying `order_by` on any child.
+
+  ## Parameters
+    - `schema`  - An Ecto schema module.
+    - `visited` - A MapSet of schemas already seen (to avoid cycles).
+    - `opts`    - A map of association names to order-by clauses, e.g.
+                  `%{productsupplier: [asc: :sequence], costingtrim: [desc: :id]}`
+
+  ## Returns
+    - A list of preloads, where each preload is either:
+      - an atom `:assoc`
+      - `{assoc, nested}` if you only need nested preloads
+      - `{assoc, queryable}` if you only need ordering
+      - `{assoc, {queryable, nested}}` if you need both
+  """
+  @spec preload_all(
+          schema :: module(),
+          opts :: %{optional(atom()) => any()},
+          visited :: MapSet.t(module())
+        ) :: [atom() | {atom(), any()}]
+
+  def preload_all(schema, opts \\ %{}, visited \\ MapSet.new()) do
+    if MapSet.member?(visited, schema) do
+      []
+    else
+      new_visited = MapSet.put(visited, schema)
+
+      schema.__schema__(:associations)
+      |> Enum.filter(fn assoc ->
+        case schema.__schema__(:association, assoc) do
+          %Ecto.Association.BelongsTo{} -> false
+          _ -> true
+        end
+      end)
+      |> Enum.map(fn assoc ->
+        assoc_info = schema.__schema__(:association, assoc)
+        nested_preloads = preload_all(assoc_info.queryable, opts, new_visited)
+
+        # Check if there's a passed in options for this association
+        case Map.get(opts, assoc) do
+          nil ->
+            # No options, use default behavior
+            if nested_preloads == [] do
+              assoc
+            else
+              {assoc, nested_preloads}
+            end
+
+          options ->
+            # Use passed in options, but still include nested preloads if they exist
+            if nested_preloads == [] do
+              {assoc, options}
+            else
+              {assoc, {options, nested_preloads}}
+            end
+        end
+      end)
+    end
+  end
+
+  @doc """
   Checks whether every string in `list_a` (trimmed and downcased) appears as a substring
   in at least one string of `list_b` (also trimmed and downcased).
 
@@ -912,32 +939,6 @@ defmodule Phoexnip.ImportUtils do
     * `entities_attrs` (`[map]`) — A list of attribute maps for entities to insert or update. Each map may contain nested association data, keyed by the association name as a string. If an entity map contains an `"id"` key, an update will be performed; otherwise, an insert is performed.
     * `chunk_size` (`integer`, optional, default: `256`) — The batch size for chunked insertion/updating of entities and their associations.
     * `on_replace` (`[atom | {atom, [atom]}]`, optional, default: `[]`) — Specifies which associations to replace (delete and re-insert) before upserting, and which nested associations to handle recursively. Supports prefixing with an underscore (`:_assoc`) to target only nested deletion without deleting the top-level association itself.
-
-  ## Behavior
-
-    * **Bulk Insert/Update:** For each chunk, entities are inserted or updated using `Repo.insert_all/3`, using `:replace_all` on conflict for upserts. Existing records are detected by presence of `"id"` in their attribute map.
-    * **Association Recursion:** After top-level entity upserts, the function recursively processes all associations using chunked upserts, ensuring nested associations are also updated or inserted as needed.
-    * **Timestamps:** Both `:inserted_at` and `:updated_at` fields are handled intelligently. If present in the original attribute map, these values are respected; otherwise, the current transaction timestamp is used.
-    * **Association Replacement:** Associations named in `on_replace` are deleted before the corresponding parent entity is upserted. Nested deletes can be specified for fine-grained cleanup of child associations, with subquery safety for batch deletes.
-    * **Transaction:** All operations occur within a single transaction, ensuring atomicity.
-    * **Return Value:** Returns a map containing:
-      - `:updated_entities` — List of fully preloaded, upserted entities.
-      - `:original_entities` — Map of previously existing entities keyed by id, only for those updated in this operation.
-
-  ## Examples
-
-      iex> bulk_upsert(Product, [%{"name" => "Widget", "variants" => [%{"sku" => "ABC123"}]}])
-      %{updated_entities: [%Product{...}], original_entities: %{}}
-
-      iex> bulk_upsert(Order, [%{"id" => 5, "status" => "shipped"}], 100, on_replace: [:line_items])
-      %{updated_entities: [%Order{...}], original_entities: %{5 => %Order{...}}}
-
-  ## Options
-
-    * Handles both inserts and updates in a single operation.
-    * Supports arbitrarily nested associations and multi-level deletes.
-    * Association replacement/deletion logic is customizable per-association and per-nesting.
-    * Returns all resulting entities with all associations preloaded.
 
   ## Returns
 
@@ -1295,68 +1296,6 @@ defmodule Phoexnip.ImportUtils do
   end
 
   @doc """
-  Recursively generates a list of associations for preloading from the given Ecto schema,
-  excluding `belongs_to` associations, and optionally applying `order_by` on any child.
-
-  ## Parameters
-    - `schema`  - An Ecto schema module.
-    - `visited` - A MapSet of schemas already seen (to avoid cycles).
-    - `opts`    - A map of association names to order-by clauses, e.g.
-                  `%{productsupplier: [asc: :sequence], costingtrim: [desc: :id]}`
-
-  ## Returns
-    - A list of preloads, where each preload is either:
-      - an atom `:assoc`
-      - `{assoc, nested}` if you only need nested preloads
-      - `{assoc, queryable}` if you only need ordering
-      - `{assoc, {queryable, nested}}` if you need both
-  """
-  @spec preload_all(
-          schema :: module(),
-          opts :: %{optional(atom()) => any()},
-          visited :: MapSet.t(module())
-        ) :: [atom() | {atom(), any()}]
-
-  def preload_all(schema, opts \\ %{}, visited \\ MapSet.new()) do
-    if MapSet.member?(visited, schema) do
-      []
-    else
-      new_visited = MapSet.put(visited, schema)
-
-      schema.__schema__(:associations)
-      |> Enum.filter(fn assoc ->
-        case schema.__schema__(:association, assoc) do
-          %Ecto.Association.BelongsTo{} -> false
-          _ -> true
-        end
-      end)
-      |> Enum.map(fn assoc ->
-        assoc_info = schema.__schema__(:association, assoc)
-        nested_preloads = preload_all(assoc_info.queryable, opts, new_visited)
-
-        # Check if there's a passed in options for this association
-        case Map.get(opts, assoc) do
-          nil ->
-            # No options, use default behavior
-            if nested_preloads == [] do
-              assoc
-            else
-              {assoc, nested_preloads}
-            end
-
-          options ->
-            # Use passed in options, but still include nested preloads if they exist
-            if nested_preloads == [] do
-              {assoc, options}
-            else
-              {assoc, {options, nested_preloads}}
-            end
-        end
-      end)
-    end
-  end
-
-  @doc """
   Transforms search result entries into a form-friendly structure.
 
   This function converts SearchUtils.search() results—whether they are single structs, lists of structs, or nested
@@ -1465,8 +1404,8 @@ defmodule Phoexnip.ImportUtils do
       - a list of string alternatives. For lists, the function picks the first matching header.
 
   For each element in `header_names`, the function:
-    1. If it’s a list of strings, finds the first header in `headers` (case-insensitive, trimmed) matching any of those, and returns the corresponding `row` value.
-    2. If it’s a string, finds its index in `headers` (case-insensitive, trimmed) and returns the corresponding `row` value.
+    1. If it's a list of strings, finds the first header in `headers` (case-insensitive, trimmed) matching any of those, and returns the corresponding `row` value.
+    2. If it's a string, finds its index in `headers` (case-insensitive, trimmed) and returns the corresponding `row` value.
     3. If no match is found, returns an empty string `""`.
 
   ## Returns
@@ -1506,35 +1445,6 @@ defmodule Phoexnip.ImportUtils do
           index = find_header_index(headers, header)
           if index, do: Enum.at(row, index, ""), else: ""
       end
-    end)
-  end
-
-  defp find_header_index(headers, header) do
-    norm = header |> String.trim() |> String.downcase()
-
-    Enum.find_index(headers, fn h ->
-      h |> String.trim() |> String.downcase() == norm
-    end)
-  end
-
-  defp find_header_with_occurrence(row, headers, strings, occurrence_idx) do
-    Enum.find_value(strings, "", fn header ->
-      norm = header |> String.trim() |> String.downcase()
-
-      indices =
-        headers
-        |> Enum.with_index()
-        |> Enum.filter(fn {h, _i} -> h |> String.trim() |> String.downcase() == norm end)
-        |> Enum.map(&elem(&1, 1))
-
-      actual_idx =
-        if occurrence_idx < 0 do
-          Enum.at(indices, occurrence_idx)
-        else
-          Enum.at(indices, occurrence_idx)
-        end
-
-      if actual_idx, do: Enum.at(row, actual_idx, ""), else: nil
     end)
   end
 
@@ -1906,216 +1816,6 @@ defmodule Phoexnip.ImportUtils do
     end
   end
 
-  @spec resolve_extra_cells(
-          raw :: [[any()]],
-          extra_cells :: [{String.t(), String.t() | {non_neg_integer(), non_neg_integer()}}]
-        ) :: {[String.t()], [any()]}
-  defp resolve_extra_cells(_raw, []), do: {[], []}
-
-  defp resolve_extra_cells(raw, extra_cells) do
-    Enum.map(extra_cells, fn {name, cell_ref} ->
-      value = read_cell(raw, cell_ref)
-      {name |> to_string() |> String.trim() |> String.downcase(), value}
-    end)
-    |> Enum.unzip()
-  end
-
-  defp read_cell(raw, {row, col}) when is_integer(row) and is_integer(col) do
-    raw |> Enum.at(row, []) |> Enum.at(col)
-  end
-
-  defp read_cell(raw, cell_ref) when is_binary(cell_ref) do
-    {col, row} = parse_cell_reference(cell_ref)
-    raw |> Enum.at(row, []) |> Enum.at(col)
-  end
-
-  defp parse_cell_reference(ref) do
-    {letters, digits} =
-      String.split_at(
-        ref,
-        String.length(ref) -
-          String.length(
-            String.trim_leading(ref, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-          )
-      )
-
-    col =
-      letters
-      |> String.upcase()
-      |> String.to_charlist()
-      |> Enum.reduce(0, fn char, acc -> acc * 26 + (char - ?A + 1) end)
-      |> Kernel.-(1)
-
-    row = String.to_integer(digits) - 1
-    {col, row}
-  end
-
-  @spec mix_colours(hexes :: [String.t()]) :: String.t()
-  defp mix_colours(hexes) do
-    hexes
-    |> Enum.map(&hex_to_rgb/1)
-    |> Enum.reduce({0, 0, 0}, fn {r, g, b}, {acc_r, acc_g, acc_b} ->
-      {acc_r + r, acc_g + g, acc_b + b}
-    end)
-    |> then(fn {total_r, total_g, total_b} ->
-      count = length(hexes)
-      {div(total_r, count), div(total_g, count), div(total_b, count)}
-    end)
-    |> rgb_to_hex()
-  end
-
-  @spec hex_to_rgb(hex :: String.t()) :: {integer(), integer(), integer()}
-  defp hex_to_rgb("#" <> hex) do
-    hex
-    |> String.upcase()
-    |> String.to_charlist()
-    |> Enum.chunk_every(2)
-    |> Enum.map(fn pair ->
-      pair
-      |> List.to_string()
-      |> String.to_integer(16)
-    end)
-    |> List.to_tuple()
-  end
-
-  @spec rgb_to_hex({integer(), integer(), integer()}) :: String.t()
-  defp rgb_to_hex({r, g, b}) do
-    "#" <>
-      (r |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
-      (g |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
-      (b |> Integer.to_string(16) |> String.pad_leading(2, "0"))
-  end
-
-  @doc """
-  Resets all entries for a given upload in a LiveView socket.
-
-  Every entry for `upload_name` is cancelled, regardless of its current state.
-  If `upload_name` is not present in `socket.assigns.uploads`, the function is a no-op.
-
-  ## Parameters
-    - `socket` - The LiveView socket that contains upload configuration(s).
-    - `upload_name` - The upload name configured via `allow_upload/3`.
-
-  ## Returns
-    - The updated socket after cancelling all entries for the upload.
-  """
-  @spec reset_upload(socket :: Phoenix.LiveView.Socket.t(), upload_name :: atom()) ::
-          Phoenix.LiveView.Socket.t()
-  def reset_upload(socket, upload_name) do
-    # Check if upload entries for this config exists
-    if upload_config = socket.assigns.uploads[upload_name] do
-      # For every single entry, regardless of its state (done, progress, error),
-      # simply cancel it. This is the most direct way to clear the entries list.
-      Enum.reduce(upload_config.entries, socket, fn entry, acc_socket ->
-        cancel_upload(acc_socket, upload_name, entry.ref)
-      end)
-    else
-      # The upload config for this name didn't exist, so do nothing.
-      socket
-    end
-  end
-
-  defp safe_string_to_atom(str) do
-    try do
-      String.to_existing_atom(str)
-    rescue
-      ArgumentError -> nil
-    end
-  end
-
-  @spec deduplicate_assoc_entries(entries :: [map()]) :: [map()]
-  defp deduplicate_assoc_entries(entries) do
-    {with_id, without_id} =
-      Enum.split_with(entries, fn attrs -> Map.has_key?(attrs, :id) end)
-
-    deduped =
-      with_id
-      |> Enum.reverse()
-      |> Enum.uniq_by(fn attrs -> attrs[:id] end)
-      |> Enum.reverse()
-
-    without_id ++ deduped
-  end
-
-  @spec deduplicate_by_id(entities :: [map()]) :: [map()]
-  defp deduplicate_by_id(entities) do
-    {with_id, without_id} =
-      Enum.split_with(entities, fn attrs ->
-        Map.has_key?(attrs, "id") or Map.has_key?(attrs, :id)
-      end)
-
-    deduped =
-      with_id
-      |> Enum.reverse()
-      |> Enum.uniq_by(fn attrs -> Map.get(attrs, "id") || Map.get(attrs, :id) end)
-      |> Enum.reverse()
-
-    without_id ++ deduped
-  end
-
-  @doc """
-  Recursively converts a struct (and all nested structs) into a plain map
-  with string keys.
-
-  Handles `Ecto.Association.NotLoaded` and `Ecto.Schema.Metadata` by converting
-  them to `nil`. Preserves structs that implement `Phoenix.HTML.Safe`.
-  Processes nested maps and lists recursively.
-
-  ## Examples
-
-      iex> transform_struct_to_map(%MyStruct{name: "test"})
-      %{"name" => "test"}
-  """
-  @spec transform_struct_to_map(value :: any()) :: any()
-  def transform_struct_to_map(value) do
-    cond do
-      is_nil(value) ->
-        nil
-
-      match?(%Ecto.Association.NotLoaded{}, value) ->
-        nil
-
-      match?(%Ecto.Schema.Metadata{}, value) ->
-        nil
-
-      is_struct(value) ->
-        if Phoenix.HTML.Safe.impl_for(value) != Phoenix.HTML.Safe.Any do
-          value
-        else
-          value
-          |> Map.from_struct()
-          |> Map.delete(:__meta__)
-          |> stringify_keys_deep()
-        end
-
-      is_map(value) ->
-        stringify_keys_deep(value)
-
-      is_list(value) ->
-        Enum.map(value, &transform_struct_to_map/1)
-
-      true ->
-        value
-    end
-  end
-
-  @doc """
-  Recursively converts all keys in a map to strings and transforms nested
-  struct values via `transform_struct_to_map/1`.
-
-  ## Examples
-
-      iex> stringify_keys_deep(%{name: "test", nested: %{id: 1}})
-      %{"name" => "test", "nested" => %{"id" => 1}}
-  """
-  @spec stringify_keys_deep(map :: map()) :: map()
-  def stringify_keys_deep(map) when is_map(map) do
-    Map.new(map, fn {k, v} ->
-      key = if is_atom(k), do: Atom.to_string(k), else: to_string(k)
-      {key, transform_struct_to_map(v)}
-    end)
-  end
-
   @doc """
   Sends a flash instruction message to a process.
 
@@ -2165,5 +1865,181 @@ defmodule Phoexnip.ImportUtils do
        }, [kind: Keyword.get(ops, :kind, :info), reset: Keyword.get(ops, :reset, nil)]}
 
     send(pid, {:put_flash, flash_options})
+  end
+
+  @doc """
+  Resets all entries for a given upload in a LiveView socket.
+
+  Every entry for `upload_name` is cancelled, regardless of its current state.
+  If `upload_name` is not present in `socket.assigns.uploads`, the function is a no-op.
+
+  ## Parameters
+    - `socket` - The LiveView socket that contains upload configuration(s).
+    - `upload_name` - The upload name configured via `allow_upload/3`.
+
+  ## Returns
+    - The updated socket after cancelling all entries for the upload.
+  """
+  @spec reset_upload(socket :: Phoenix.LiveView.Socket.t(), upload_name :: atom()) ::
+          Phoenix.LiveView.Socket.t()
+  def reset_upload(socket, upload_name) do
+    # Check if upload entries for this config exists
+    if upload_config = socket.assigns.uploads[upload_name] do
+      # For every single entry, regardless of its state (done, progress, error),
+      # simply cancel it. This is the most direct way to clear the entries list.
+      Enum.reduce(upload_config.entries, socket, fn entry, acc_socket ->
+        cancel_upload(acc_socket, upload_name, entry.ref)
+      end)
+    else
+      # The upload config for this name didn't exist, so do nothing.
+      socket
+    end
+  end
+
+  @spec resolve_extra_cells(
+          raw :: [[any()]],
+          extra_cells :: [{String.t(), String.t() | {non_neg_integer(), non_neg_integer()}}]
+        ) :: {[String.t()], [any()]}
+  defp resolve_extra_cells(_raw, []), do: {[], []}
+
+  defp resolve_extra_cells(raw, extra_cells) do
+    Enum.map(extra_cells, fn {name, cell_ref} ->
+      value = read_cell(raw, cell_ref)
+      {name |> to_string() |> String.trim() |> String.downcase(), value}
+    end)
+    |> Enum.unzip()
+  end
+
+  defp read_cell(raw, {row, col}) when is_integer(row) and is_integer(col) do
+    raw |> Enum.at(row, []) |> Enum.at(col)
+  end
+
+  defp read_cell(raw, cell_ref) when is_binary(cell_ref) do
+    {col, row} = parse_cell_reference(cell_ref)
+    raw |> Enum.at(row, []) |> Enum.at(col)
+  end
+
+  defp parse_cell_reference(ref) do
+    {letters, digits} =
+      String.split_at(
+        ref,
+        String.length(ref) -
+          String.length(
+            String.trim_leading(ref, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+          )
+      )
+
+    col =
+      letters
+      |> String.upcase()
+      |> String.to_charlist()
+      |> Enum.reduce(0, fn char, acc -> acc * 26 + (char - ?A + 1) end)
+      |> Kernel.-(1)
+
+    row = String.to_integer(digits) - 1
+    {col, row}
+  end
+
+  defp find_header_index(headers, header) do
+    norm = header |> String.trim() |> String.downcase()
+
+    Enum.find_index(headers, fn h ->
+      h |> String.trim() |> String.downcase() == norm
+    end)
+  end
+
+  defp find_header_with_occurrence(row, headers, strings, occurrence_idx) do
+    Enum.find_value(strings, "", fn header ->
+      norm = header |> String.trim() |> String.downcase()
+
+      indices =
+        headers
+        |> Enum.with_index()
+        |> Enum.filter(fn {h, _i} -> h |> String.trim() |> String.downcase() == norm end)
+        |> Enum.map(&elem(&1, 1))
+
+      actual_idx =
+        if occurrence_idx < 0 do
+          Enum.at(indices, occurrence_idx)
+        else
+          Enum.at(indices, occurrence_idx)
+        end
+
+      if actual_idx, do: Enum.at(row, actual_idx, ""), else: nil
+    end)
+  end
+
+  @spec mix_colours(hexes :: [String.t()]) :: String.t()
+  defp mix_colours(hexes) do
+    hexes
+    |> Enum.map(&hex_to_rgb/1)
+    |> Enum.reduce({0, 0, 0}, fn {r, g, b}, {acc_r, acc_g, acc_b} ->
+      {acc_r + r, acc_g + g, acc_b + b}
+    end)
+    |> then(fn {total_r, total_g, total_b} ->
+      count = length(hexes)
+      {div(total_r, count), div(total_g, count), div(total_b, count)}
+    end)
+    |> rgb_to_hex()
+  end
+
+  @spec hex_to_rgb(hex :: String.t()) :: {integer(), integer(), integer()}
+  defp hex_to_rgb("#" <> hex) do
+    hex
+    |> String.upcase()
+    |> String.to_charlist()
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn pair ->
+      pair
+      |> List.to_string()
+      |> String.to_integer(16)
+    end)
+    |> List.to_tuple()
+  end
+
+  @spec rgb_to_hex({integer(), integer(), integer()}) :: String.t()
+  defp rgb_to_hex({r, g, b}) do
+    "#" <>
+      (r |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
+      (g |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
+      (b |> Integer.to_string(16) |> String.pad_leading(2, "0"))
+  end
+
+  defp safe_string_to_atom(str) do
+    try do
+      String.to_existing_atom(str)
+    rescue
+      ArgumentError -> nil
+    end
+  end
+
+  @spec deduplicate_assoc_entries(entries :: [map()]) :: [map()]
+  defp deduplicate_assoc_entries(entries) do
+    {with_id, without_id} =
+      Enum.split_with(entries, fn attrs -> Map.has_key?(attrs, :id) end)
+
+    deduped =
+      with_id
+      |> Enum.reverse()
+      |> Enum.uniq_by(fn attrs -> attrs[:id] end)
+      |> Enum.reverse()
+
+    without_id ++ deduped
+  end
+
+  @spec deduplicate_by_id(entities :: [map()]) :: [map()]
+  defp deduplicate_by_id(entities) do
+    {with_id, without_id} =
+      Enum.split_with(entities, fn attrs ->
+        Map.has_key?(attrs, "id") or Map.has_key?(attrs, :id)
+      end)
+
+    deduped =
+      with_id
+      |> Enum.reverse()
+      |> Enum.uniq_by(fn attrs -> Map.get(attrs, "id") || Map.get(attrs, :id) end)
+      |> Enum.reverse()
+
+    without_id ++ deduped
   end
 end
