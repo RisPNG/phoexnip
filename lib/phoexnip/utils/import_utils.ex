@@ -68,11 +68,14 @@ defmodule Phoexnip.ImportUtils do
   @spec parse_xl_with_header(
           socket :: Phoenix.LiveView.Socket.t(),
           sheet_idx :: non_neg_integer(),
-          header_row_idx :: non_neg_integer()
+          header_row_idx :: non_neg_integer(),
+          opts :: keyword()
         ) ::
           {:ok, {list(String.t()), list(list(any()))}}
           | {:error, String.t()}
-  def parse_xl_with_header(socket, sheet_idx \\ 0, header_row_idx \\ 0) do
+  def parse_xl_with_header(socket, sheet_idx \\ 0, header_row_idx \\ 0, opts \\ []) do
+    extra_cells = Keyword.get(opts, :extra_cells, [])
+
     uploads =
       case Enum.find(socket.assigns.uploads, fn
              {_upload_name, %Phoenix.LiveView.UploadConfig{entries: es}} ->
@@ -96,14 +99,24 @@ defmodule Phoexnip.ImportUtils do
 
                       case XlsxReader.sheet(pkg, sheet) do
                         {:ok, raw} ->
-                          rows = Enum.reject(raw, fn r -> Enum.all?(r, &(&1 in [nil, ""])) end)
-
-                          unless Enum.at(rows, header_row_idx) do
+                          unless Enum.at(raw, header_row_idx) do
                             throw({:row_oob, client})
                           end
 
-                          header = Enum.at(rows, header_row_idx)
-                          data_rows = Enum.drop(rows, header_row_idx + 1)
+                          header = Enum.at(raw, header_row_idx)
+                          data_rows = Enum.drop(raw, header_row_idx + 1)
+
+                          data_rows =
+                            Enum.reject(data_rows, fn r ->
+                              Enum.all?(r, &(&1 in [nil, ""]))
+                            end)
+
+                          {extra_headers, extra_values} =
+                            resolve_extra_cells(raw, extra_cells)
+
+                          header = header ++ extra_headers
+                          data_rows = Enum.map(data_rows, &(&1 ++ extra_values))
+
                           {:ok, {client, header, data_rows}}
 
                         {:error, msg} ->
@@ -273,13 +286,13 @@ defmodule Phoexnip.ImportUtils do
       is_binary(input) ->
         formats_to_try = [
           "{YYYY}-{0M}-{0D} {h24}:{m}:{s}",
-          # dd/mm/yyyy
+          "{YYYY}-{0M}-{0D}T{h24}:{m}",
+          "{0D}/{0M}/{YYYY} {h24}:{m}:{s}",
+          "{YYYY}/{0M}/{0D} {h24}:{m}:{s}",
+          "{0D}-{0M}-{YYYY} {h24}:{m}:{s}",
           "{0D}/{0M}/{YYYY}",
-          # yyyy/mm/dd
           "{YYYY}/{0M}/{0D}",
-          # yyyy-mm-dd
           "{YYYY}-{0M}-{0D}",
-          # dd-mm-yyyy
           "{0D}-{0M}-{YYYY}"
         ]
 
@@ -297,6 +310,82 @@ defmodule Phoexnip.ImportUtils do
       true ->
         {:ok, nil}
     end
+  end
+
+  @doc """
+  Bang variant of `parse_datetime/1` that unwraps the `{:ok, datetime}` tuple.
+
+  Returns the bare `DateTime` struct or `nil` directly instead of a tagged tuple.
+
+  ## Examples
+
+      iex> parse_datetime!("44601.75")
+      ~U[2022-01-31 18:00:00Z]
+
+      iex> parse_datetime!(nil)
+      nil
+  """
+  @spec parse_datetime!(input :: any()) :: DateTime.t() | nil
+  def parse_datetime!(input) do
+    {:ok, dt} = parse_datetime(input)
+    dt
+  end
+
+  @doc """
+  Parses various inputs into a `Date` struct, stripping any time information.
+
+  Handles Excel serial numbers (floats), ISO-8601 strings, DateTime, NaiveDateTime,
+  and Date structs.
+
+  ## Examples
+
+      iex> parse_date("44601.75")
+      {:ok, ~D[2022-01-31]}
+
+      iex> parse_date(~D[2022-01-31])
+      {:ok, ~D[2022-01-31]}
+
+      iex> parse_date(nil)
+      {:ok, nil}
+  """
+  @spec parse_date(input :: any()) :: {:ok, Date.t() | nil}
+  def parse_date(input) do
+    cond do
+      is_nil(input) ->
+        {:ok, nil}
+
+      match?(%Date{}, input) ->
+        {:ok, input}
+
+      match?(%DateTime{}, input) ->
+        {:ok, DateTime.to_date(input)}
+
+      match?(%NaiveDateTime{}, input) ->
+        {:ok, NaiveDateTime.to_date(input)}
+
+      true ->
+        case parse_datetime(input) do
+          {:ok, nil} -> {:ok, nil}
+          {:ok, dt} -> {:ok, DateTime.to_date(dt)}
+        end
+    end
+  end
+
+  @doc """
+  Bang variant of `parse_date/1` that unwraps the `{:ok, date}` tuple.
+
+  ## Examples
+
+      iex> parse_date!("44601.75")
+      ~D[2022-01-31]
+
+      iex> parse_date!(nil)
+      nil
+  """
+  @spec parse_date!(input :: any()) :: Date.t() | nil
+  def parse_date!(input) do
+    {:ok, d} = parse_date(input)
+    d
   end
 
   @doc """
@@ -389,6 +478,9 @@ defmodule Phoexnip.ImportUtils do
       %DateTime{} = datetime ->
         datetime |> DateTime.to_unix() |> parse_to_float()
 
+      %Decimal{} = decimal ->
+        Decimal.to_float(decimal)
+
       %Date{} = date ->
         date |> Date.to_erl() |> :calendar.date_to_gregorian_days() |> parse_to_float()
 
@@ -439,21 +531,21 @@ defmodule Phoexnip.ImportUtils do
         value
 
       value when is_float(value) ->
-        trunc(value)
+        round(value)
 
       value when is_binary(value) ->
         trimmed = String.trim(value)
 
-        case Integer.parse(trimmed) do
-          {int_val, _} ->
-            int_val
-
-          :error ->
-            # Try parsing as float first, then truncate
-            case Float.parse(trimmed) do
-              {float_val, _} -> trunc(float_val)
-              :error -> 0
-            end
+        if String.contains?(trimmed, ".") do
+          case Float.parse(trimmed) do
+            {float_val, _} -> round(float_val)
+            :error -> 0
+          end
+        else
+          case Integer.parse(trimmed) do
+            {int_val, _} -> int_val
+            :error -> 0
+          end
         end
 
       value when is_list(value) ->
@@ -465,6 +557,9 @@ defmodule Phoexnip.ImportUtils do
       value when is_boolean(value) ->
         if value, do: 1, else: 0
 
+      %Decimal{} = decimal ->
+        decimal |> Decimal.round(0) |> Decimal.to_integer()
+
       %DateTime{} = datetime ->
         DateTime.to_unix(datetime)
 
@@ -473,6 +568,160 @@ defmodule Phoexnip.ImportUtils do
 
       _ ->
         0
+    end
+  end
+
+  @doc """
+  Converts various data types into a `Decimal` struct.
+
+  ## Details
+
+    * Decimals: Returned as-is.
+    * Integers: Converted via `Decimal.new/1`.
+    * Floats: Converted via `Decimal.from_float/1`.
+    * Strings: Parsed via `Decimal.parse/1`, returns `Decimal.new(0)` on failure.
+    * Booleans: `true` becomes `Decimal.new(1)`, `false` becomes `Decimal.new(0)`.
+    * Lists: If single element, converts that element. Otherwise returns `Decimal.new(0)`.
+    * DateTime: Returns Unix timestamp as Decimal.
+    * Date: Returns gregorian days as Decimal.
+    * Any other type or `nil`: Returns `Decimal.new(0)`.
+
+  ## Examples
+
+      iex> parse_to_decimal("10.5")
+      #Decimal<10.5>
+
+      iex> parse_to_decimal(true)
+      #Decimal<1>
+
+      iex> parse_to_decimal(nil)
+      #Decimal<0>
+  """
+  @spec parse_to_decimal(value :: any()) :: Decimal.t()
+  def parse_to_decimal(value) do
+    case value do
+      %Decimal{} = decimal ->
+        decimal
+
+      value when is_integer(value) ->
+        Decimal.new(value)
+
+      value when is_float(value) ->
+        Decimal.from_float(value)
+
+      value when is_binary(value) ->
+        case Decimal.parse(String.trim(value)) do
+          {decimal, _} -> decimal
+          :error -> Decimal.new(0)
+        end
+
+      value when is_list(value) ->
+        case value do
+          [single_value] -> parse_to_decimal(single_value)
+          _ -> Decimal.new(0)
+        end
+
+      value when is_boolean(value) ->
+        if value, do: Decimal.new(1), else: Decimal.new(0)
+
+      %DateTime{} = datetime ->
+        datetime |> DateTime.to_unix() |> Decimal.new()
+
+      %Date{} = date ->
+        date |> Date.to_erl() |> :calendar.date_to_gregorian_days() |> Decimal.new()
+
+      _ ->
+        Decimal.new(0)
+    end
+  end
+
+  @doc """
+  Converts various data types into a boolean.
+
+  ## Details
+
+    * Booleans: Returned as-is.
+    * Strings: `"true"`, `"1"`, `"yes"` → `true`; `"false"`, `"0"`, `"no"` → `false` (case-insensitive, trimmed).
+    * Integers: `1` → `true`, `0` → `false`.
+    * `nil` or unrecognized: Returns `nil`.
+
+  ## Examples
+
+      iex> parse_to_boolean("true")
+      true
+
+      iex> parse_to_boolean("NO")
+      false
+
+      iex> parse_to_boolean(1)
+      true
+
+      iex> parse_to_boolean(nil)
+      nil
+  """
+  @spec parse_to_boolean(value :: any()) :: boolean() | nil
+  def parse_to_boolean(value) do
+    case value do
+      value when is_boolean(value) ->
+        value
+
+      value when is_binary(value) ->
+        case String.downcase(String.trim(value)) do
+          v when v in ["true", "1", "yes"] -> true
+          v when v in ["false", "0", "no"] -> false
+          _ -> nil
+        end
+
+      value when is_integer(value) ->
+        value != 0
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Parses various inputs into a `Time` struct.
+
+  ## Details
+
+    * `%Time{}`: Returned as-is.
+    * Strings: Parsed via `Time.from_iso8601/1`.
+    * `%DateTime{}`: Extracts time via `DateTime.to_time/1`.
+    * `%NaiveDateTime{}`: Extracts time via `NaiveDateTime.to_time/1`.
+    * `nil` or unrecognized: Returns `nil`.
+
+  ## Examples
+
+      iex> parse_to_time("12:30:00")
+      ~T[12:30:00]
+
+      iex> parse_to_time(~T[08:00:00])
+      ~T[08:00:00]
+
+      iex> parse_to_time(nil)
+      nil
+  """
+  @spec parse_to_time(value :: any()) :: Time.t() | nil
+  def parse_to_time(value) do
+    case value do
+      %Time{} = time ->
+        time
+
+      value when is_binary(value) ->
+        case Time.from_iso8601(String.trim(value)) do
+          {:ok, t} -> t
+          _ -> nil
+        end
+
+      %DateTime{} = dt ->
+        DateTime.to_time(dt)
+
+      %NaiveDateTime{} = ndt ->
+        NaiveDateTime.to_time(ndt)
+
+      _ ->
+        nil
     end
   end
 
@@ -533,11 +782,12 @@ defmodule Phoexnip.ImportUtils do
           Enum.join(value, ", ")
 
         value when is_boolean(value) ->
-          # Convert true/false to "true"/"false"
           to_string(value)
 
+        %Decimal{} = decimal ->
+          Decimal.to_string(decimal)
+
         %DateTime{} = datetime ->
-          # Convert DateTime to a string
           DateTime.to_string(datetime)
 
         %Date{} = date ->
@@ -732,6 +982,9 @@ defmodule Phoexnip.ImportUtils do
                 "on_replace must be an atom, a {atom, [atom()]} tuple, or a list of those; got: #{inspect(bad)}"
       end)
 
+    # Deduplicate entities by id, keeping the last occurrence
+    entities_attrs = deduplicate_by_id(entities_attrs)
+
     Repo.transaction(
       fn ->
         timestamp = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -864,9 +1117,18 @@ defmodule Phoexnip.ImportUtils do
                 processed =
                   cleaned_attrs
                   |> Map.drop(schema.__schema__(:associations) |> Enum.map(&Atom.to_string/1))
-                  |> Map.new(fn {k, v} ->
-                    key_atom = if is_atom(k), do: k, else: String.to_existing_atom(k)
-                    {key_atom, SearchUtils.convert_value_to_field(schema, key_atom, v)}
+                  |> Enum.reduce(%{}, fn {k, v}, acc ->
+                    key_atom = if is_atom(k), do: k, else: safe_string_to_atom(k)
+
+                    if key_atom do
+                      Map.put(
+                        acc,
+                        key_atom,
+                        SearchUtils.convert_value_to_field(schema, key_atom, v)
+                      )
+                    else
+                      acc
+                    end
                   end)
                   |> Map.take(schema.__schema__(:fields))
 
@@ -932,11 +1194,18 @@ defmodule Phoexnip.ImportUtils do
                       processed =
                         cleaned_nested_attrs
                         |> Map.drop(nested_assoc_keys)
-                        |> Map.new(fn {k, v} ->
-                          key_atom = if is_atom(k), do: k, else: String.to_existing_atom(k)
+                        |> Enum.reduce(%{}, fn {k, v}, acc ->
+                          key_atom = if is_atom(k), do: k, else: safe_string_to_atom(k)
 
-                          {key_atom,
-                           SearchUtils.convert_value_to_field(assoc_schema, key_atom, v)}
+                          if key_atom do
+                            Map.put(
+                              acc,
+                              key_atom,
+                              SearchUtils.convert_value_to_field(assoc_schema, key_atom, v)
+                            )
+                          else
+                            acc
+                          end
                         end)
                         |> Map.put(assoc_info.related_key, parent_id)
                         |> Map.take(assoc_schema.__schema__(:fields))
@@ -968,7 +1237,10 @@ defmodule Phoexnip.ImportUtils do
                       {processed, cleaned_nested_attrs}
                     end)
 
-                  entries_to_insert = Enum.map(processed_data, &elem(&1, 0))
+                  entries_to_insert =
+                    processed_data
+                    |> Enum.map(&elem(&1, 0))
+                    |> deduplicate_assoc_entries()
 
                   {_sub_count, inserted_assocs} =
                     entries_to_insert
@@ -1210,29 +1482,688 @@ defmodule Phoexnip.ImportUtils do
     header_names
     |> Enum.map(fn header_group ->
       case header_group do
-        # If it's a list, check each option until one is found
         list when is_list(list) ->
-          list
-          |> Enum.find_value(fn header ->
-            index =
-              Enum.find_index(headers, fn h ->
-                String.trim(h) |> String.downcase() ==
-                  String.trim(header) |> String.downcase()
+          {strings, rest} = Enum.split_while(list, &is_binary/1)
+
+          case rest do
+            [] ->
+              # All strings — find first matching header
+              Enum.find_value(strings, "", fn header ->
+                index = find_header_index(headers, header)
+                if index, do: Enum.at(row, index, ""), else: nil
               end)
 
-            if not is_nil(index), do: Enum.at(row, index, ""), else: nil
-          end) || ""
+            [occurrence_idx] when is_integer(occurrence_idx) ->
+              # Strings followed by an occurrence index
+              find_header_with_occurrence(row, headers, strings, occurrence_idx)
 
-        # If it's a single string, treat it as usual
+            [bad | _] ->
+              raise ArgumentError,
+                    "enum_header: expected a string or integer in header group, got: #{inspect(bad)}"
+          end
+
         header when is_binary(header) ->
-          index =
-            Enum.find_index(headers, fn h ->
-              String.trim(h) |> String.downcase() ==
-                String.trim(header) |> String.downcase()
-            end)
-
-          if not is_nil(index), do: Enum.at(row, index, ""), else: ""
+          index = find_header_index(headers, header)
+          if index, do: Enum.at(row, index, ""), else: ""
       end
     end)
+  end
+
+  defp find_header_index(headers, header) do
+    norm = header |> String.trim() |> String.downcase()
+
+    Enum.find_index(headers, fn h ->
+      h |> String.trim() |> String.downcase() == norm
+    end)
+  end
+
+  defp find_header_with_occurrence(row, headers, strings, occurrence_idx) do
+    Enum.find_value(strings, "", fn header ->
+      norm = header |> String.trim() |> String.downcase()
+
+      indices =
+        headers
+        |> Enum.with_index()
+        |> Enum.filter(fn {h, _i} -> h |> String.trim() |> String.downcase() == norm end)
+        |> Enum.map(&elem(&1, 1))
+
+      actual_idx =
+        if occurrence_idx < 0 do
+          Enum.at(indices, occurrence_idx)
+        else
+          Enum.at(indices, occurrence_idx)
+        end
+
+      if actual_idx, do: Enum.at(row, actual_idx, ""), else: nil
+    end)
+  end
+
+  @doc """
+  Finds a colour code based on a colour name search.
+
+  Supports colour mixing by detecting multiple base colours in the name.
+  For example, "blue green" will mix blue and green hex codes.
+
+  ## Parameters
+    - `name` - A string to search for colour names (case-insensitive, partial matching supported)
+    - `opts` - Keyword list of options:
+      - `:return` - Format to return the colour in. Currently supports `"hex"` (default)
+
+  ## Returns
+    - A colour code string in the requested format, or `nil` if no match is found
+
+  ## Examples
+
+      iex> find_colour("red")
+      "#FF0000"
+
+      iex> find_colour("blue green")
+      "#008080"  # Mix of blue and green
+
+      iex> find_colour("dark blue", return: "hex")
+      "#00008B"
+
+      iex> find_colour("unknown")
+      nil
+  """
+  @spec find_colour(name :: String.t(), opts :: keyword()) :: String.t() | nil
+  def find_colour(name, opts \\ []) do
+    return_format = Keyword.get(opts, :return, "hex")
+
+    search_term = name |> String.trim() |> String.downcase()
+
+    base_colours = %{
+      "red" => "#FF0000",
+      "green" => "#00FF00",
+      "blue" => "#0000FF",
+      "yellow" => "#FFFF00",
+      "orange" => "#FFA500",
+      "purple" => "#800080",
+      "pink" => "#FFC0CB",
+      "brown" => "#A52A2A",
+      "black" => "#000000",
+      "white" => "#FFFFFF",
+      "grey" => "#808080",
+      "gray" => "#808080",
+      "navy" => "#000080",
+      "maroon" => "#800000",
+      "teal" => "#008080",
+      "lime" => "#00FF00",
+      "olive" => "#808000",
+      "cyan" => "#00FFFF",
+      "magenta" => "#FF00FF",
+      "silver" => "#C0C0C0",
+      "gold" => "#FFD700",
+      "crimson" => "#DC143C",
+      "violet" => "#EE82EE",
+      "indigo" => "#4B0082",
+      "turquoise" => "#40E0D0",
+      "coral" => "#FF7F50",
+      "khaki" => "#C3B091",
+      "beige" => "#F5F5DC",
+      "tan" => "#D2B48C",
+      "bronze" => "#CD7F32",
+      "copper" => "#B87333",
+      "rust" => "#B7410E",
+      "cream" => "#FFFDD0",
+      "ivory" => "#FFFFF0",
+      "pearl" => "#EAE0C8",
+      "fuchsia" => "#FF00FF",
+      "adobe" => "#C17E4E",
+      "amarillo" => "#F4D03F",
+      "anthracite" => "#293133",
+      "brass" => "#CD9575",
+      "slate" => "#708090",
+      "spruce" => "#1F4D28",
+      "ceramic" => "#E8F1F2",
+      "mandarin" => "#FF8C00",
+      "cactus" => "#587F3E",
+      "berry" => "#8B0A50",
+      "ash" => "#B2BEB5",
+      "cacao" => "#6B4423",
+      "cannon" => "#2C3539",
+      "canyon" => "#D2691E",
+      "cargo" => "#8B7355",
+      "cedar" => "#9B5D3F",
+      "chlorine" => "#00FFFF",
+      "chrome" => "#FFA700",
+      "jade" => "#00A86B",
+      "clover" => "#3EA055",
+      "club" => "#FFD700",
+      "cobalt" => "#0047AB",
+      "coconut" => "#F8F6F0",
+      "charcoal" => "#36454F",
+      "cinder" => "#3B3B3B",
+      "obsidian" => "#0B1B26",
+      "raisin" => "#2B1B17",
+      "russet" => "#7A4419",
+      "stucco" => "#8B8680",
+      "sulfur" => "#B8860B",
+      "denim" => "#1E90FF",
+      "desert" => "#EDC9AF",
+      "dragon" => "#C41E3A",
+      "dust" => "#B2AC88",
+      "ember" => "#FF4500",
+      "enamel" => "#006B3C",
+      "fir" => "#1F4D28",
+      "opal" => "#A8C3BC",
+      "flax" => "#EEDC82",
+      "football" => "#848482",
+      "geode" => "#008B8B",
+      "glacier" => "#B0E0E6",
+      "gorge" => "#1D5E3F",
+      "frost" => "#98FB98",
+      "fog" => "#D3D3D3",
+      "guava" => "#FFC0CB",
+      "gunsmoke" => "#828685",
+      "gym" => "#0066CC",
+      "habanero" => "#E25822",
+      "hasta" => "#9CAFC4",
+      "hemp" => "#987654",
+      "punch" => "#FF1493",
+      "hydrangeas" => "#B5A6C9",
+      "hyper" => "#FF6FFF",
+      "ice" => "#E0E6F0",
+      "infinite" => "#FFD700",
+      "iron" => "#52595D",
+      "ironstone" => "#7D6C5C",
+      "horizon" => "#00A878",
+      "lakeside" => "#4682B4",
+      "laser" => "#1E90FF",
+      "leche" => "#B8D8E8",
+      "lemon" => "#FFFACD",
+      "life" => "#BFFF00",
+      "army" => "#7C8A6A",
+      "bone" => "#E3DAC9",
+      "carbon" => "#616161",
+      "pumice" => "#C8C8C8",
+      "lightening" => "#F0E68C",
+      "blast" => "#CCFF00",
+      "limestone" => "#FAEBD7",
+      "lucky" => "#2E8B57",
+      "lyon" => "#004E98",
+      "magic" => "#FF6FFF",
+      "flamingo" => "#FF6FFF",
+      "malachite" => "#0BDA51",
+      "mica" => "#3D6B57",
+      "midnight" => "#191970",
+      "mineral" => "#4F7942",
+      "mystic" => "#E97451",
+      "hibiscus" => "#E97451",
+      "nano" => "#8B8B83",
+      "neutral" => "#8B8970",
+      "orchid" => "#DA70D6",
+      "night" => "#1B3D2F",
+      "forest" => "#1B3D2F",
+      "noble" => "#A0132C",
+      "noise" => "#00CED1",
+      "aqua" => "#00CED1",
+      "noir" => "#1C1C1C",
+      "oil" => "#3B5441",
+      "old" => "#2B547E",
+      "royal" => "#4169E1",
+      "aura" => "#6B8E23",
+      "opti" => "#FFFF00",
+      "oxidized" => "#556B2F",
+      "oxygen" => "#9370DB",
+      "pacific" => "#4A7856",
+      "moss" => "#4A7856",
+      "pale" => "#E0E0E0",
+      "particle" => "#A7A8AA",
+      "persian" => "#6600FF",
+      "pewter" => "#91A3B0",
+      "phantom" => "#3B3C40",
+      "photo" => "#87CEEB",
+      "photon" => "#D4AF37",
+      "picante" => "#E23D28",
+      "foam" => "#FFB3D9",
+      "glow" => "#FF69B4",
+      "oxford" => "#E8A1A6",
+      "prime" => "#FF6FFF",
+      "pinksicle" => "#FFC0CB",
+      "platinum" => "#E5E4E2",
+      "playful" => "#FF7FE4",
+      "plum" => "#BC8F8F",
+      "polar" => "#F0F8FF",
+      "primary" => "#0066CC",
+      "pro" => "#00FF00",
+      "pure" => "#FFFFFF",
+      "cosmos" => "#8B00FF",
+      "ink" => "#663399",
+      "rattan" => "#D2B48C",
+      "stardust" => "#DC143C",
+      "reflective" => "#C0C0C0",
+      "rosewood" => "#65000B",
+      "rough" => "#6B8E23",
+      "pulse" => "#0047AB",
+      "tint" => "#6495ED",
+      "rush" => "#1E90FF",
+      "safety" => "#FF6600",
+      "sail" => "#F5F5DC",
+      "sanddrift" => "#C2B280",
+      "sangria" => "#92000A",
+      "scream" => "#76FF7A",
+      "sea" => "#9FE2BF",
+      "glass" => "#9FE2BF",
+      "secondary" => "#FF6600",
+      "sequoia" => "#5D4037",
+      "sesame" => "#C8B58D",
+      "signal" => "#003F87",
+      "smoke" => "#738276",
+      "smokey" => "#A9879D",
+      "mauve" => "#A9879D",
+      "soar" => "#87CEEB",
+      "speed" => "#FFDE00",
+      "sport" => "#FFD700",
+      "stadium" => "#006B3C",
+      "stone" => "#928E85",
+      "summit" => "#F8F8FF",
+      "sundown" => "#FF6347",
+      "taupe" => "#8B8589",
+      "team" => "#DC143C",
+      "tertiary" => "#663399",
+      "thunder" => "#4E5B61",
+      "tough" => "#B22222",
+      "track" => "#E30022",
+      "truly" => "#FFD700",
+      "twine" => "#C19A6B",
+      "university" => "#00B2E3",
+      "valerian" => "#435B66",
+      "valor" => "#003D79",
+      "vapor" => "#98FF98",
+      "varsity" => "#FFCB05",
+      "maize" => "#FFCB05",
+      "velvet" => "#7B3F00",
+      "vintage" => "#6B8E23",
+      "viotech" => "#8A2BE2",
+      "vivid" => "#9F00FF",
+      "volt" => "#CEFF00",
+      "washed" => "#5F9EA0",
+      "wheat" => "#F5DEB3",
+      "wolf" => "#6C757D",
+      "worn" => "#5F9EA0",
+      "raspberry" => "#32174D",
+      "void" => "#0B1F3F",
+      "blustery" => "#6B8E9E",
+      "challenge" => "#E41B17",
+      "classic" => "#228B22",
+      "clay" => "#D2691E",
+      "clear" => "#FFFFFF",
+      "court" => "#4169E1",
+      "cyber" => "#FFD300",
+      "diffused" => "#7B9FBF",
+      "dynamic" => "#FFD700",
+      "field" => "#663399",
+      "flat" => "#A8C3BC",
+      "global" => "#0033A0",
+      "oriental" => "#FF8C00",
+      "lotus" => "#FFB7C5",
+      "aurora" => "#00CED1",
+      "atomic" => "#7FFF00",
+      "celestine" => "#4682B4",
+      "chiffon" => "#FFFACD",
+      "college" => "#002147",
+      "cool" => "#8C92AC",
+      "copa" => "#FFD700",
+      "chalk" => "#F5A9A9",
+      "cosmic" => "#B87333",
+      "aster" => "#E6B8D7",
+      "astronomy" => "#1B2F4F",
+      "baltic" => "#2C5F8D",
+      "baroque" => "#654321",
+      "bicoastal" => "#5DBCD2",
+      "binary" => "#0033FF",
+      "blackened" => "#1A1F3A",
+      "brilliant" => "#FF6600",
+      "bronzine" => "#CD7F32",
+      "brushed" => "#B8B8B8",
+      "burgundy" => "#800020",
+      "crush" => "#800020"
+    }
+
+    modifiers = %{
+      "light" => 1.3,
+      "lt" => 1.3,
+      "dark" => 0.7,
+      "dk" => 0.7,
+      "bright" => 1.2,
+      "pale" => 1.4,
+      "deep" => 0.6,
+      "vivid" => 1.1,
+      "faded" => 0.8,
+      "dusty" => 0.75,
+      "washed" => 0.85,
+      "midnight" => 0.5,
+      "soft" => 1.15,
+      "bold" => 1.05,
+      "muted" => 0.65,
+      "worn" => 0.8,
+      "vintage" => 0.75,
+      "antique" => 0.7,
+      "brushed" => 0.9,
+      "oxidized" => 0.6,
+      "blackened" => 0.5,
+      "medium" => 1.0,
+      "med" => 1.0,
+      "active" => 1.15,
+      "hot" => 1.2,
+      "hyper" => 1.25,
+      "magic" => 1.2,
+      "mystic" => 0.8,
+      "ashen" => 0.75,
+      "fir" => 0.65,
+      "smokey" => 0.7,
+      "rough" => 0.75
+    }
+
+    matched_colours =
+      base_colours
+      |> Enum.filter(fn {colour_name, _hex} ->
+        String.contains?(search_term, colour_name)
+      end)
+      |> Enum.map(fn {_name, hex} -> hex end)
+
+    modifier_value =
+      modifiers
+      |> Enum.find_value(1.0, fn {modifier_name, value} ->
+        if String.contains?(search_term, modifier_name), do: value, else: nil
+      end)
+
+    result =
+      case matched_colours do
+        [] ->
+          "#000000"
+
+        [single_hex] ->
+          single_hex
+          |> hex_to_rgb()
+          |> then(fn {r, g, b} ->
+            {
+              min(255, round(r * modifier_value)),
+              min(255, round(g * modifier_value)),
+              min(255, round(b * modifier_value))
+            }
+          end)
+          |> rgb_to_hex()
+
+        multiple_hexes ->
+          multiple_hexes
+          |> mix_colours()
+          |> hex_to_rgb()
+          |> then(fn {r, g, b} ->
+            {
+              min(255, round(r * modifier_value)),
+              min(255, round(g * modifier_value)),
+              min(255, round(b * modifier_value))
+            }
+          end)
+          |> rgb_to_hex()
+      end
+
+    case String.downcase(return_format) do
+      "hex" -> result
+      _ -> result
+    end
+  end
+
+  @spec resolve_extra_cells(
+          raw :: [[any()]],
+          extra_cells :: [{String.t(), String.t() | {non_neg_integer(), non_neg_integer()}}]
+        ) :: {[String.t()], [any()]}
+  defp resolve_extra_cells(_raw, []), do: {[], []}
+
+  defp resolve_extra_cells(raw, extra_cells) do
+    Enum.map(extra_cells, fn {name, cell_ref} ->
+      value = read_cell(raw, cell_ref)
+      {name |> to_string() |> String.trim() |> String.downcase(), value}
+    end)
+    |> Enum.unzip()
+  end
+
+  defp read_cell(raw, {row, col}) when is_integer(row) and is_integer(col) do
+    raw |> Enum.at(row, []) |> Enum.at(col)
+  end
+
+  defp read_cell(raw, cell_ref) when is_binary(cell_ref) do
+    {col, row} = parse_cell_reference(cell_ref)
+    raw |> Enum.at(row, []) |> Enum.at(col)
+  end
+
+  defp parse_cell_reference(ref) do
+    {letters, digits} =
+      String.split_at(
+        ref,
+        String.length(ref) -
+          String.length(
+            String.trim_leading(ref, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+          )
+      )
+
+    col =
+      letters
+      |> String.upcase()
+      |> String.to_charlist()
+      |> Enum.reduce(0, fn char, acc -> acc * 26 + (char - ?A + 1) end)
+      |> Kernel.-(1)
+
+    row = String.to_integer(digits) - 1
+    {col, row}
+  end
+
+  @spec mix_colours(hexes :: [String.t()]) :: String.t()
+  defp mix_colours(hexes) do
+    hexes
+    |> Enum.map(&hex_to_rgb/1)
+    |> Enum.reduce({0, 0, 0}, fn {r, g, b}, {acc_r, acc_g, acc_b} ->
+      {acc_r + r, acc_g + g, acc_b + b}
+    end)
+    |> then(fn {total_r, total_g, total_b} ->
+      count = length(hexes)
+      {div(total_r, count), div(total_g, count), div(total_b, count)}
+    end)
+    |> rgb_to_hex()
+  end
+
+  @spec hex_to_rgb(hex :: String.t()) :: {integer(), integer(), integer()}
+  defp hex_to_rgb("#" <> hex) do
+    hex
+    |> String.upcase()
+    |> String.to_charlist()
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn pair ->
+      pair
+      |> List.to_string()
+      |> String.to_integer(16)
+    end)
+    |> List.to_tuple()
+  end
+
+  @spec rgb_to_hex({integer(), integer(), integer()}) :: String.t()
+  defp rgb_to_hex({r, g, b}) do
+    "#" <>
+      (r |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
+      (g |> Integer.to_string(16) |> String.pad_leading(2, "0")) <>
+      (b |> Integer.to_string(16) |> String.pad_leading(2, "0"))
+  end
+
+  @doc """
+  Resets all entries for a given upload in a LiveView socket.
+
+  Every entry for `upload_name` is cancelled, regardless of its current state.
+  If `upload_name` is not present in `socket.assigns.uploads`, the function is a no-op.
+
+  ## Parameters
+    - `socket` - The LiveView socket that contains upload configuration(s).
+    - `upload_name` - The upload name configured via `allow_upload/3`.
+
+  ## Returns
+    - The updated socket after cancelling all entries for the upload.
+  """
+  @spec reset_upload(socket :: Phoenix.LiveView.Socket.t(), upload_name :: atom()) ::
+          Phoenix.LiveView.Socket.t()
+  def reset_upload(socket, upload_name) do
+    # Check if upload entries for this config exists
+    if upload_config = socket.assigns.uploads[upload_name] do
+      # For every single entry, regardless of its state (done, progress, error),
+      # simply cancel it. This is the most direct way to clear the entries list.
+      Enum.reduce(upload_config.entries, socket, fn entry, acc_socket ->
+        cancel_upload(acc_socket, upload_name, entry.ref)
+      end)
+    else
+      # The upload config for this name didn't exist, so do nothing.
+      socket
+    end
+  end
+
+  defp safe_string_to_atom(str) do
+    try do
+      String.to_existing_atom(str)
+    rescue
+      ArgumentError -> nil
+    end
+  end
+
+  @spec deduplicate_assoc_entries(entries :: [map()]) :: [map()]
+  defp deduplicate_assoc_entries(entries) do
+    {with_id, without_id} =
+      Enum.split_with(entries, fn attrs -> Map.has_key?(attrs, :id) end)
+
+    deduped =
+      with_id
+      |> Enum.reverse()
+      |> Enum.uniq_by(fn attrs -> attrs[:id] end)
+      |> Enum.reverse()
+
+    without_id ++ deduped
+  end
+
+  @spec deduplicate_by_id(entities :: [map()]) :: [map()]
+  defp deduplicate_by_id(entities) do
+    {with_id, without_id} =
+      Enum.split_with(entities, fn attrs ->
+        Map.has_key?(attrs, "id") or Map.has_key?(attrs, :id)
+      end)
+
+    deduped =
+      with_id
+      |> Enum.reverse()
+      |> Enum.uniq_by(fn attrs -> Map.get(attrs, "id") || Map.get(attrs, :id) end)
+      |> Enum.reverse()
+
+    without_id ++ deduped
+  end
+
+  @doc """
+  Recursively converts a struct (and all nested structs) into a plain map
+  with string keys.
+
+  Handles `Ecto.Association.NotLoaded` and `Ecto.Schema.Metadata` by converting
+  them to `nil`. Preserves structs that implement `Phoenix.HTML.Safe`.
+  Processes nested maps and lists recursively.
+
+  ## Examples
+
+      iex> transform_struct_to_map(%MyStruct{name: "test"})
+      %{"name" => "test"}
+  """
+  @spec transform_struct_to_map(value :: any()) :: any()
+  def transform_struct_to_map(value) do
+    cond do
+      is_nil(value) ->
+        nil
+
+      match?(%Ecto.Association.NotLoaded{}, value) ->
+        nil
+
+      match?(%Ecto.Schema.Metadata{}, value) ->
+        nil
+
+      is_struct(value) ->
+        if Phoenix.HTML.Safe.impl_for(value) != Phoenix.HTML.Safe.Any do
+          value
+        else
+          value
+          |> Map.from_struct()
+          |> Map.delete(:__meta__)
+          |> stringify_keys_deep()
+        end
+
+      is_map(value) ->
+        stringify_keys_deep(value)
+
+      is_list(value) ->
+        Enum.map(value, &transform_struct_to_map/1)
+
+      true ->
+        value
+    end
+  end
+
+  @doc """
+  Recursively converts all keys in a map to strings and transforms nested
+  struct values via `transform_struct_to_map/1`.
+
+  ## Examples
+
+      iex> stringify_keys_deep(%{name: "test", nested: %{id: 1}})
+      %{"name" => "test", "nested" => %{"id" => 1}}
+  """
+  @spec stringify_keys_deep(map :: map()) :: map()
+  def stringify_keys_deep(map) when is_map(map) do
+    Map.new(map, fn {k, v} ->
+      key = if is_atom(k), do: Atom.to_string(k), else: to_string(k)
+      {key, transform_struct_to_map(v)}
+    end)
+  end
+
+  @doc """
+  Sends a flash instruction message to a process.
+
+  The `ops` argument must be a keyword list. Missing values are defaulted to:
+
+    - `:title` -> `"Processing"`
+    - `:msg` -> `"Please wait..."`
+    - `:show_spinner` -> `false`
+    - `:duration` -> `5000`
+    - `:kind` -> `:info`
+    - `:reset` -> `nil`
+
+  A message in the form `{:put_flash, {payload, metadata}}` is sent to `pid`.
+
+  ## Parameters
+    - `pid` - Target process that handles flash messages.
+    - `ops` - Keyword options used to build the flash payload and metadata.
+
+  ## Returns
+    - The message sent by `Kernel.send/2`.
+  """
+  @spec put_flash(
+          pid :: pid(),
+          ops :: [
+            {:title, String.t()}
+            | {:msg, String.t()}
+            | {:show_spinner, boolean()}
+            | {:duration, non_neg_integer()}
+            | {:kind, atom()}
+            | {:reset, any()}
+          ]
+        ) ::
+          {:put_flash,
+           {%{
+              title: String.t(),
+              msg: String.t(),
+              show_spinner: boolean(),
+              duration: non_neg_integer()
+            }, [kind: atom(), reset: any()]}}
+  def put_flash(pid, ops) when is_list(ops) do
+    flash_options =
+      {%{
+         title: Keyword.get(ops, :title, "Processing"),
+         msg: Keyword.get(ops, :msg, "Please wait..."),
+         show_spinner: Keyword.get(ops, :show_spinner, false),
+         duration: Keyword.get(ops, :duration, 5000)
+       }, [kind: Keyword.get(ops, :kind, :info), reset: Keyword.get(ops, :reset, nil)]}
+
+    send(pid, {:put_flash, flash_options})
   end
 end

@@ -48,6 +48,7 @@ defmodule Phoexnip.SearchUtils do
     user_timezone = Keyword.get(opts, :user_timezone, "Etc/UTC")
     preload = Keyword.get(opts, :preload, [])
     order_method = Keyword.get(opts, :order_method, :asc)
+    distinct = Keyword.get(opts, :distinct, false)
 
     ctx = %{module: module, user_timezone: user_timezone, use_or: use_or}
     normalized_order_by = normalize_order_by(order_by, order_method)
@@ -63,9 +64,9 @@ defmodule Phoexnip.SearchUtils do
     {query, joined} = apply_filters(remaining, base_query, ctx)
     {query, joined} = apply_or_filters(or_filters, query, joined, ctx)
     {query, joined} = apply_multi_or_filters(multi_or_filters, query, joined, ctx)
-    {final_query, count_query} = prepare_final_query(query, joined, normalized_order_by)
+    {final_query, count_query} = prepare_final_query(query, joined, normalized_order_by, distinct)
 
-    execute_query(final_query, count_query, pagination, preload, module)
+    execute_query(final_query, count_query, pagination, preload, module, distinct)
   end
 
   defp clean_and_parse_args(args, drop_args) do
@@ -256,20 +257,26 @@ defmodule Phoexnip.SearchUtils do
   end
 
   defp build_field_condition(module, binding, field, value, user_timezone) do
-    if exact_type_field?(module, field) do
-      dynamic(
-        [{^binding, a}],
-        field(a, ^field) == ^convert_value_to_field(module, field, value, user_timezone)
-      )
-    else
-      dynamic(
-        [{^binding, a}],
-        fragment("? ILIKE ?", field(a, ^field), ^"%#{value}%")
-      )
+    cond do
+      array_type_field?(module, field) ->
+        arr_value = List.wrap(value)
+        dynamic([{^binding, a}], fragment("? && ?", field(a, ^field), ^arr_value))
+
+      exact_type_field?(module, field) ->
+        dynamic(
+          [{^binding, a}],
+          field(a, ^field) == ^convert_value_to_field(module, field, value, user_timezone)
+        )
+
+      true ->
+        dynamic(
+          [{^binding, a}],
+          fragment("? ILIKE ?", field(a, ^field), ^"%#{value}%")
+        )
     end
   end
 
-  defp prepare_final_query(query, joined, order_by_list) do
+  defp prepare_final_query(query, joined, order_by_list, distinct) do
     # Ensure associations needed for ordering are joined
     {query, _joined} =
       Enum.reduce(order_by_list, {query, joined}, fn {order_by, _method},
@@ -302,13 +309,21 @@ defmodule Phoexnip.SearchUtils do
       end)
 
     final_query = from(q in query, order_by: ^order_clauses)
+    final_query = if distinct, do: from(q in final_query, distinct: true), else: final_query
     {final_query, query}
   end
 
-  defp execute_query(final_query, count_query, pagination, preload, module) do
+  defp execute_query(final_query, count_query, pagination, preload, module, distinct) do
+    count_select =
+      if distinct do
+        dynamic([p], count(field(as(:p), :id), :distinct))
+      else
+        dynamic([p], count(field(as(:p), :id)))
+      end
+
     case pagination do
       %{page: page, per_page: per_page} ->
-        total = Repo.one(from(q in count_query, select: count(field(as(:p), :id), :distinct)))
+        total = Repo.one(from(q in count_query, select: ^count_select))
 
         entries =
           final_query
@@ -327,7 +342,7 @@ defmodule Phoexnip.SearchUtils do
 
       _ ->
         entries = final_query |> Repo.all() |> apply_preload(preload, module)
-        total = Repo.one(from(q in count_query, select: count(field(as(:p), :id), :distinct)))
+        total = Repo.one(from(q in count_query, select: ^count_select))
 
         %{
           entries: entries,
@@ -365,13 +380,24 @@ defmodule Phoexnip.SearchUtils do
 
   defp handle_single_value(query, module, binding, field, value, ctx) do
     condition =
-      if exact_type_field?(module, field) do
-        dynamic(
-          [{^binding, r}],
-          field(r, ^field) == ^convert_value_to_field(module, field, value, ctx.user_timezone)
-        )
-      else
-        dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^"%#{value}%"))
+      cond do
+        array_type_field?(module, field) ->
+          arr_value = List.wrap(value)
+
+          if ctx.use_or do
+            dynamic([{^binding, r}], fragment("? && ?", field(r, ^field), ^arr_value))
+          else
+            dynamic([{^binding, r}], fragment("? @> ?", field(r, ^field), ^arr_value))
+          end
+
+        exact_type_field?(module, field) ->
+          dynamic(
+            [{^binding, r}],
+            field(r, ^field) == ^convert_value_to_field(module, field, value, ctx.user_timezone)
+          )
+
+        true ->
+          dynamic([{^binding, r}], fragment("? ILIKE ?", field(r, ^field), ^"%#{value}%"))
       end
 
     if ctx.use_or do
@@ -382,11 +408,33 @@ defmodule Phoexnip.SearchUtils do
   end
 
   defp handle_list_value(query, module, binding, field, value, ctx) do
-    filtered = Enum.reject(value, &non_value?/1)
+    if array_type_field?(module, field) do
+      handle_array_field_value(query, module, binding, field, value, ctx)
+    else
+      filtered = Enum.reject(value, &non_value?/1)
 
-    if filtered == [],
-      do: query,
-      else: do_handle_list_value(query, module, binding, field, value, ctx)
+      if filtered == [],
+        do: query,
+        else: do_handle_list_value(query, module, binding, field, value, ctx)
+    end
+  end
+
+  defp handle_array_field_value(query, _module, binding, field, value, ctx) do
+    {keyword, values} = extract_list_keyword(value)
+    arr_values = Enum.reject(values, &non_value?/1)
+
+    if arr_values == [] do
+      query
+    else
+      condition =
+        if keyword == "or" or ctx.use_or do
+          dynamic([{^binding, r}], fragment("? && ?", field(r, ^field), ^arr_values))
+        else
+          dynamic([{^binding, r}], fragment("? @> ?", field(r, ^field), ^arr_values))
+        end
+
+      from(r in query, where: ^condition)
+    end
   end
 
   defp do_handle_list_value(query, module, binding, field, value, ctx) do
@@ -754,11 +802,19 @@ defmodule Phoexnip.SearchUtils do
     |> Enum.into(%{})
   end
 
+  defp array_type_field?(module, field) do
+    case detect_schema_field?(module, field) do
+      {:array, _} -> true
+      _ -> false
+    end
+  end
+
   defp exact_type_field?(module, field) do
     detect_schema_field?(module, field) in @exact_types
   end
 
-  @spec detect_schema_field?(schema :: module(), field :: atom()) :: atom() | nil
+  @spec detect_schema_field?(schema :: module(), field :: atom()) ::
+          atom() | {atom(), atom()} | nil
   def detect_schema_field?(schema, field) do
     schema.__schema__(:type, field)
   end
@@ -786,19 +842,7 @@ defmodule Phoexnip.SearchUtils do
   end
 
   defp do_convert_value(:date, value, _tz) do
-    cond do
-      is_struct(value, Date) ->
-        value
-
-      is_binary(value) and String.trim(value) != "" ->
-        case Date.from_iso8601(value) do
-          {:ok, d} -> d
-          _ -> nil
-        end
-
-      true ->
-        nil
-    end
+    ImportUtils.parse_date!(value)
   end
 
   defp do_convert_value(:utc_datetime, value, user_timezone) do
@@ -811,21 +855,11 @@ defmodule Phoexnip.SearchUtils do
         |> DateTime.from_naive!(user_timezone)
         |> DateTime.shift_zone!("Etc/UTC")
 
-      is_binary(value) and String.trim(value) != "" ->
-        value
-        |> Phoexnip.DateUtils.ensure_datetime_format()
-        |> Timex.parse("{ISO:Extended}")
-        |> case do
-          {:ok, dt} ->
-            Timex.to_datetime(dt, user_timezone)
-            |> DateTime.shift_zone!("Etc/UTC")
-
-          _ ->
-            nil
-        end
-
       true ->
-        nil
+        case ImportUtils.parse_datetime(value) do
+          {:ok, nil} -> nil
+          {:ok, %DateTime{} = dt} -> dt
+        end
     end
   end
 
@@ -834,77 +868,36 @@ defmodule Phoexnip.SearchUtils do
       is_struct(value, NaiveDateTime) ->
         value
 
-      is_binary(value) and String.trim(value) != "" ->
-        case NaiveDateTime.from_iso8601(value) do
-          {:ok, ndt} -> ndt
-          _ -> nil
-        end
-
       true ->
-        nil
+        case ImportUtils.parse_datetime(value) do
+          {:ok, nil} -> nil
+          {:ok, %DateTime{} = dt} -> DateTime.to_naive(dt)
+        end
     end
   end
 
   defp do_convert_value(:time, value, _tz) do
-    cond do
-      is_struct(value, Time) ->
-        value
-
-      is_binary(value) and String.trim(value) != "" ->
-        case Time.from_iso8601(value) do
-          {:ok, t} -> t
-          _ -> nil
-        end
-
-      true ->
-        nil
-    end
+    ImportUtils.parse_to_time(value)
   end
 
-  defp do_convert_value(:integer, value, _tz) when is_binary(value) do
-    case Integer.parse(value) do
-      {int, _} -> int
-      _ -> nil
-    end
+  defp do_convert_value(:integer, value, _tz) do
+    ImportUtils.parse_to_integer(value)
   end
 
-  defp do_convert_value(:float, value, _tz) when is_binary(value) do
-    case Float.parse(value) do
-      {flt, _} -> flt
-      _ -> nil
-    end
+  defp do_convert_value(:float, value, _tz) do
+    ImportUtils.parse_to_float(value)
   end
 
-  defp do_convert_value(:decimal, value, _tz) when is_binary(value) do
-    case Decimal.parse(value) do
-      {dec, _} -> dec
-      _ -> nil
-    end
-  end
-
-  defp do_convert_value(:decimal, value, _tz) when is_number(value) do
-    Decimal.new(to_string(value))
+  defp do_convert_value(:decimal, value, _tz) do
+    ImportUtils.parse_to_decimal(value)
   end
 
   defp do_convert_value(:boolean, value, _tz) do
-    cond do
-      is_boolean(value) ->
-        value
-
-      is_binary(value) ->
-        case String.downcase(String.trim(value)) do
-          "true" -> true
-          "false" -> false
-          _ -> nil
-        end
-
-      true ->
-        nil
-    end
+    ImportUtils.parse_to_boolean(value)
   end
 
   defp do_convert_value(:string, value, _tz) do
-    if is_binary(value), do: value, else: to_string(value)
+    ImportUtils.parse_to_string(value)
   end
 
   defp do_convert_value(:binary, value, _tz), do: value

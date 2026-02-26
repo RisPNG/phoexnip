@@ -179,6 +179,24 @@ defmodule PhoexnipWeb do
           {:noreply, socket}
         end
       end
+
+      @impl true
+      def handle_info({:put_flash, {content, opts}}, socket) do
+        kind = Keyword.get(opts, :kind, :info)
+        reset = Keyword.get(opts, :reset, nil)
+
+        socket =
+          if reset != nil do
+            Phoexnip.ImportUtils.reset_upload(socket, reset)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> clear_flash()
+         |> put_flash(kind, content)}
+      end
     end
   end
 
