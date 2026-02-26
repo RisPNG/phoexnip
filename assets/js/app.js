@@ -256,8 +256,7 @@ function setupDatePicker(
   }
 
   if (!can_be_in_the_future) {
-    const now = new Date();
-    maxDate = flatpickr.formatDate(now, "Y-m-d H:i");
+    maxDate = new Date();
   }
 
   flatpickr(element, {
@@ -287,12 +286,8 @@ function setupDatePicker(
         todayButton.className = "today-button";
         todayButton.textContent = "Today";
         todayButton.addEventListener("click", () => {
-            const now = new Date();
-            instance.setDate(
-              flatpickr.formatDate(now, "Y-m-d H:i"), // format in local time
-              true
-            );
-            instance.close();
+          instance.setDate(new Date(), true);
+          instance.close();
         });
 
         // Create Clear button

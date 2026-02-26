@@ -180,10 +180,12 @@ defmodule PhoexnipWeb.CoreComponents do
       <.modal_unclosable id="unclosable-modal">Content</.modal_unclosable>
   """
   def modal_unclosable(assigns) do
+    onclose = Map.get(assigns, :onclose) || Map.get(assigns, :on_cancel) || "close-modal"
+
     assigns =
       assigns
       |> assign_new(:bottom_close, fn -> false end)
-      |> Map.put_new(:onclose, "close-modal")
+      |> assign(:onclose, onclose)
       |> Map.put_new(:class, "w-full")
       |> Map.put_new(:flash, %{})
 
@@ -610,75 +612,86 @@ defmodule PhoexnipWeb.CoreComponents do
       end)
 
     render_as = assigns.render_as
+    errors = assigns.errors
     has_error = render_as in ["enabled", "hidden", "hidden-enabled"]
+    store_input = render_as in ["enabled", "like-disabled", "hidden", "hidden-enabled"]
+    is_span = render_as in ["disabled", "like-disabled", "like-enabled"]
 
-    label_class =
-      case render_as do
-        render_as when render_as in ["enabled", "hidden", "hidden-enabled"] ->
-          [
-            if(assigns.disabled,
-              do: "bg-disabledSurface cursor-not-allowed",
-              else: "bg-surface hover:border-themePrimary"
-            ),
-            assigns.errors != [] && "border-danger",
-            assigns.errors == [] && "border-muted",
-            render_as in ["hidden", "hidden-enabled"] && "hidden"
-          ]
+    hidden_value =
+      cond do
+        not store_input ->
+          nil
 
-        "like-enabled" ->
-          ["bg-surface hover:border-themePrimary", "border-muted cursor-pointer"]
+        render_as == "enabled" and assigns.disabled ->
+          if assigns.checked, do: "true", else: "false"
 
-        _ ->
-          ["bg-disabledSurface cursor-not-allowed", "border-muted"]
+        render_as == "enabled" ->
+          "false"
+
+        true ->
+          if assigns.checked, do: "true", else: "false"
       end
 
+    class = [
+      (render_as in ["disabled", "like-disabled"] || assigns.disabled) &&
+        "bg-disabledSurface cursor-not-allowed",
+      render_as == "like-enabled" && "bg-surface cursor-pointer",
+      render_as == "enabled" && !assigns.disabled && "bg-surface cursor-pointer",
+      "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3 focus-within:border-themePrimary",
+      "phx-no-feedback:border-muted",
+      errors == [] && has_error && "border-muted",
+      errors != [] && has_error && "border-danger focus-within:border-danger",
+      !has_error && "border-muted"
+    ]
+
     checkbox_class = [
-      "!appearance-none input-checkbox h-5 w-5 rounded border-2 !bg-surface focus:ring-0 focus:outline-none",
-      if(render_as in ["like-disabled", "disabled"],
-        do: "hover:cursor-not-allowed",
-        else: "hover:cursor-pointer"
-      ),
-      # Hover states - only apply when NOT checked
-      "hover:!bg-surface focus:!bg-surface",
-      "focus:!border-2",
-      # Checked states - override hover/focus
-      "checked:!bg-success checked:!border-success checked:bg-center checked:bg-no-repeat checked:bg-[url('/images/check.svg')]",
-      # Keep checked styles even when hovering/focusing
-      "checked:hover:!bg-success checked:focus:!bg-success",
-      "checked:hover:!border-success checked:focus:!border-success",
-      has_error && assigns.errors != [] &&
-        "border-danger focus:!border-danger checked:hover:!border-success checked:focus:!border-success",
-      has_error && assigns.errors == [] &&
-        ((assigns.checked && "border-success focus:!border-success") ||
-           "border-muted focus:!border-muted")
+      "input-checkbox h-5 w-5 shrink-0 rounded border-2 focus:ring-0 focus:outline-none",
+      render_as == "enabled" && !assigns.disabled && "cursor-pointer",
+      (render_as != "enabled" || assigns.disabled) && "cursor-not-allowed",
+      errors != [] && has_error && "border-danger",
+      errors == [] && has_error && ((assigns.checked && "border-success") || "border-muted"),
+      !has_error && "border-muted"
+    ]
+
+    checkbox_span_class = [
+      "h-5 w-5 shrink-0 rounded border-2 flex items-center justify-center bg-center bg-no-repeat",
+      assigns.checked && "bg-success border-success bg-[url('/images/check.svg')]",
+      !assigns.checked && "bg-surface border-muted",
+      render_as == "like-enabled" && "cursor-pointer",
+      render_as in ["disabled", "like-disabled"] && "cursor-not-allowed"
     ]
 
     assigns =
       assigns
       |> assign(
-        _render: render_as != "hidden-disabled",
-        _show_hidden: render_as in ["enabled", "hidden", "hidden-enabled", "like-disabled"],
-        _use_span: render_as == "like-enabled",
         _has_error: has_error,
-        _label_class: label_class,
-        _checkbox_class: checkbox_class
+        _render_as: render_as,
+        _store_input: store_input,
+        _is_span: is_span,
+        _hidden_value: hidden_value,
+        _class: class,
+        _checkbox_class: checkbox_class,
+        _checkbox_span_class: checkbox_span_class
       )
 
     ~H"""
     <div phx-feedback-for={@name} class={@class}>
-      <%= if @_render do %>
-        <input :if={@_show_hidden} type="hidden" name={@name} value="false" />
-        <label class={[
-          "mt-2 min-h-[2.75rem] w-full rounded-lg border-2 text-foreground flex items-center justify-between px-3",
-          "phx-no-feedback:border-muted"
-          | @_label_class
-        ]}>
+      <%= if @_store_input do %>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={@_hidden_value}
+        />
+      <% end %>
+      <%= if not String.starts_with?(@_render_as, "hidden") do %>
+        <label class={@_class}>
           <span class="flex items-center gap-2">
             <.icon :if={@icon} name={@icon} class="h-5 w-5" />
             {@label}
           </span>
           <input
-            :if={!@_use_span}
+            :if={!@_is_span}
             type="checkbox"
             id={@id}
             name={@name}
@@ -689,21 +702,18 @@ defmodule PhoexnipWeb.CoreComponents do
             {@rest}
           />
           <span
-            :if={@_use_span}
-            type="checkbox"
+            :if={@_is_span}
             id={@id}
-            name={@name}
-            disabled={@disabled}
-            value="true"
-            checked={@checked}
-            class={@_checkbox_class}
+            role="checkbox"
+            aria-checked={to_string(@checked)}
+            class={@_checkbox_span_class}
             {@rest}
           />
         </label>
-      <% end %>
 
-      <%= if @_has_error do %>
-        <.error :for={msg <- @errors}>{msg}</.error>
+        <%= if @_has_error do %>
+          <.error :for={msg <- @errors}>{msg}</.error>
+        <% end %>
       <% end %>
     </div>
     """
@@ -1239,7 +1249,179 @@ defmodule PhoexnipWeb.CoreComponents do
     """
   end
 
-  # All other inputs text, datetime-local, url, password, etc. are handled here...
+  def input(%{type: "date"} = assigns) do
+    render_as = assigns.render_as
+    errors = assigns.errors
+    has_error = render_as in ["enabled", "hidden", "hidden-enabled"]
+    store_input = render_as in ["enabled", "like-disabled", "hidden", "hidden-enabled"]
+    is_span = render_as in ["disabled", "like-disabled", "like-enabled"]
+
+    span_value =
+      if is_span do
+        value = Phoenix.HTML.Form.normalize_value(assigns.type, assigns[:value])
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if value in [nil, ""] && is_binary(placeholder) do
+          placeholder
+        else
+          Phoexnip.DateUtils.formatDate(value, "{0D}/{0M}/{YYYY}")
+        end
+      end
+
+    class = [
+      render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
+      render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
+      errors == [] && has_error && "border-muted focus:border-themePrimary",
+      errors != [] && has_error && "border-danger focus:border-danger"
+    ]
+
+    assigns =
+      assigns
+      |> assign(
+        _has_error: has_error,
+        _render_as: render_as,
+        _store_input: store_input,
+        _is_span: is_span,
+        _span_value: span_value,
+        _class: class
+      )
+
+    ~H"""
+    <div phx-feedback-for={@name} class={@class}>
+      <%= if @_store_input do %>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        />
+      <% end %>
+      <%= if not String.starts_with?(@_render_as, "hidden") do %>
+        <.label for={@id}>{@label}</.label>
+        <input
+          :if={!@_is_span}
+          type={@type}
+          name={@name}
+          id={@id}
+          disabled={@disabled}
+          phx-debounce="blur"
+          autocomplete="off"
+          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+          class={@_class}
+          {@rest}
+          data-phx-hook="DatePicker"
+        />
+        <span
+          :if={@_is_span}
+          type={@type}
+          name={@name}
+          id={@id}
+          disabled={@disabled}
+          phx-debounce="blur"
+          autocomplete="off"
+          class={@_class}
+          {@rest}
+        >
+          {@_span_value}
+        </span>
+
+        <%= if @_has_error do %>
+          <.error :for={msg <- @errors}>{msg}</.error>
+        <% end %>
+      <% end %>
+    </div>
+    """
+  end
+
+  def input(%{type: "datetime-local"} = assigns) do
+    render_as = assigns.render_as
+    errors = assigns.errors
+    has_error = render_as in ["enabled", "hidden", "hidden-enabled"]
+    store_input = render_as in ["enabled", "like-disabled", "hidden", "hidden-enabled"]
+    is_span = render_as in ["disabled", "like-disabled", "like-enabled"]
+
+    span_value =
+      if is_span do
+        value = Phoenix.HTML.Form.normalize_value(assigns.type, assigns[:value])
+        placeholder = Map.get(assigns.rest, :placeholder)
+
+        if value in [nil, ""] && is_binary(placeholder) do
+          placeholder
+        else
+          Phoexnip.DateUtils.formatDate(value)
+        end
+      end
+
+    class = [
+      render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
+      render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
+      errors == [] && has_error && "border-muted focus:border-themePrimary",
+      errors != [] && has_error && "border-danger focus:border-danger"
+    ]
+
+    assigns =
+      assigns
+      |> assign(
+        _has_error: has_error,
+        _render_as: render_as,
+        _store_input: store_input,
+        _is_span: is_span,
+        _span_value: span_value,
+        _class: class
+      )
+
+    ~H"""
+    <div phx-feedback-for={@name} class={@class}>
+      <%= if @_store_input do %>
+        <input
+          type="hidden"
+          name={@name}
+          id={@id <> "_store"}
+          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+        />
+      <% end %>
+      <%= if not String.starts_with?(@_render_as, "hidden") do %>
+        <.label for={@id}>{@label}</.label>
+        <input
+          :if={!@_is_span}
+          type={@type}
+          name={@name}
+          id={@id}
+          disabled={@disabled}
+          phx-debounce="blur"
+          autocomplete="off"
+          value={Phoenix.HTML.Form.normalize_value(@type, @value)}
+          class={@_class}
+          {@rest}
+          data-phx-hook="DateTimePicker"
+        />
+        <span
+          :if={@_is_span}
+          type={@type}
+          name={@name}
+          id={@id}
+          disabled={@disabled}
+          phx-debounce="blur"
+          autocomplete="off"
+          class={@_class}
+          {@rest}
+        >
+          {@_span_value}
+        </span>
+
+        <%= if @_has_error do %>
+          <.error :for={msg <- @errors}>{msg}</.error>
+        <% end %>
+      <% end %>
+    </div>
+    """
+  end
+
+  # All other inputs text, url, password, etc. are handled here...
   def input(assigns) do
     render_as = assigns.render_as
     errors = assigns.errors
