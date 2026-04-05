@@ -85,7 +85,6 @@ defmodule Phoexnip.MixProject do
       {:jason, ">= 1.2.0"},
       {:live_debugger, ">= 0.3.0", only: :dev},
       {:live_select, github: "rispng/live_select", branch: "testing", override: true},
-      {:pdf_generator, ">= 0.6.0"},
       {:phoenix, ">= 1.7.14"},
       {:phoenix_ecto, ">= 4.5.0"},
       {:phoenix_html, ">= 4.1.0"},
