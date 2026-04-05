@@ -4,7 +4,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "chart.js": "^4.4.7",
+        "chart.js": "^4.5.1",
         "web-haptics": "^0.0.6",
       },
     },
