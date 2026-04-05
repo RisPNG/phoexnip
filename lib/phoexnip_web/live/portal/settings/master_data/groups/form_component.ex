@@ -1,7 +1,7 @@
 defmodule PhoexnipWeb.MasterDataGroupsLive.FormComponent do
   use PhoexnipWeb, :live_component
 
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @impl true
   def render(assigns) do
@@ -50,13 +50,13 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.FormComponent do
      socket
      |> assign(assigns)
      |> assign_new(:form, fn ->
-       to_form(ServiceUtils.change(groups))
+       to_form(CommonService.change(groups))
      end)}
   end
 
   @impl true
   def handle_event("validate", %{"groups" => groups_params}, socket) do
-    changeset = ServiceUtils.change(socket.assigns.groups, groups_params)
+    changeset = CommonService.change(socket.assigns.groups, groups_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
@@ -65,7 +65,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.FormComponent do
   end
 
   defp save(socket, :edit, groups_params) do
-    case ServiceUtils.update(socket.assigns.groups, groups_params) do
+    case CommonService.update(socket.assigns.groups, groups_params) do
       {:ok, groups} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
@@ -97,7 +97,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.FormComponent do
   end
 
   defp save(socket, :new, groups_params) do
-    case ServiceUtils.create(Phoexnip.Masterdata.Groups, groups_params) do
+    case CommonService.create(Phoexnip.Masterdata.Groups, groups_params) do
       {:ok, groups} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type

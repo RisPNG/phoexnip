@@ -9,7 +9,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
   """
 
   alias Phoexnip.Masterdata.Currencies
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @impl true
   def render(assigns) do
@@ -56,13 +56,13 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
      socket
      |> assign(assigns)
      |> assign_new(:form, fn ->
-       to_form(ServiceUtils.change(currencies))
+       to_form(CommonService.change(currencies))
      end)}
   end
 
   @impl true
   def handle_event("validate", %{"currencies" => currencies_params}, socket) do
-    changeset = ServiceUtils.change(socket.assigns.currencies, currencies_params)
+    changeset = CommonService.change(socket.assigns.currencies, currencies_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
@@ -71,7 +71,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
   end
 
   defp save(socket, :edit, currencies_params) do
-    case ServiceUtils.update(socket.assigns.currencies, currencies_params) do
+    case CommonService.update(socket.assigns.currencies, currencies_params) do
       {:ok, currencies} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type
@@ -103,7 +103,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.FormComponent do
   end
 
   defp save(socket, :new, currencies_params) do
-    case ServiceUtils.create(Currencies, currencies_params) do
+    case CommonService.create(Currencies, currencies_params) do
       {:ok, currencies} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type

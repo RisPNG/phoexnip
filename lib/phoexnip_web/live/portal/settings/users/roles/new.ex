@@ -3,7 +3,7 @@ defmodule PhoexnipWeb.RolesLive.New do
 
   alias Phoexnip.Sitemap
   alias Phoexnip.Roles
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
   alias Phoexnip.UserRolesService
   import Ecto.Query, warn: false
 
@@ -13,7 +13,7 @@ defmodule PhoexnipWeb.RolesLive.New do
       socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET2", 2)
 
       # Fetch the sitemap data
-      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = CommonService.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       # Transform sitemap data into RolesPermission structs
       role_permissions =
@@ -62,13 +62,13 @@ defmodule PhoexnipWeb.RolesLive.New do
         |> Enum.filter(fn rp -> rp.permission == 16 end)
 
       role =
-        ServiceUtils.get_with_preload!(
+        CommonService.get_with_preload!(
           Phoexnip.Roles,
           String.to_integer(params["id"]),
           role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)
         )
 
-      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = CommonService.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       # 1. Build a map from sitemap_code → the existing permission struct
       existing_by_code =
@@ -112,7 +112,7 @@ defmodule PhoexnipWeb.RolesLive.New do
           end
         end)
 
-      changeset = ServiceUtils.change(role, %{role_permissions: role_permissions})
+      changeset = CommonService.change(role, %{role_permissions: role_permissions})
 
       {:ok,
        socket
@@ -137,7 +137,7 @@ defmodule PhoexnipWeb.RolesLive.New do
     old_role = socket.assigns.role
 
     if old_role.id == nil do
-      case ServiceUtils.create(Phoexnip.Roles, params) do
+      case CommonService.create(Phoexnip.Roles, params) do
         {:ok, role} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -165,7 +165,7 @@ defmodule PhoexnipWeb.RolesLive.New do
           {:noreply, assign(socket, :form, errors)}
       end
     else
-      case ServiceUtils.update(old_role, params) do
+      case CommonService.update(old_role, params) do
         {:ok, role} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -198,7 +198,7 @@ defmodule PhoexnipWeb.RolesLive.New do
   def handle_event("validate", %{"role" => params}, socket) do
     changeset =
       %Roles{}
-      |> ServiceUtils.change(params)
+      |> CommonService.change(params)
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, form: changeset)}

@@ -2,7 +2,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
   use PhoexnipWeb, :live_view
 
   alias Phoexnip.Masterdata.Currencies
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
   alias Phoexnip.UserRolesService
 
   @impl true
@@ -53,8 +53,8 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
 
     socket
     |> assign(:page_title, "Edit Currencies")
-    |> assign(:currencies, ServiceUtils.get!(Currencies, id))
-    |> stream(:currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))
+    |> assign(:currencies, CommonService.get!(Currencies, id))
+    |> stream(:currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))
   end
 
   defp apply_action(socket, :new, _params) do
@@ -66,7 +66,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
         2
       )
 
-    all_currencies = ServiceUtils.list_ordered(Currencies, asc: :sort)
+    all_currencies = CommonService.list_ordered(Currencies, asc: :sort)
 
     socket
     |> assign(:page_title, "New Currencies")
@@ -93,7 +93,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
     socket
     |> assign(:page_title, "Currencies")
     |> assign(:currencies, nil)
-    |> stream(:currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))
+    |> stream(:currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))
   end
 
   @impl true
@@ -102,13 +102,13 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
         socket
       ) do
     {:noreply,
-     stream(socket, :currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))}
+     stream(socket, :currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))}
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    currencies = ServiceUtils.get!(Currencies, id)
-    {:ok, _} = ServiceUtils.delete(currencies)
+    currencies = CommonService.get!(Currencies, id)
+    {:ok, _} = CommonService.delete(currencies)
 
     Phoexnip.AuditLogService.create_audit_log(
       # Entity type
@@ -128,7 +128,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
     )
 
     {:noreply,
-     stream(socket, :currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))}
+     stream(socket, :currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))}
   end
 
   def handle_event(
@@ -154,7 +154,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
       socket
       |> assign(:audit_log_data, audit_log_data)
       |> assign(:show_audit_log_modal, true)
-      |> stream(:currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))
+      |> stream(:currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))
 
     {:noreply, socket}
   end
@@ -162,6 +162,6 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
   def handle_event("close_audit_log_modal", _params, socket) do
     {:noreply,
      assign(socket, show_audit_log_modal: false)
-     |> stream(:currencies_collection, ServiceUtils.list_ordered(Currencies, asc: :sort))}
+     |> stream(:currencies_collection, CommonService.list_ordered(Currencies, asc: :sort))}
   end
 end

@@ -55,11 +55,11 @@ defmodule PhoexnipWeb.UserController do
       |> halt()
     else
       existing_key =
-        Phoexnip.ServiceUtils.get_by(Phoexnip.Settings.ApiKey, %{given_to: user.email})
+        Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{given_to: user.email})
 
       new_key =
         if existing_key != nil do
-          case Phoexnip.ServiceUtils.delete(existing_key) do
+          case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
             {:ok, _} ->
               Phoexnip.AuditLogService.create_audit_log(
                 "Apikey",
@@ -146,7 +146,7 @@ defmodule PhoexnipWeb.UserController do
     end
 
     existing_key =
-      Phoexnip.ServiceUtils.get_by(Phoexnip.Settings.ApiKey, %{
+      Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{
         refresh_key: refreshToken,
         given_to: email
       })
@@ -161,7 +161,7 @@ defmodule PhoexnipWeb.UserController do
       user = UserService.get_user_by_email(email)
 
       new_key =
-        case Phoexnip.ServiceUtils.delete(existing_key) do
+        case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
           {:ok, _} ->
             Phoexnip.AuditLogService.create_audit_log(
               "Apikey",

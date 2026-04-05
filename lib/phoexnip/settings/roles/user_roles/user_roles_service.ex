@@ -3,11 +3,12 @@ defmodule Phoexnip.UserRolesService do
   Focused permission helpers built on top of roles and sitemap entries.
 
   This module keeps only non-generic logic that cannot be covered by
-  `Phoexnip.ServiceUtils` or `Phoexnip.SearchUtils`.
+  `Phoexnip.CoreUtils.CommonService` or `Phoexnip.SearchUtils`.
   """
 
   import Ecto.Query, warn: false
-  alias Phoexnip.{Repo, RolesPermission, Roles, ServiceUtils, Sitemap, UserRoles}
+  alias Phoexnip.{Repo, RolesPermission, Roles, Sitemap, UserRoles}
+  alias Phoexnip.CoreUtils.CommonService
 
   # Internal: fetch roles a user belongs to (with permissions preloaded)
   @spec fetch_roles_users_belongs_too(user :: struct()) :: [Roles.t()]
@@ -32,7 +33,7 @@ defmodule Phoexnip.UserRolesService do
   @spec fetch_highest_permission_for_users(user :: struct()) :: [RolesPermission.t()]
   def fetch_highest_permission_for_users(user) do
     if user.super_user do
-      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = CommonService.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       Enum.map(sitemap_entries, fn entry ->
         %RolesPermission{
@@ -68,7 +69,7 @@ defmodule Phoexnip.UserRolesService do
   @spec fetch_user_permissions(user :: struct()) :: list(map() | RolesPermission.t())
   def fetch_user_permissions(user) do
     if user.super_user do
-      sitemap_entries = ServiceUtils.list(Sitemap) |> Enum.sort_by(& &1.sequence)
+      sitemap_entries = CommonService.list(Sitemap) |> Enum.sort_by(& &1.sequence)
 
       all_role_permissions =
         Enum.map(sitemap_entries, fn entry ->
@@ -160,7 +161,7 @@ defmodule Phoexnip.UserRolesService do
         ]
   def fetch_level_two_user_permissions(user, parent) do
     if user.super_user do
-      sitemap_entries = ServiceUtils.list(Sitemap)
+      sitemap_entries = CommonService.list(Sitemap)
 
       sitemap_entries
       |> Enum.map(fn entry ->
@@ -190,5 +191,5 @@ defmodule Phoexnip.UserRolesService do
     end
   end
 
-  # All generic CRUD for UserRoles should be done via ServiceUtils.
+  # All generic CRUD for UserRoles should be done via CommonService.
 end

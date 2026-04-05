@@ -15,7 +15,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
 
   alias Phoexnip.Settings.OrganisationInfo
   alias Phoexnip.SearchUtils
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @doc """
   Retrieves the organisation information record.
@@ -81,7 +81,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
       # Extracting the user parameters from the body_params of the connection
       params = conn.body_params["organisation_info"] || conn.body_params
 
-      case ServiceUtils.create(OrganisationInfo, params) do
+      case CommonService.create(OrganisationInfo, params) do
         {:ok, %OrganisationInfo{} = new_organisation_info} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -140,7 +140,7 @@ defmodule PhoexnipWeb.OrganisationInformationController do
 
     master_data = fetch_organisation_info()
 
-    case ServiceUtils.update(master_data, conn.body_params) do
+    case CommonService.update(master_data, conn.body_params) do
       {:ok, %OrganisationInfo{} = updated_master_data} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type

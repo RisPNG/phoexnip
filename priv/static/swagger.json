@@ -5,381 +5,6 @@
   },
   "host": "localhost:4000",
   "definitions": {
-    "Users": {
-      "description": "A paginated list of users.",
-      "properties": {
-        "data": {
-          "description": "List of users",
-          "items": {
-            "$ref": "#/definitions/User"
-          },
-          "type": "array"
-        }
-      },
-      "title": "Users",
-      "type": "object"
-    },
-    "User": {
-      "description": "A registered user of the system.",
-      "properties": {
-        "email": {
-          "description": "Email of the user",
-          "type": "string"
-        },
-        "group": {
-          "description": "Group the user belongs to",
-          "type": "string"
-        },
-        "id": {
-          "description": "User ID",
-          "type": "integer"
-        },
-        "image_url": {
-          "description": "Profile image URL of the user",
-          "type": "string"
-        },
-        "inserted_at": {
-          "description": "Timestamp when the user was created",
-          "format": "date-time",
-          "type": "string"
-        },
-        "name": {
-          "description": "Full name of the user",
-          "type": "string"
-        },
-        "phone": {
-          "description": "Phone number of the user",
-          "type": "string"
-        },
-        "updated_at": {
-          "description": "Timestamp when the user was last updated",
-          "format": "date-time",
-          "type": "string"
-        }
-      },
-      "title": "User",
-      "type": "object"
-    },
-    "Permission": {
-      "description": "A permission object representing user permissions based on the sitemap. In short what the user can access in the system",
-      "example": {
-        "children": [
-          {
-            "permission": 16,
-            "sequence": 30,
-            "sitemap_code": "INV1",
-            "sitemap_level": 1,
-            "sitemap_name": "Product Management",
-            "sitemap_parent": "INV",
-            "sitemap_url": "product"
-          }
-        ],
-        "permission": 16,
-        "sequence": 20,
-        "sitemap_code": "INV",
-        "sitemap_level": 0,
-        "sitemap_name": "Inventory",
-        "sitemap_url": ""
-      },
-      "properties": {
-        "children": {
-          "description": "Nested permissions for child sitemaps (this can only be for level 0)",
-          "items": {
-            "$ref": "#/definitions/Permission"
-          },
-          "type": "array"
-        },
-        "permission": {
-          "description": "User permission level",
-          "type": "integer"
-        },
-        "sequence": {
-          "description": "Display order sequence",
-          "type": "integer"
-        },
-        "sitemap_code": {
-          "description": "Sitemap code",
-          "type": "string"
-        },
-        "sitemap_level": {
-          "description": "Sitemap level",
-          "type": "integer"
-        },
-        "sitemap_name": {
-          "description": "Sitemap name",
-          "type": "string"
-        },
-        "sitemap_parent": {
-          "description": "Parent sitemap code",
-          "type": "string"
-        },
-        "sitemap_url": {
-          "description": "Sitemap URL",
-          "type": "string"
-        }
-      },
-      "required": [
-        "permission",
-        "sequence",
-        "sitemap_level",
-        "sitemap_name",
-        "sitemap_code"
-      ],
-      "title": "Users Permissions",
-      "type": "object"
-    },
-    "Update_User_Password": {
-      "description": "Update a user's password",
-      "properties": {
-        "current_password": {
-          "description": "User's current password",
-          "type": "string"
-        },
-        "password": {
-          "description": "User's newly selected password",
-          "type": "string"
-        },
-        "password_confirmation": {
-          "description": "User's password confirmation",
-          "type": "string"
-        }
-      },
-      "required": [
-        "password_confirmation",
-        "password",
-        "current_password"
-      ],
-      "title": "Update user password",
-      "type": "object"
-    },
-    "Update_User": {
-      "description": "Fields for updating a user.",
-      "properties": {
-        "group": {
-          "description": "Group the user belongs to",
-          "type": "string"
-        },
-        "name": {
-          "description": "Full name of the user",
-          "type": "string"
-        },
-        "phone": {
-          "description": "Phone number of the user",
-          "type": "string"
-        }
-      },
-      "title": "Update a user",
-      "type": "object"
-    },
-    "login_result": {
-      "description": "Information about the API key and validation",
-      "properties": {
-        "given_to": {
-          "description": "User email",
-          "type": "string"
-        },
-        "key": {
-          "description": "API Key",
-          "type": "string"
-        },
-        "refresh_key": {
-          "description": "Refresh Key",
-          "type": "string"
-        },
-        "refresh_until": {
-          "description": "Refresh key valid till in UTC",
-          "format": "date_time",
-          "type": "string"
-        },
-        "valid_until": {
-          "description": "API key valid till in UTC",
-          "format": "date_time",
-          "type": "string"
-        }
-      },
-      "required": [
-        "refresh_until",
-        "valid_until",
-        "refresh_key",
-        "key",
-        "given_to"
-      ],
-      "title": "Login result",
-      "type": "object"
-    },
-    "login_body": {
-      "description": "Authenticate to the API",
-      "properties": {
-        "email": {
-          "description": "User email",
-          "type": "string"
-        },
-        "password": {
-          "description": "User password",
-          "type": "string"
-        }
-      },
-      "required": [
-        "email",
-        "password"
-      ],
-      "title": "Login body",
-      "type": "object"
-    },
-    "Create_User": {
-      "description": "Fields for creating a user.",
-      "properties": {
-        "email": {
-          "description": "Email of the user",
-          "type": "string"
-        },
-        "group": {
-          "description": "Group the user belongs to",
-          "type": "string"
-        },
-        "name": {
-          "description": "Full name of the user",
-          "type": "string"
-        },
-        "password": {
-          "description": "User chosen password",
-          "type": "string"
-        },
-        "password_confirmation": {
-          "description": "Confirmation of user chosen password",
-          "type": "string"
-        },
-        "phone": {
-          "description": "Phone number of the user",
-          "type": "string"
-        }
-      },
-      "required": [
-        "password_confirmation",
-        "password",
-        "name",
-        "email"
-      ],
-      "title": "Create a user",
-      "type": "object"
-    },
-    "Address": {
-      "description": "Schema for an address entry in the application.",
-      "properties": {
-        "attn": {
-          "description": "Attention to",
-          "type": "string"
-        },
-        "category": {
-          "description": "Category of the address",
-          "type": "string"
-        },
-        "city": {
-          "description": "City",
-          "type": "string"
-        },
-        "country": {
-          "description": "Country",
-          "type": "string"
-        },
-        "guid": {
-          "description": "Unique address identifier",
-          "type": "string"
-        },
-        "inserted_at": {
-          "description": "Date and time when the address was created",
-          "type": "string"
-        },
-        "line1": {
-          "description": "Address line 1",
-          "type": "string"
-        },
-        "line2": {
-          "description": "Address line 2",
-          "type": "string"
-        },
-        "line3": {
-          "description": "Address line 3",
-          "type": "string"
-        },
-        "postcode": {
-          "description": "Postal code",
-          "type": "string"
-        },
-        "sequence": {
-          "description": "Sequence order for the address",
-          "type": "integer"
-        },
-        "state": {
-          "description": "State",
-          "type": "string"
-        },
-        "updated_at": {
-          "description": "Date and time when the address was last updated",
-          "type": "string"
-        }
-      },
-      "title": "Address",
-      "type": "object"
-    },
-    "OrganisationInformation": {
-      "description": "Parameters for creating or updating organisation information.",
-      "properties": {
-        "address": {
-          "description": "List of organisation addresses",
-          "items": {
-            "$ref": "#/definitions/Address"
-          },
-          "type": "array"
-        },
-        "currency": {
-          "description": "Currencies code",
-          "type": "string"
-        },
-        "email": {
-          "description": "Organisation email",
-          "type": "string"
-        },
-        "fax": {
-          "description": "Organisation fax number",
-          "type": "string"
-        },
-        "gst_number": {
-          "description": "GST number",
-          "type": "string"
-        },
-        "name": {
-          "description": "Organisation name",
-          "type": "string"
-        },
-        "pcb_number": {
-          "description": "PCB number",
-          "type": "string"
-        },
-        "phone": {
-          "description": "Organisation phone number",
-          "type": "string"
-        },
-        "registration_number": {
-          "description": "Registration number",
-          "type": "string"
-        },
-        "socso_number": {
-          "description": "SOCSO number",
-          "type": "string"
-        },
-        "website": {
-          "description": "Organisation website",
-          "type": "string"
-        }
-      },
-      "required": [
-        "registration_number",
-        "name"
-      ],
-      "title": "Organisation Information",
-      "type": "object"
-    },
     "RolesPermission": {
       "description": "Permission details for a specific role.",
       "properties": {
@@ -442,6 +67,203 @@
         "name"
       ],
       "title": "Roles",
+      "type": "object"
+    },
+    "Sitemap": {
+      "description": "A sitemap structure representing different elements with hierarchical levels.",
+      "properties": {
+        "code": {
+          "description": "Unique code for the sitemap",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of the sitemap element",
+          "type": "string"
+        },
+        "displayname": {
+          "description": "Display name for the sitemap",
+          "type": "string"
+        },
+        "level": {
+          "description": "Level of the sitemap in the hierarchy",
+          "type": "integer"
+        },
+        "parent": {
+          "description": "Parent element code",
+          "type": "string"
+        },
+        "sequence": {
+          "description": "Sequence number for ordering",
+          "type": "integer"
+        },
+        "url": {
+          "description": "URL for the sitemap element",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sequence",
+        "url",
+        "level",
+        "displayname",
+        "code"
+      ],
+      "title": "Sitemap",
+      "type": "object"
+    },
+    "Users": {
+      "description": "A paginated list of users.",
+      "properties": {
+        "data": {
+          "description": "List of users",
+          "items": {
+            "$ref": "#/definitions/User"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Users",
+      "type": "object"
+    },
+    "Currencies": {
+      "description": "Details of Currencies",
+      "properties": {
+        "code": {
+          "description": "Code of the Currencies",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the Currencies",
+          "type": "string"
+        },
+        "sort": {
+          "description": "Sort of the Currencies",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sort",
+        "name",
+        "code"
+      ],
+      "title": "Masterdata - Currencies",
+      "type": "object"
+    },
+    "OrganisationInformation": {
+      "description": "Parameters for creating or updating organisation information.",
+      "properties": {
+        "address": {
+          "description": "List of organisation addresses",
+          "items": {
+            "$ref": "#/definitions/Address"
+          },
+          "type": "array"
+        },
+        "currency": {
+          "description": "Currencies code",
+          "type": "string"
+        },
+        "email": {
+          "description": "Organisation email",
+          "type": "string"
+        },
+        "fax": {
+          "description": "Organisation fax number",
+          "type": "string"
+        },
+        "gst_number": {
+          "description": "GST number",
+          "type": "string"
+        },
+        "name": {
+          "description": "Organisation name",
+          "type": "string"
+        },
+        "pcb_number": {
+          "description": "PCB number",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Organisation phone number",
+          "type": "string"
+        },
+        "registration_number": {
+          "description": "Registration number",
+          "type": "string"
+        },
+        "socso_number": {
+          "description": "SOCSO number",
+          "type": "string"
+        },
+        "website": {
+          "description": "Organisation website",
+          "type": "string"
+        }
+      },
+      "required": [
+        "registration_number",
+        "name"
+      ],
+      "title": "Organisation Information",
+      "type": "object"
+    },
+    "Address": {
+      "description": "Schema for an address entry in the application.",
+      "properties": {
+        "attn": {
+          "description": "Attention to",
+          "type": "string"
+        },
+        "category": {
+          "description": "Category of the address",
+          "type": "string"
+        },
+        "city": {
+          "description": "City",
+          "type": "string"
+        },
+        "country": {
+          "description": "Country",
+          "type": "string"
+        },
+        "guid": {
+          "description": "Unique address identifier",
+          "type": "string"
+        },
+        "inserted_at": {
+          "description": "Date and time when the address was created",
+          "type": "string"
+        },
+        "line1": {
+          "description": "Address line 1",
+          "type": "string"
+        },
+        "line2": {
+          "description": "Address line 2",
+          "type": "string"
+        },
+        "line3": {
+          "description": "Address line 3",
+          "type": "string"
+        },
+        "postcode": {
+          "description": "Postal code",
+          "type": "string"
+        },
+        "sequence": {
+          "description": "Sequence order for the address",
+          "type": "integer"
+        },
+        "state": {
+          "description": "State",
+          "type": "string"
+        },
+        "updated_at": {
+          "description": "Date and time when the address was last updated",
+          "type": "string"
+        }
+      },
+      "title": "Address",
       "type": "object"
     },
     "Roles_And_Permissions": {
@@ -520,70 +342,248 @@
       "title": "Roles Permission",
       "type": "object"
     },
-    "Sitemap": {
-      "description": "A sitemap structure representing different elements with hierarchical levels.",
+    "User": {
+      "description": "A registered user of the system.",
       "properties": {
-        "code": {
-          "description": "Unique code for the sitemap",
+        "email": {
+          "description": "Email of the user",
           "type": "string"
         },
-        "description": {
-          "description": "Description of the sitemap element",
+        "group": {
+          "description": "Group the user belongs to",
           "type": "string"
         },
-        "displayname": {
-          "description": "Display name for the sitemap",
-          "type": "string"
-        },
-        "level": {
-          "description": "Level of the sitemap in the hierarchy",
+        "id": {
+          "description": "User ID",
           "type": "integer"
         },
-        "parent": {
-          "description": "Parent element code",
+        "image_url": {
+          "description": "Profile image URL of the user",
           "type": "string"
         },
-        "sequence": {
-          "description": "Sequence number for ordering",
-          "type": "integer"
-        },
-        "url": {
-          "description": "URL for the sitemap element",
-          "type": "string"
-        }
-      },
-      "required": [
-        "sequence",
-        "url",
-        "level",
-        "displayname",
-        "code"
-      ],
-      "title": "Sitemap",
-      "type": "object"
-    },
-    "Currencies": {
-      "description": "Details of Currencies",
-      "properties": {
-        "code": {
-          "description": "Code of the Currencies",
+        "inserted_at": {
+          "description": "Timestamp when the user was created",
+          "format": "date-time",
           "type": "string"
         },
         "name": {
-          "description": "Name of the Currencies",
+          "description": "Full name of the user",
           "type": "string"
         },
-        "sort": {
-          "description": "Sort of the Currencies",
-          "type": "integer"
+        "phone": {
+          "description": "Phone number of the user",
+          "type": "string"
+        },
+        "updated_at": {
+          "description": "Timestamp when the user was last updated",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "title": "User",
+      "type": "object"
+    },
+    "login_body": {
+      "description": "Authenticate to the API",
+      "properties": {
+        "email": {
+          "description": "User email",
+          "type": "string"
+        },
+        "password": {
+          "description": "User password",
+          "type": "string"
         }
       },
       "required": [
-        "sort",
-        "name",
-        "code"
+        "email",
+        "password"
       ],
-      "title": "Masterdata - Currencies",
+      "title": "Login body",
+      "type": "object"
+    },
+    "login_result": {
+      "description": "Information about the API key and validation",
+      "properties": {
+        "given_to": {
+          "description": "User email",
+          "type": "string"
+        },
+        "key": {
+          "description": "API Key",
+          "type": "string"
+        },
+        "refresh_key": {
+          "description": "Refresh Key",
+          "type": "string"
+        },
+        "refresh_until": {
+          "description": "Refresh key valid till in UTC",
+          "format": "date_time",
+          "type": "string"
+        },
+        "valid_until": {
+          "description": "API key valid till in UTC",
+          "format": "date_time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "refresh_until",
+        "valid_until",
+        "refresh_key",
+        "key",
+        "given_to"
+      ],
+      "title": "Login result",
+      "type": "object"
+    },
+    "Create_User": {
+      "description": "Fields for creating a user.",
+      "properties": {
+        "email": {
+          "description": "Email of the user",
+          "type": "string"
+        },
+        "group": {
+          "description": "Group the user belongs to",
+          "type": "string"
+        },
+        "name": {
+          "description": "Full name of the user",
+          "type": "string"
+        },
+        "password": {
+          "description": "User chosen password",
+          "type": "string"
+        },
+        "password_confirmation": {
+          "description": "Confirmation of user chosen password",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Phone number of the user",
+          "type": "string"
+        }
+      },
+      "required": [
+        "password_confirmation",
+        "password",
+        "name",
+        "email"
+      ],
+      "title": "Create a user",
+      "type": "object"
+    },
+    "Update_User": {
+      "description": "Fields for updating a user.",
+      "properties": {
+        "group": {
+          "description": "Group the user belongs to",
+          "type": "string"
+        },
+        "name": {
+          "description": "Full name of the user",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Phone number of the user",
+          "type": "string"
+        }
+      },
+      "title": "Update a user",
+      "type": "object"
+    },
+    "Update_User_Password": {
+      "description": "Update a user's password",
+      "properties": {
+        "current_password": {
+          "description": "User's current password",
+          "type": "string"
+        },
+        "password": {
+          "description": "User's newly selected password",
+          "type": "string"
+        },
+        "password_confirmation": {
+          "description": "User's password confirmation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "password_confirmation",
+        "password",
+        "current_password"
+      ],
+      "title": "Update user password",
+      "type": "object"
+    },
+    "Permission": {
+      "description": "A permission object representing user permissions based on the sitemap. In short what the user can access in the system",
+      "example": {
+        "children": [
+          {
+            "permission": 16,
+            "sequence": 30,
+            "sitemap_code": "INV1",
+            "sitemap_level": 1,
+            "sitemap_name": "Product Management",
+            "sitemap_parent": "INV",
+            "sitemap_url": "product"
+          }
+        ],
+        "permission": 16,
+        "sequence": 20,
+        "sitemap_code": "INV",
+        "sitemap_level": 0,
+        "sitemap_name": "Inventory",
+        "sitemap_url": ""
+      },
+      "properties": {
+        "children": {
+          "description": "Nested permissions for child sitemaps (this can only be for level 0)",
+          "items": {
+            "$ref": "#/definitions/Permission"
+          },
+          "type": "array"
+        },
+        "permission": {
+          "description": "User permission level",
+          "type": "integer"
+        },
+        "sequence": {
+          "description": "Display order sequence",
+          "type": "integer"
+        },
+        "sitemap_code": {
+          "description": "Sitemap code",
+          "type": "string"
+        },
+        "sitemap_level": {
+          "description": "Sitemap level",
+          "type": "integer"
+        },
+        "sitemap_name": {
+          "description": "Sitemap name",
+          "type": "string"
+        },
+        "sitemap_parent": {
+          "description": "Parent sitemap code",
+          "type": "string"
+        },
+        "sitemap_url": {
+          "description": "Sitemap URL",
+          "type": "string"
+        }
+      },
+      "required": [
+        "permission",
+        "sequence",
+        "sitemap_level",
+        "sitemap_name",
+        "sitemap_code"
+      ],
+      "title": "Users Permissions",
       "type": "object"
     }
   },

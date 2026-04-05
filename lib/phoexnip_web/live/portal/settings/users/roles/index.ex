@@ -1,7 +1,7 @@
 defmodule PhoexnipWeb.RolesLive.Index do
   use PhoexnipWeb, :live_view
 
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @impl true
   def mount(_params, _session, socket) do
@@ -55,9 +55,9 @@ defmodule PhoexnipWeb.RolesLive.Index do
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    roles = ServiceUtils.get!(Phoexnip.Roles, id)
+    roles = CommonService.get!(Phoexnip.Roles, id)
 
-    case ServiceUtils.delete(roles) do
+    case CommonService.delete(roles) do
       {:ok, _} ->
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type

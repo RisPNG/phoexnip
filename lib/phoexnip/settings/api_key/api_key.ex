@@ -10,7 +10,7 @@ defmodule Phoexnip.Settings.ApiKey do
 
   use Ecto.Schema
   import Ecto.Changeset
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @typedoc "An `%ApiKey{}` struct"
   @type t :: %__MODULE__{
@@ -75,7 +75,7 @@ defmodule Phoexnip.Settings.ApiKey do
     valid_until = Timex.shift(utc_now, days: 1)
     refresh_until = Timex.shift(utc_now, days: 7)
 
-    ServiceUtils.create(__MODULE__, %{
+    CommonService.create(__MODULE__, %{
       key: api_key,
       given_to: given_to,
       valid_until: valid_until,

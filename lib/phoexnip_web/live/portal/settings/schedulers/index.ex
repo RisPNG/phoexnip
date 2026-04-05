@@ -1,7 +1,7 @@
 defmodule PhoexnipWeb.SchedulersLive.Index do
   use PhoexnipWeb, :live_view
 
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
   alias Phoexnip.Settings.Schedulers
 
   @impl true
@@ -22,7 +22,7 @@ defmodule PhoexnipWeb.SchedulersLive.Index do
        )
        |> assign(:breadcrumb_fourth_segment, nil),
        :jobs,
-       ServiceUtils.list(Schedulers)
+       CommonService.list(Schedulers)
      )}
   end
 
@@ -45,7 +45,7 @@ defmodule PhoexnipWeb.SchedulersLive.Index do
     Phoexnip.JobExecutor.start_job_if_not_running(name)
 
     # Stream updated jobs
-    jobs = ServiceUtils.list(Schedulers)
+    jobs = CommonService.list(Schedulers)
 
     socket =
       socket
@@ -64,7 +64,7 @@ defmodule PhoexnipWeb.SchedulersLive.Index do
     Phoexnip.JobExecutor.stop_job_if_running(name)
 
     # Stream updated jobs
-    jobs = ServiceUtils.list(Schedulers)
+    jobs = CommonService.list(Schedulers)
 
     socket =
       socket

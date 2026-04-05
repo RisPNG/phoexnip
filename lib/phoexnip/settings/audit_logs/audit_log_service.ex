@@ -3,13 +3,13 @@ defmodule Phoexnip.AuditLogService do
   Thin wrappers around shared utilities for AuditLogs.
 
   This module intentionally stays minimal by delegating to `SearchUtils`
-  and `ServiceUtils`, keeping only behavior that composes attributes
+  and `CommonService`, keeping only behavior that composes attributes
   or complex filters specific to audit logging.
   """
 
   alias Phoexnip.AuditLogs
   alias Phoexnip.SearchUtils
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
 
   @doc """
   Retrieves audit logs for one or more `entity_type`s and a target entity,
@@ -65,7 +65,7 @@ defmodule Phoexnip.AuditLogService do
 
   @doc """
   Creates an audit log entry, encoding maps as JSON strings and stamping `inserted_at`.
-  Delegates persistence to `ServiceUtils.create/2`.
+  Delegates persistence to `CommonService.create/2`.
   """
   @spec create_audit_log(
           entity_type :: String.t(),
@@ -125,6 +125,6 @@ defmodule Phoexnip.AuditLogService do
       inserted_at: DateTime.utc_now()
     }
 
-    ServiceUtils.create(AuditLogs, attrs)
+    CommonService.create(AuditLogs, attrs)
   end
 end

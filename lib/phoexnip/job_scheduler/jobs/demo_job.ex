@@ -10,7 +10,7 @@ defmodule Phoexnip.DemoJob do
   """
 
   alias Phoexnip.SearchUtils
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
   alias Phoexnip.Settings.Tasks
   alias Phoexnip.Settings.TasksHistory
 
@@ -129,7 +129,7 @@ defmodule Phoexnip.DemoJob do
 
   defp start_task(%Tasks{} = task) do
     create_task_history(task, "Starting Task")
-    ServiceUtils.update(task, %{task_status: 1})
+    CommonService.update(task, %{task_status: 1})
   end
 
   defp fail_task(%Tasks{} = task, message) when is_binary(message) do
@@ -139,12 +139,12 @@ defmodule Phoexnip.DemoJob do
       |> DateTime.truncate(:second)
 
     create_task_history(task, message)
-    ServiceUtils.update(task, %{task_status: 0, task_retry_date: retry_date})
+    CommonService.update(task, %{task_status: 0, task_retry_date: retry_date})
   end
 
   defp success_task(%Tasks{} = task, message) when is_binary(message) do
     create_task_history(task, message)
-    ServiceUtils.update(task, %{task_status: 2})
+    CommonService.update(task, %{task_status: 2})
   end
 
   defp create_task_history(%Tasks{} = task, message) when is_binary(message) do
@@ -159,6 +159,6 @@ defmodule Phoexnip.DemoJob do
       message: message
     }
 
-    ServiceUtils.create(TasksHistory, history_attrs)
+    CommonService.create(TasksHistory, history_attrs)
   end
 end

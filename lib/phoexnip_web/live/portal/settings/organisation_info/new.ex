@@ -9,7 +9,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
   """
 
   alias Phoexnip.Settings.OrganisationInfo
-  alias Phoexnip.ServiceUtils
+  alias Phoexnip.CoreUtils.CommonService
   alias Phoexnip.SearchUtils
   alias Phoexnip.Masterdata.Currencies
 
@@ -18,10 +18,10 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET4", 4)
 
     organisation_information = fetch_organisation_info()
-    changeset = ServiceUtils.change(organisation_information)
+    changeset = CommonService.change(organisation_information)
 
     currency =
-      ServiceUtils.list_ordered(Currencies, asc: :sort) |> Enum.map(&{"#{&1.name}", &1.code})
+      CommonService.list_ordered(Currencies, asc: :sort) |> Enum.map(&{"#{&1.name}", &1.code})
 
     {:ok,
      socket
@@ -45,7 +45,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     organisation_info = socket.assigns.organisation_info
 
     if organisation_info.id != nil do
-      case ServiceUtils.update(organisation_info, params) do
+      case CommonService.update(organisation_info, params) do
         {:ok, new_organisation_info} ->
           # Create the audit log after customer creation
           Phoexnip.AuditLogService.create_audit_log(
@@ -75,7 +75,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
       end
     else
       # Save the user first to ensure unique constrained is honored.
-      case ServiceUtils.create(OrganisationInfo, params) do
+      case CommonService.create(OrganisationInfo, params) do
         {:ok, organisation_info} ->
           Phoexnip.AuditLogService.create_audit_log(
             # Entity type
@@ -109,14 +109,14 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     if socket.assigns.organisation_info.id != nil do
       changeset =
         socket.assigns.organisation_info
-        |> ServiceUtils.change(params)
+        |> CommonService.change(params)
         |> Map.put(:action, :validate)
 
       {:noreply, assign(socket, form: changeset)}
     else
       changeset =
         %OrganisationInfo{}
-        |> ServiceUtils.change(params)
+        |> CommonService.change(params)
         |> Map.put(:action, :validate)
 
       {:noreply, assign(socket, form: changeset)}
@@ -146,7 +146,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
       | address: customer.address ++ [new_address]
     }
 
-    {:noreply, assign(socket, :form, ServiceUtils.change(updated_customer))}
+    {:noreply, assign(socket, :form, CommonService.change(updated_customer))}
   end
 
   def handle_event("remove_address", %{"guid" => guid}, socket) do
@@ -188,7 +188,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
     updated_customer = %{customer | address: final_addresses}
 
     # Assign the updated changeset back to the socket
-    {:noreply, assign(socket, :form, ServiceUtils.change(updated_customer))}
+    {:noreply, assign(socket, :form, CommonService.change(updated_customer))}
   end
 
   @impl true
