@@ -79,15 +79,13 @@ defmodule Phoexnip.AuthenticationUtils do
       permission = check_permissions(socket.assigns.permissions, page_code)
 
       if permission == nil || permission.permission < permission_needed do
-        case permission.sitemap_code do
-          "H" ->
-            socket
-            |> redirect(to: ~p"/")
-
-          _ ->
-            socket
-            |> put_flash(:error, "You do not have access to this page.")
-            |> redirect(to: ~p"/")
+        if permission != nil and permission.sitemap_code == "H" do
+          socket
+          |> redirect(to: ~p"/")
+        else
+          socket
+          |> put_flash(:error, "You do not have access to this page.")
+          |> redirect(to: ~p"/")
         end
       else
         socket |> assign(permission_level: permission.permission)

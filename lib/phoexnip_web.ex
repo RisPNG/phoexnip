@@ -87,15 +87,10 @@ defmodule PhoexnipWeb do
         if now > session_expiry && socket.assigns[:current_user] do
           {:noreply, socket |> redirect(to: "/")}
         else
-          # Cancel existing timer before setting a new one
-          PhoexnipWeb.Live.SessionExpiryHook.cancel_existing_check_session_timer()
-
-          # Reschedule session check
+          if old_ref = socket.assigns[:expiry_timer], do: Process.cancel_timer(old_ref)
           timer_ref = Process.send_after(self(), :check_session, 60_000)
-          # Store globally
-          PhoexnipWeb.Live.SessionExpiryHook.store_check_session_timer(timer_ref)
 
-          {:noreply, socket}
+          {:noreply, assign(socket, :expiry_timer, timer_ref)}
         end
       end
     end
@@ -168,15 +163,10 @@ defmodule PhoexnipWeb do
         if now > session_expiry && socket.assigns[:current_user] do
           {:noreply, socket |> redirect(to: "/")}
         else
-          # Cancel existing timer before setting a new one
-          PhoexnipWeb.Live.SessionExpiryHook.cancel_existing_check_session_timer()
-
-          # Reschedule session check
+          if old_ref = socket.assigns[:expiry_timer], do: Process.cancel_timer(old_ref)
           timer_ref = Process.send_after(self(), :check_session, 60_000)
-          # Store globally
-          PhoexnipWeb.Live.SessionExpiryHook.store_check_session_timer(timer_ref)
 
-          {:noreply, socket}
+          {:noreply, assign(socket, :expiry_timer, timer_ref)}
         end
       end
 

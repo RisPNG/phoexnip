@@ -41,84 +41,85 @@ defmodule PhoexnipWeb.UserController do
     if String.trim(email) == "" || String.trim(password) == "" do
       conn
       |> put_status(:unprocessable_entity)
-      |> json(%{
-        error: "Failed to login user invalid data provided"
-      })
-    end
-
-    user = UserService.get_user_by_email_and_password(email, password)
-
-    if user == nil do
-      conn
-      |> put_status(:unauthorized)
-      |> json(%{error: "Unauthorized: Invalid username or password"})
+      |> json(%{error: "Failed to login user invalid data provided"})
       |> halt()
     else
-      existing_key =
-        Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{given_to: user.email})
+      user = UserService.get_user_by_email_and_password(email, password)
 
-      new_key =
-        if existing_key != nil do
-          case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
-            {:ok, _} ->
-              Phoexnip.AuditLogService.create_audit_log(
-                "Apikey",
-                existing_key.id,
-                "delete",
-                user,
-                existing_key.given_to,
-                %{},
-                existing_key
-              )
-
-              case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
-                {:ok, api_key} ->
-                  Phoexnip.AuditLogService.create_audit_log(
-                    "Apikey",
-                    api_key.id,
-                    "create",
-                    user,
-                    existing_key.given_to,
-                    api_key,
-                    %{}
-                  )
-
-                  api_key
-
-                {:error, _} ->
-                  nil
-              end
-
-            {:error, _} ->
-              nil
-          end
-        else
-          case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
-            {:ok, api_key} ->
-              Phoexnip.AuditLogService.create_audit_log(
-                "Apikey",
-                api_key.id,
-                "create",
-                user,
-                api_key.given_to,
-                api_key,
-                %{}
-              )
-
-              api_key
-
-            {:error, _} ->
-              nil
-          end
-        end
-
-      if new_key == nil do
+      if user == nil do
         conn
-        |> put_status(:badrequest)
-        |> json(%{error: "badrequest: Something went wrong try again later!"})
+        |> put_status(:unauthorized)
+        |> json(%{error: "Unauthorized: Invalid username or password"})
         |> halt()
       else
-        render(conn, :show_api_key, api_key: new_key)
+        existing_key =
+          Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{
+            given_to: user.email
+          })
+
+        new_key =
+          if existing_key != nil do
+            case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
+              {:ok, _} ->
+                Phoexnip.AuditLogService.create_audit_log(
+                  "Apikey",
+                  existing_key.id,
+                  "delete",
+                  user,
+                  existing_key.given_to,
+                  %{},
+                  existing_key
+                )
+
+                case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
+                  {:ok, api_key} ->
+                    Phoexnip.AuditLogService.create_audit_log(
+                      "Apikey",
+                      api_key.id,
+                      "create",
+                      user,
+                      existing_key.given_to,
+                      api_key,
+                      %{}
+                    )
+
+                    api_key
+
+                  {:error, _} ->
+                    nil
+                end
+
+              {:error, _} ->
+                nil
+            end
+          else
+            case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
+              {:ok, api_key} ->
+                Phoexnip.AuditLogService.create_audit_log(
+                  "Apikey",
+                  api_key.id,
+                  "create",
+                  user,
+                  api_key.given_to,
+                  api_key,
+                  %{}
+                )
+
+                api_key
+
+              {:error, _} ->
+                nil
+            end
+          end
+
+        if new_key == nil do
+          conn
+          |> put_status(:badrequest)
+          |> json(%{error: "badrequest: Something went wrong try again later!"})
+          |> halt()
+        else
+          render(conn, :show_api_key, api_key: new_key)
+        end
       end
     end
   end
@@ -140,68 +141,74 @@ defmodule PhoexnipWeb.UserController do
     if String.trim(email) == "" || String.trim(refreshToken) == "" do
       conn
       |> put_status(:unprocessable_entity)
-      |> json(%{
-        error: "Invalid data provided"
-      })
-    end
-
-    existing_key =
-      Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{
-        refresh_key: refreshToken,
-        given_to: email
-      })
-
-    if existing_key == nil ||
-         NaiveDateTime.compare(NaiveDateTime.utc_now(), existing_key.refresh_until) == :gt do
-      conn
-      |> put_status(:forbidden)
-      |> json(%{error: "Forbidden: Refresh key expired or email is invalid"})
+      |> json(%{error: "Invalid data provided"})
       |> halt()
     else
-      user = UserService.get_user_by_email(email)
+      existing_key =
+        Phoexnip.CoreUtils.CommonService.get_by(Phoexnip.Settings.ApiKey, %{
+          refresh_key: refreshToken,
+          given_to: email
+        })
 
-      new_key =
-        case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
-          {:ok, _} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "Apikey",
-              existing_key.id,
-              "delete",
-              user,
-              existing_key.given_to,
-              %{},
-              existing_key
-            )
+      if existing_key == nil ||
+           NaiveDateTime.compare(NaiveDateTime.utc_now(), existing_key.refresh_until) == :gt do
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Forbidden: Refresh key expired or email is invalid"})
+        |> halt()
+      else
+        user = UserService.get_user_by_email(email)
 
-            case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
-              {:ok, api_key} ->
+        if user == nil do
+          conn
+          |> put_status(:unauthorized)
+          |> json(%{error: "Unauthorized: Invalid email"})
+          |> halt()
+        else
+          new_key =
+            case Phoexnip.CoreUtils.CommonService.delete(existing_key) do
+              {:ok, _} ->
                 Phoexnip.AuditLogService.create_audit_log(
                   "Apikey",
-                  api_key.id,
-                  "refresh",
+                  existing_key.id,
+                  "delete",
                   user,
-                  api_key.given_to,
-                  api_key,
-                  %{}
+                  existing_key.given_to,
+                  %{},
+                  existing_key
                 )
 
-                api_key
+                case Phoexnip.Settings.ApiKey.generate_api_key(user.email) do
+                  {:ok, api_key} ->
+                    Phoexnip.AuditLogService.create_audit_log(
+                      "Apikey",
+                      api_key.id,
+                      "refresh",
+                      user,
+                      api_key.given_to,
+                      api_key,
+                      %{}
+                    )
+
+                    api_key
+
+                  {:error, _} ->
+                    nil
+                end
 
               {:error, _} ->
                 nil
             end
 
-          {:error, _} ->
-            nil
+          if new_key == nil do
+            conn
+            |> put_status(:badrequest)
+            |> json(%{error: "badrequest: Something went wrong try again later!"})
+            |> halt()
+          else
+            render(conn, :show_api_key, api_key: new_key)
+          end
         end
-
-      if new_key == nil do
-        conn
-        |> put_status(:badrequest)
-        |> json(%{error: "badrequest: Something went wrong try again later!"})
-        |> halt()
-      else
-        render(conn, :show_api_key, api_key: new_key)
       end
     end
   end
@@ -223,15 +230,15 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
+    else
+      page = Map.get(params, "page", 1) |> Phoexnip.NumberUtils.validate_positive_integer(1)
+
+      per_page =
+        Map.get(params, "per_page", 20) |> Phoexnip.NumberUtils.validate_positive_integer(20)
+
+      users = UserService.list(%{page: page, per_page: per_page})
+      render(conn, :index, users: users)
     end
-
-    page = Map.get(params, "page", 1) |> Phoexnip.NumberUtils.validate_positive_integer(1)
-
-    per_page =
-      Map.get(params, "per_page", 20) |> Phoexnip.NumberUtils.validate_positive_integer(20)
-
-    users = UserService.list(%{page: page, per_page: per_page})
-    render(conn, :index, users: users)
   end
 
   @doc """
@@ -252,16 +259,16 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          render(conn, :show, user: user)
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        render(conn, :show, user: user)
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -283,35 +290,35 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      user_params = conn.body_params["user"] || conn.body_params
 
-    user_params = conn.body_params["user"] || conn.body_params
+      case UserService.create_user(user_params) do
+        {:ok, %User{} = user} ->
+          user = user |> Phoexnip.Repo.preload(:user_roles)
 
-    case UserService.create_user(user_params) do
-      {:ok, %User{} = user} ->
-        user = user |> Phoexnip.Repo.preload(:user_roles)
+          Phoexnip.AuditLogService.create_audit_log(
+            "User - API",
+            user.id,
+            "create",
+            conn.assigns.current_user,
+            user.email,
+            user,
+            %{}
+          )
 
-        Phoexnip.AuditLogService.create_audit_log(
-          "User - API",
-          user.id,
-          "create",
-          conn.assigns.current_user,
-          user.email,
-          user,
-          %{}
-        )
+          conn
+          |> put_status(:ok)
+          |> render(:show, user: user)
 
-        conn
-        |> put_status(:ok)
-        |> render(:show, user: user)
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          error: "Failed to create user",
-          details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-        })
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error: "Failed to create user",
+            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+          })
+      end
     end
   end
 
@@ -334,41 +341,41 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      user_params = conn.body_params["user"] || conn.body_params
 
-    user_params = conn.body_params["user"] || conn.body_params
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          case UserService.update_user(user, user_params) do
+            {:ok, %User{} = updated_user} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "User - API",
+                updated_user.id,
+                "update",
+                conn.assigns.current_user,
+                updated_user.email,
+                updated_user,
+                user
+              )
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        case UserService.update_user(user, user_params) do
-          {:ok, %User{} = updated_user} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "User - API",
-              updated_user.id,
-              "update",
-              conn.assigns.current_user,
-              updated_user.email,
-              updated_user,
-              user
-            )
+              conn
+              |> put_status(:ok)
+              |> render(:show, user: updated_user)
 
-            conn
-            |> put_status(:ok)
-            |> render(:show, user: updated_user)
+            {:error, changeset} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update user",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+              })
+          end
 
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update user",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -391,38 +398,38 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          case UserService.delete_user(user) do
+            {:ok, _} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "User - API",
+                user.id,
+                "delete",
+                conn.assigns.current_user,
+                user.email,
+                %{},
+                user
+              )
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        case UserService.delete_user(user) do
-          {:ok, _} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "User - API",
-              user.id,
-              "delete",
-              conn.assigns.current_user,
-              user.email,
-              %{},
-              user
-            )
+              conn
+              |> send_resp(:no_content, "")
 
-            conn
-            |> send_resp(:no_content, "")
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to create user",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to create user",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -445,53 +452,53 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          case Phoexnip.UploadUtils.save_upload(
+                 upload.path,
+                 user.image_url
+               ) do
+            {:ok, image_path} ->
+              case UserService.update_user(user, %{image_url: image_path}) do
+                {:ok, updated_user} ->
+                  Phoexnip.AuditLogService.create_audit_log(
+                    "User - API",
+                    updated_user.id,
+                    "update",
+                    conn.assigns.current_user,
+                    updated_user.email,
+                    updated_user,
+                    user
+                  )
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        case Phoexnip.UploadUtils.save_upload(
-               upload.path,
-               user.image_url
-             ) do
-          {:ok, image_path} ->
-            case UserService.update_user(user, %{image_url: image_path}) do
-              {:ok, updated_user} ->
-                Phoexnip.AuditLogService.create_audit_log(
-                  "User - API",
-                  updated_user.id,
-                  "update",
-                  conn.assigns.current_user,
-                  updated_user.email,
-                  updated_user,
-                  user
-                )
+                  conn
+                  |> put_status(:ok)
+                  |> render(:show, user: updated_user)
 
-                conn
-                |> put_status(:ok)
-                |> render(:show, user: updated_user)
+                {:error, error} ->
+                  conn
+                  |> put_status(:unprocessable_entity)
+                  |> json(%{
+                    error: "Failed to update user",
+                    details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+                  })
+              end
 
-              {:error, error} ->
-                conn
-                |> put_status(:unprocessable_entity)
-                |> json(%{
-                  error: "Failed to update user",
-                  details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-                })
-            end
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update user",
+                details: "#{error}"
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update user",
-              details: "#{error}"
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -514,50 +521,50 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          case Phoexnip.UploadUtils.delete_upload(user.image_url) do
+            {:ok, _} ->
+              case UserService.update_user(user, %{image_url: ""}) do
+                {:ok, updated_user} ->
+                  Phoexnip.AuditLogService.create_audit_log(
+                    "User - API",
+                    updated_user.id,
+                    "update",
+                    conn.assigns.current_user,
+                    updated_user.email,
+                    updated_user,
+                    user
+                  )
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        case Phoexnip.UploadUtils.delete_upload(user.image_url) do
-          {:ok, _} ->
-            case UserService.update_user(user, %{image_url: ""}) do
-              {:ok, updated_user} ->
-                Phoexnip.AuditLogService.create_audit_log(
-                  "User - API",
-                  updated_user.id,
-                  "update",
-                  conn.assigns.current_user,
-                  updated_user.email,
-                  updated_user,
-                  user
-                )
+                  conn
+                  |> put_status(:ok)
+                  |> render(:show, user: updated_user)
 
-                conn
-                |> put_status(:ok)
-                |> render(:show, user: updated_user)
+                {:error, error} ->
+                  conn
+                  |> put_status(:unprocessable_entity)
+                  |> json(%{
+                    error: "Failed to update user",
+                    details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+                  })
+              end
 
-              {:error, error} ->
-                conn
-                |> put_status(:unprocessable_entity)
-                |> json(%{
-                  error: "Failed to update user",
-                  details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-                })
-            end
+            {:error, message} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to delete image",
+                details: message
+              })
+          end
 
-          {:error, message} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to delete image",
-              details: message
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -585,43 +592,43 @@ defmodule PhoexnipWeb.UserController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      attr = %{
+        "password" => password,
+        "password_confirmation" => password_confirmation
+      }
 
-    attr = %{
-      "password" => password,
-      "password_confirmation" => password_confirmation
-    }
+      case UserService.get_user_by(%{id: id}) do
+        %User{} = user ->
+          case UserService.update_user_password(user, current_password, attr) do
+            {:ok, updated_user} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "User - API",
+                updated_user.id,
+                "update",
+                conn.assigns.current_user,
+                updated_user.email,
+                updated_user,
+                user
+              )
 
-    case UserService.get_user_by(%{id: id}) do
-      %User{} = user ->
-        case UserService.update_user_password(user, current_password, attr) do
-          {:ok, updated_user} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "User - API",
-              updated_user.id,
-              "update",
-              conn.assigns.current_user,
-              updated_user.email,
-              updated_user,
-              user
-            )
+              conn
+              |> send_resp(:no_content, "")
 
-            conn
-            |> send_resp(:no_content, "")
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update user password",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update user password",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "User not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "User not found"})
+      end
     end
   end
 
@@ -644,7 +651,7 @@ defmodule PhoexnipWeb.UserController do
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
     else
-      if String.to_integer(id) == conn.assigns.current_user.id do
+      if to_string(conn.assigns.current_user.id) == id do
         conn
         |> put_status(:ok)
         |> json(%{data: conn.assigns.permissions})

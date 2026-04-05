@@ -35,27 +35,25 @@ defmodule PhoexnipWeb.RolesController do
   """
   @spec index(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def index(conn, params) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET2", 1) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
+    else
+      page = Map.get(params, "page", 1) |> Phoexnip.NumberUtils.validate_positive_integer(1)
+
+      per_page =
+        Map.get(params, "per_page", 20) |> Phoexnip.NumberUtils.validate_positive_integer(20)
+
+      %{entries: roles} =
+        SearchUtils.search(
+          pagination: %{page: page, per_page: per_page},
+          module: Phoexnip.Roles
+        )
+
+      render(conn, :index, roles: roles)
     end
-
-    # Extract page and per_page from params with default values
-    page = Map.get(params, "page", 1) |> Phoexnip.NumberUtils.validate_positive_integer(1)
-
-    per_page =
-      Map.get(params, "per_page", 20) |> Phoexnip.NumberUtils.validate_positive_integer(20)
-
-    %{entries: roles} =
-      SearchUtils.search(
-        pagination: %{page: page, per_page: per_page},
-        module: Phoexnip.Roles
-      )
-
-    render(conn, :index, roles: roles)
   end
 
   @doc """
@@ -72,24 +70,23 @@ defmodule PhoexnipWeb.RolesController do
   """
   @spec show(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET2", 1) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get_with_preload(Phoexnip.Roles, id,
+             role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)
+           ) do
+        %Roles{} = role ->
+          render(conn, :show, role: role)
 
-    case CommonService.get_with_preload(Phoexnip.Roles, id,
-           role_permissions: from(rp in Phoexnip.RolesPermission, order_by: rp.id)
-         ) do
-      %Roles{} = role ->
-        render(conn, :show, role: role)
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Roles not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Roles not found"})
+      end
     end
   end
 
@@ -107,46 +104,38 @@ defmodule PhoexnipWeb.RolesController do
   """
   @spec create(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def create(conn, _) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET2", 2) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      role_params = conn.body_params["role"] || conn.body_params
 
-    # Extracting the user parameters from the body_params of the connection
-    role_params = conn.body_params["role"] || conn.body_params
+      case CommonService.create(Phoexnip.Roles, role_params) do
+        {:ok, %Roles{} = role} ->
+          Phoexnip.AuditLogService.create_audit_log(
+            "Roles - API",
+            role.id,
+            "create",
+            conn.assigns.current_user,
+            role.name,
+            role,
+            %{}
+          )
 
-    case CommonService.create(Phoexnip.Roles, role_params) do
-      {:ok, %Roles{} = role} ->
-        Phoexnip.AuditLogService.create_audit_log(
-          # Entity type
-          "Roles - API",
-          # Entity ID
-          role.id,
-          # Action type
-          "create",
-          # User who performed the action
-          conn.assigns.current_user,
-          role.name,
-          # New data (changes)
-          role,
-          # Previous data (empty since it's a new record)
-          %{}
-        )
+          conn
+          |> put_status(:ok)
+          |> render(:show, role: role)
 
-        conn
-        |> put_status(:ok)
-        |> render(:show, role: role)
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          error: "Failed to create role",
-          details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-        })
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error: "Failed to create role",
+            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+          })
+      end
     end
   end
 
@@ -164,54 +153,46 @@ defmodule PhoexnipWeb.RolesController do
   """
   @spec update(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def update(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET2", 4) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      role_params = conn.body_params["role"] || conn.body_params
 
-    # Extracting the user parameters from the body_params of the connection
-    role_params = conn.body_params["role"] || conn.body_params
+      case CommonService.get(Phoexnip.Roles, id) do
+        %Roles{} = role ->
+          case CommonService.update(role, role_params) do
+            {:ok, %Roles{} = updated_role} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Roles - API",
+                updated_role.id,
+                "update",
+                conn.assigns.current_user,
+                updated_role.name,
+                updated_role,
+                role
+              )
 
-    case CommonService.get(Phoexnip.Roles, id) do
-      %Roles{} = role ->
-        case CommonService.update(role, role_params) do
-          {:ok, %Roles{} = updated_role} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              # Entity type
-              "Roles - API",
-              # Entity ID
-              updated_role.id,
-              # Action type
-              "update",
-              # User who performed the action
-              conn.assigns.current_user,
-              updated_role.name,
-              # New data (changes)
-              updated_role,
-              # Previous data (empty since it's a new record)
-              role
-            )
+              conn
+              |> put_status(:ok)
+              |> render(:show, role: updated_role)
 
-            conn
-            |> put_status(:ok)
-            |> render(:show, role: updated_role)
+            {:error, changeset} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update role",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+              })
+          end
 
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update role",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Roles not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Roles not found"})
+      end
     end
   end
 
@@ -229,50 +210,43 @@ defmodule PhoexnipWeb.RolesController do
   """
   @spec delete(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def delete(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET2", 8) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Phoexnip.Roles, id) do
+        %Roles{} = role ->
+          case CommonService.delete(role) do
+            {:ok, _} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Roles - API",
+                role.id,
+                "delete",
+                conn.assigns.current_user,
+                role.name,
+                %{},
+                role
+              )
 
-    case CommonService.get(Phoexnip.Roles, id) do
-      %Roles{} = role ->
-        case CommonService.delete(role) do
-          {:ok, _} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              # Entity type
-              "Roles - API",
-              # Entity ID
-              role.id,
-              # Action type
-              "delete",
-              # User who performed the action
-              conn.assigns.current_user,
-              role.name,
-              # New data (changes)
-              %{},
-              # Previous data (empty since it's a new record)
-              role
-            )
+              conn
+              |> send_resp(:no_content, "")
 
-            conn
-            |> send_resp(:no_content, "")
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to delete role",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to delete role",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Roles not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Roles not found"})
+      end
     end
   end
 

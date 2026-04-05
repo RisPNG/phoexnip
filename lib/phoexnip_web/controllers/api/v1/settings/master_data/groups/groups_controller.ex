@@ -45,10 +45,10 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
+    else
+      masterdatas = CommonService.list_ordered(Groups, asc: :sort)
+      render(conn, :index, masterdatas: masterdatas)
     end
-
-    masterdatas = CommonService.list_ordered(Groups, asc: :sort)
-    render(conn, :index, masterdatas: masterdatas)
   end
 
   @doc """
@@ -75,16 +75,16 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Groups, id) do
+        %Groups{} = group ->
+          render(conn, :show, masterdata: group)
 
-    case CommonService.get(Groups, id) do
-      %Groups{} = group ->
-        render(conn, :show, masterdata: group)
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Not found"})
+      end
     end
   end
 
@@ -112,33 +112,33 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      params = conn.body_params["groups"] || conn.body_params
 
-    params = conn.body_params["groups"] || conn.body_params
+      case CommonService.create(Groups, params) do
+        {:ok, %Groups{} = group} ->
+          Phoexnip.AuditLogService.create_audit_log(
+            "Groups - API",
+            group.id,
+            "create",
+            conn.assigns.current_user,
+            group.code,
+            group,
+            %{}
+          )
 
-    case CommonService.create(Groups, params) do
-      {:ok, %Groups{} = group} ->
-        Phoexnip.AuditLogService.create_audit_log(
-          "Groups - API",
-          group.id,
-          "create",
-          conn.assigns.current_user,
-          group.code,
-          group,
-          %{}
-        )
+          conn
+          |> put_status(:ok)
+          |> render(:show, masterdata: group)
 
-        conn
-        |> put_status(:ok)
-        |> render(:show, masterdata: group)
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          error: "Failed to create Groups",
-          details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-        })
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error: "Failed to create Groups",
+            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+          })
+      end
     end
   end
 
@@ -167,39 +167,39 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Groups, id) do
+        %Groups{} = group ->
+          case CommonService.update(group, conn.body_params) do
+            {:ok, %Groups{} = updated_group} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Groups - API",
+                updated_group.id,
+                "update",
+                conn.assigns.current_user,
+                updated_group.code,
+                updated_group,
+                group
+              )
 
-    case CommonService.get(Groups, id) do
-      %Groups{} = group ->
-        case CommonService.update(group, conn.body_params) do
-          {:ok, %Groups{} = updated_group} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "Groups - API",
-              updated_group.id,
-              "update",
-              conn.assigns.current_user,
-              updated_group.code,
-              updated_group,
-              group
-            )
+              conn
+              |> put_status(:ok)
+              |> render(:show, masterdata: updated_group)
 
-            conn
-            |> put_status(:ok)
-            |> render(:show, masterdata: updated_group)
+            {:error, changeset} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update Groups",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+              })
+          end
 
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update Groups",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Groups not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Groups not found"})
+      end
     end
   end
 
@@ -228,38 +228,38 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Groups, id) do
+        %Groups{} = group ->
+          case CommonService.delete(group) do
+            {:ok, _} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Groups - API",
+                group.id,
+                "delete",
+                conn.assigns.current_user,
+                group.code,
+                %{},
+                group
+              )
 
-    case CommonService.get(Groups, id) do
-      %Groups{} = group ->
-        case CommonService.delete(group) do
-          {:ok, _} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              "Groups - API",
-              group.id,
-              "delete",
-              conn.assigns.current_user,
-              group.code,
-              %{},
-              group
-            )
+              conn
+              |> send_resp(:no_content, "")
 
-            conn
-            |> send_resp(:no_content, "")
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to delete Country",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to delete Country",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Groups not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Groups not found"})
+      end
     end
   end
 

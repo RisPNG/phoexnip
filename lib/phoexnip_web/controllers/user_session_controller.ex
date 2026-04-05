@@ -48,20 +48,13 @@ defmodule PhoexnipWeb.UserSessionController do
     else
       # Create the audit log after customer creation
       case Phoexnip.AuditLogService.create_audit_log(
-             # Entity type
              "Log In",
-             # Entity ID
              -1,
-             # Action type
              "fail",
-             # User who performed the action
              %{id: -1, name: "Mystery"},
              "",
-             # New data (changes)
-             user_params,
-             # Previous data (empty since it's a new record)
+             %{email: String.slice(email, 0, 160)},
              %{}
-             # Metadata (example: user's IP)
            ) do
         {:ok, _auditlog} ->
           # In order to prevent user enumeration attacks, don't disclose whether the email is registered.

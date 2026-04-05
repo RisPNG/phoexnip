@@ -33,21 +33,19 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   """
   @spec index(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def index(conn, _params) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions_level_two(
          conn.assigns.current_user,
          "SET3A",
          1
-       ) ==
-         false do
+       ) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
+    else
+      masterdatas = CommonService.list_ordered(Currencies, asc: :sort)
+      render(conn, :index, masterdatas: masterdatas)
     end
-
-    masterdatas = CommonService.list_ordered(Currencies, asc: :sort)
-    render(conn, :index, masterdatas: masterdatas)
   end
 
   @doc """
@@ -64,27 +62,25 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   """
   @spec show(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions_level_two(
          conn.assigns.current_user,
          "SET3A",
          1
-       ) ==
-         false do
+       ) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Currencies, id) do
+        %Currencies{} = colour ->
+          render(conn, :show, masterdata: colour)
 
-    case CommonService.get(Currencies, id) do
-      %Currencies{} = colour ->
-        render(conn, :show, masterdata: colour)
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Not found"})
+      end
     end
   end
 
@@ -102,51 +98,42 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   """
   @spec create(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def create(conn, _) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions_level_two(
          conn.assigns.current_user,
          "SET3A",
          2
-       ) ==
-         false do
+       ) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      params = conn.body_params["currency"] || conn.body_params
 
-    # Extracting the user parameters from the body_params of the connection
-    params = conn.body_params["currency"] || conn.body_params
+      case CommonService.create(Currencies, params) do
+        {:ok, %Currencies{} = masterdata} ->
+          Phoexnip.AuditLogService.create_audit_log(
+            "Currencies - API",
+            masterdata.id,
+            "create",
+            conn.assigns.current_user,
+            masterdata.code,
+            masterdata,
+            %{}
+          )
 
-    case CommonService.create(Currencies, params) do
-      {:ok, %Currencies{} = masterdata} ->
-        Phoexnip.AuditLogService.create_audit_log(
-          # Entity type
-          "Currencies - API",
-          # Entity ID
-          masterdata.id,
-          # Action type
-          "create",
-          # User who performed the action
-          conn.assigns.current_user,
-          masterdata.code,
-          # New data (changes)
-          masterdata,
-          # Previous data (empty since it's a new record)
-          %{}
-        )
+          conn
+          |> put_status(:ok)
+          |> render(:show, masterdata: masterdata)
 
-        conn
-        |> put_status(:ok)
-        |> render(:show, masterdata: masterdata)
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          error: "Failed to create Currencies",
-          details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-        })
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error: "Failed to create Currencies",
+            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+          })
+      end
     end
   end
 
@@ -164,56 +151,48 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   """
   @spec update(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def update(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions_level_two(
          conn.assigns.current_user,
          "SET3A",
          4
-       ) ==
-         false do
+       ) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Currencies, id) do
+        %Currencies{} = masterdata ->
+          case CommonService.update(masterdata, conn.body_params) do
+            {:ok, %Currencies{} = updated_masterdata} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Currencies - API",
+                updated_masterdata.id,
+                "update",
+                conn.assigns.current_user,
+                updated_masterdata.code,
+                updated_masterdata,
+                masterdata
+              )
 
-    case CommonService.get(Currencies, id) do
-      %Currencies{} = masterdata ->
-        case CommonService.update(masterdata, conn.body_params) do
-          {:ok, %Currencies{} = updated_masterdata} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              # Entity type
-              "Currencies - API",
-              # Entity ID
-              updated_masterdata.id,
-              # Action type
-              "update",
-              # User who performed the action
-              conn.assigns.current_user,
-              updated_masterdata.code,
-              # New data (changes)
-              updated_masterdata,
-              # Previous data (empty since it's a new record)
-              masterdata
-            )
+              conn
+              |> put_status(:ok)
+              |> render(:show, masterdata: updated_masterdata)
 
-            conn
-            |> put_status(:ok)
-            |> render(:show, masterdata: updated_masterdata)
+            {:error, changeset} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to update Currencies",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+              })
+          end
 
-          {:error, changeset} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to update Currencies",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Currencies not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Currencies not found"})
+      end
     end
   end
 
@@ -231,55 +210,47 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
   """
   @spec delete(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def delete(conn, %{"id" => id}) do
-    # permission checking like we do on the pages.
     if Phoexnip.AuthenticationUtils.check_api_permissions_level_two(
          conn.assigns.current_user,
          "SET3A",
          8
-       ) ==
-         false do
+       ) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      case CommonService.get(Currencies, id) do
+        %Currencies{} = masterdata ->
+          case CommonService.delete(masterdata) do
+            {:ok, _} ->
+              Phoexnip.AuditLogService.create_audit_log(
+                "Currencies - API",
+                masterdata.id,
+                "delete",
+                conn.assigns.current_user,
+                masterdata.code,
+                %{},
+                masterdata
+              )
 
-    case CommonService.get(Currencies, id) do
-      %Currencies{} = masterdata ->
-        case CommonService.delete(masterdata) do
-          {:ok, _} ->
-            Phoexnip.AuditLogService.create_audit_log(
-              # Entity type
-              "Currencies - API",
-              # Entity ID
-              masterdata.id,
-              # Action type
-              "delete",
-              # User who performed the action
-              conn.assigns.current_user,
-              masterdata.code,
-              # New data (changes)
-              %{},
-              # Previous data (empty since it's a new record)
-              masterdata
-            )
+              conn
+              |> send_resp(:no_content, "")
 
-            conn
-            |> send_resp(:no_content, "")
+            {:error, error} ->
+              conn
+              |> put_status(:unprocessable_entity)
+              |> json(%{
+                error: "Failed to delete Currencies",
+                details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
+              })
+          end
 
-          {:error, error} ->
-            conn
-            |> put_status(:unprocessable_entity)
-            |> json(%{
-              error: "Failed to delete Currencies",
-              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(error)
-            })
-        end
-
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "Currencies not found"})
+        nil ->
+          conn
+          |> put_status(:not_found)
+          |> json(%{error: "Currencies not found"})
+      end
     end
   end
 

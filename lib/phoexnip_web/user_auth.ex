@@ -48,21 +48,10 @@ defmodule PhoexnipWeb.UserAuth do
     home =
       Enum.find(sitemap, fn p -> p.sitemap_code == "H" and Map.get(p, :permission, 0) > 0 end)
 
-    cond do
-      home ->
-        # both exist, go to root
-        "/"
-
-      home ->
-        if is_binary(home.sitemap_url) and home.sitemap_url != "" do
-          "/" <> home.sitemap_url
-        else
-          "/"
-        end
-
-      true ->
-        # fallback
-        "/"
+    if home != nil and is_binary(home.sitemap_url) and home.sitemap_url != "" do
+      "/" <> home.sitemap_url
+    else
+      "/"
     end
   end
 

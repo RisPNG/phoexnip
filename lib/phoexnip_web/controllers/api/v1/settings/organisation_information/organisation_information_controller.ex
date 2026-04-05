@@ -31,18 +31,15 @@ defmodule PhoexnipWeb.OrganisationInformationController do
   """
   @spec index(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def index(conn, _params) do
-    # permission checking like we do on the pages.
-    if Phoexnip.AuthenticationUtils.check_api_permissions(conn.assigns.current_user, "SET4", 1) ==
-         false do
+    if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET4", 1) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
+    else
+      organisation_info = fetch_organisation_info()
+      render(conn, :index, organisation_info: organisation_info)
     end
-
-    organisation_info = fetch_organisation_info()
-
-    render(conn, :index, organisation_info: organisation_info)
   end
 
   @doc """
@@ -60,56 +57,47 @@ defmodule PhoexnipWeb.OrganisationInformationController do
   """
   @spec create(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def create(conn, _) do
-    # permission checking like we do on the pages.
-    if Phoexnip.AuthenticationUtils.check_api_permissions(conn.assigns.current_user, "SET4", 2) ==
-         false do
+    if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET4", 2) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
-
-    organisation_info = fetch_organisation_info()
-
-    if organisation_info.id != nil do
-      conn
-      |> put_status(:conflict)
-      |> json(%{
-        error: "Failed to create organisation information as it already exists. Use PUT instead"
-      })
     else
-      # Extracting the user parameters from the body_params of the connection
-      params = conn.body_params["organisation_info"] || conn.body_params
+      organisation_info = fetch_organisation_info()
 
-      case CommonService.create(OrganisationInfo, params) do
-        {:ok, %OrganisationInfo{} = new_organisation_info} ->
-          Phoexnip.AuditLogService.create_audit_log(
-            # Entity type
-            "Organisation Information - API",
-            # Entity ID
-            new_organisation_info.id,
-            # Action type
-            "create",
-            # User who performed the action
-            conn.assigns.current_user,
-            organisation_info.name,
-            # New data (changes)
-            new_organisation_info,
-            # Previous data (empty since it's a new record)
-            %{}
-          )
+      if organisation_info.id != nil do
+        conn
+        |> put_status(:conflict)
+        |> json(%{
+          error: "Failed to create organisation information as it already exists. Use PUT instead"
+        })
+      else
+        params = conn.body_params["organisation_info"] || conn.body_params
 
-          conn
-          |> put_status(:ok)
-          |> render(:index, organisation_info: new_organisation_info)
+        case CommonService.create(OrganisationInfo, params) do
+          {:ok, %OrganisationInfo{} = new_organisation_info} ->
+            Phoexnip.AuditLogService.create_audit_log(
+              "Organisation Information - API",
+              new_organisation_info.id,
+              "create",
+              conn.assigns.current_user,
+              organisation_info.name,
+              new_organisation_info,
+              %{}
+            )
 
-        {:error, changeset} ->
-          conn
-          |> put_status(:unprocessable_entity)
-          |> json(%{
-            error: "Failed to create Organisation Information",
-            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-          })
+            conn
+            |> put_status(:ok)
+            |> render(:index, organisation_info: new_organisation_info)
+
+          {:error, changeset} ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{
+              error: "Failed to create Organisation Information",
+              details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+            })
+        end
       end
     end
   end
@@ -129,46 +117,38 @@ defmodule PhoexnipWeb.OrganisationInformationController do
   """
   @spec update(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def update(conn, _) do
-    # permission checking like we do on the pages.
-    if Phoexnip.AuthenticationUtils.check_api_permissions(conn.assigns.current_user, "SET4", 4) ==
-         false do
+    if Phoexnip.AuthenticationUtils.check_api_permissions(conn, "SET4", 4) == false do
       conn
       |> put_status(:unauthorized)
       |> json(%{error: "Unauthorized: Not enough permissions!"})
       |> halt()
-    end
+    else
+      master_data = fetch_organisation_info()
 
-    master_data = fetch_organisation_info()
+      case CommonService.update(master_data, conn.body_params) do
+        {:ok, %OrganisationInfo{} = updated_master_data} ->
+          Phoexnip.AuditLogService.create_audit_log(
+            "Organisation Information - API",
+            updated_master_data.id,
+            "update",
+            conn.assigns.current_user,
+            updated_master_data.name,
+            updated_master_data,
+            master_data
+          )
 
-    case CommonService.update(master_data, conn.body_params) do
-      {:ok, %OrganisationInfo{} = updated_master_data} ->
-        Phoexnip.AuditLogService.create_audit_log(
-          # Entity type
-          "Organisation Information - API",
-          # Entity ID
-          updated_master_data.id,
-          # Action type
-          "update",
-          # User who performed the action
-          conn.assigns.current_user,
-          updated_master_data.name,
-          # New data (changes)
-          updated_master_data,
-          # Previous data (empty since it's a new record)
-          master_data
-        )
+          conn
+          |> put_status(:ok)
+          |> render(:index, organisation_info: updated_master_data)
 
-        conn
-        |> put_status(:ok)
-        |> render(:index, organisation_info: updated_master_data)
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> json(%{
-          error: "Failed to update Organisation Information",
-          details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
-        })
+        {:error, changeset} ->
+          conn
+          |> put_status(:unprocessable_entity)
+          |> json(%{
+            error: "Failed to update Organisation Information",
+            details: Phoexnip.ControllerUtils.convert_changeset_errors_to_json(changeset)
+          })
+      end
     end
   end
 
