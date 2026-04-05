@@ -3,12 +3,35 @@ defmodule PhoexnipWeb.Router do
 
   import PhoexnipWeb.UserAuth
 
+  @browser_content_security_policy [
+                                     "default-src 'self'",
+                                     "base-uri 'self'",
+                                     "connect-src 'self' ws: wss:",
+                                     "font-src 'self' data:",
+                                     "form-action 'self'",
+                                     "frame-ancestors 'self'",
+                                     "img-src 'self' data: blob: https:",
+                                     "media-src 'self' data: blob:",
+                                     "object-src 'none'",
+                                     "script-src 'self'",
+                                     "style-src 'self' 'unsafe-inline'"
+                                   ]
+                                   |> Enum.join("; ")
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
     plug :protect_from_forgery
-    plug :put_secure_browser_headers, %{"content-security-policy" => "*"}
+
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => @browser_content_security_policy,
+      "cross-origin-opener-policy" => "same-origin",
+      "permissions-policy" =>
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "referrer-policy" => "same-origin"
+    }
+
     plug :fetch_current_user
   end
 

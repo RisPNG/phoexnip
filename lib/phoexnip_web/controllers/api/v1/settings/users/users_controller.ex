@@ -454,8 +454,6 @@ defmodule PhoexnipWeb.UserController do
                user.image_url
              ) do
           {:ok, image_path} ->
-            IO.inspect(image_path, label: "image_path")
-
             case UserService.update_user(user, %{image_url: image_path}) do
               {:ok, updated_user} ->
                 Phoexnip.AuditLogService.create_audit_log(

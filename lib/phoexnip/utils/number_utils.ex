@@ -31,27 +31,4 @@ defmodule Phoexnip.NumberUtils do
       _ -> default
     end
   end
-
-  @doc """
-  Formats a number with space-separated thousands.
-
-  ## Examples
-
-      iex> format_number(1234567)
-      "1 234 567"
-
-      iex> format_number(999)
-      "999"
-  """
-  @spec format_number(number :: integer()) :: String.t()
-  def format_number(number) when is_integer(number) do
-    number |> Integer.to_string() |> add_thousand_separators()
-  end
-
-  defp add_thousand_separators(number_string) do
-    number_string
-    |> String.reverse()
-    |> String.replace(~r/.{3}(?=.)/, "\\0 ")
-    |> String.reverse()
-  end
 end

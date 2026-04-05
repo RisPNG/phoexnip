@@ -113,7 +113,6 @@ defmodule PhoexnipWeb.UserSettingsLive do
     case UserService.update_user_password(user, password, user_params) do
       {:ok, user} ->
         user = user |> Repo.preload(:user_roles)
-        IO.inspect(user, label: "user")
 
         Phoexnip.AuditLogService.create_audit_log(
           # Entity type

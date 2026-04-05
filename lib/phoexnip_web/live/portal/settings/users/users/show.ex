@@ -104,8 +104,8 @@ defmodule PhoexnipWeb.UsersLive.Show do
           # Metadata (example: user's IP)
         )
 
-      {:error, error} ->
-        IO.inspect(error)
+      {:error, _error} ->
+        nil
     end
 
     {:noreply,

@@ -5,10 +5,6 @@ defmodule Phoexnip.UploadUtils do
   This module centralizes shared logic for files and uploads, including:
 
     * Image helpers (selecting a user/product image URL or default).
-    * Detecting MIME types from binary data.
-    * Validating file types against a whitelist.
-    * Reading raw file bytes (with `.xlsx`‑as‑ZIP support).
-    * Validating file paths/extensions without reading contents.
     * Saving uploaded files (size, type, old‑file cleanup, UUID filenames).
     * Safely deleting files under the application's static root.
 
@@ -22,10 +18,6 @@ defmodule Phoexnip.UploadUtils do
 
     * `image_for/2` – Pick a URL or default based on an object’s `image` or `image_url`.
     * `fetch_image_for_by_object_identifier/2` – Lookup a user/machine/product by ID and return its image URL or default.
-    * `detect_mime_type/1` – Inspect the first bytes to map to an extension/mIME.
-    * `validate_mime_type/2` – Check that a binary’s detected type is allowed.
-    * `read_file/2` – Read and return file bytes only if its type (or ZIP for `.xlsx`) is permitted.
-    * `validate_file/2` – Validate a file’s extension or `.xlsx`‑as‑ZIP without loading full contents.
     * `save_upload/6` – Enforce size/type, remove old file, generate safe filename, and copy into uploads.
     * `delete_upload/1` – Safely remove an uploaded file under `priv/static`, guarding against path traversal.
 
@@ -43,12 +35,6 @@ defmodule Phoexnip.UploadUtils do
       iex> Phoexnip.UploadUtils.image_for(nil, "user")
       "/images/default-user.png"
 
-      iex> Phoexnip.UploadUtils.validate_mime_type(<<255, 216, 255, 224, ...>>, [".jpg", ".png"])
-      {:ok, ".jpeg"}
-
-      iex> Phoexnip.UploadUtils.read_file("priv/static/uploads/data.xlsx", [".xlsx"])
-      {:ok, binary()}
-
       iex> Phoexnip.UploadUtils.save_upload("tmp/photo.png")
       {:ok, "/uploads/<uuid>.png"}
 
@@ -58,8 +44,11 @@ defmodule Phoexnip.UploadUtils do
 
   # List of allowed extensions
   @max_file_size 8 * 1024 * 1024
+  @max_probe_bytes 2048
   @allowed_extensions [".jpg", ".jpeg", ".png", ".gif"]
-  @static_root Path.expand("priv/static")
+  @safe_path_segment ~r/\A[a-zA-Z0-9_-]+\z/
+  @static_root Application.app_dir(:phoexnip, "priv/static") |> Path.expand()
+  @upload_root Path.join(@static_root, "uploads") |> Path.expand()
 
   @doc """
   Returns the appropriate image URL for the given object and type.
@@ -89,7 +78,7 @@ defmodule Phoexnip.UploadUtils do
 
   def image_for(%Phoexnip.Users.User{image_url: url}, "user")
       when is_binary(url) and byte_size(url) > 0,
-      do: url
+      do: safe_display_image(url, "/images/default-user.png")
 
   def image_for(_, _), do: "/images/default-user.png"
 
@@ -106,7 +95,7 @@ defmodule Phoexnip.UploadUtils do
         user = Phoexnip.Users.UserService.get_user_by(%{name: object_id})
 
         if user != nil && user.image_url && String.length(user.image_url) > 0 do
-          user.image_url
+          safe_display_image(user.image_url, "/images/default-user.png")
         else
           "/images/default-user.png"
         end
@@ -146,118 +135,22 @@ defmodule Phoexnip.UploadUtils do
   # Default if no match
   defp get_mime_type(_), do: "unknown"
 
-  @doc """
-  Detects the MIME type of the given binary data.
-
-  ## Parameters
-
-    * `binary_data` — a binary (`t:binary/0`) containing the raw bytes of a file or payload.
-
-  ## Returns
-
-    * A `String.t()` representing the detected MIME type (e.g. `"image/png"`, `"application/pdf"`).
-    * May return `nil` if the type could not be determined (depending on `get_mime_type/1` implementation).
-  """
   @spec detect_mime_type(binary()) :: String.t()
-  def detect_mime_type(binary_data) when is_binary(binary_data) do
+  defp detect_mime_type(binary_data) when is_binary(binary_data) do
     get_mime_type(binary_data)
   end
 
-  @doc """
-  Validates whether the MIME type detected from the given binary data is allowed.
-
-  ## Parameters
-
-    * `bytes` — a `t:binary/0` containing the raw bytes of a file or payload.
-    * `allowed_extensions` — a list of MIME type strings (e.g. `[".jpg", ".jpeg", ".png", ".gif"]`) that are permitted. Defaults to `@allowed_extensions`.
-
-  ## Behavior
-
-    1. Calls `detect_mime_type/1` on `bytes` to determine the file’s MIME type.
-    2. If the detected type is in `allowed_extensions`, returns `{:ok, extension}`.
-    3. Otherwise returns `{:error, "Unsupported file type. Allowed types: …"}`, listing the allowed ones.
-
-  ## Returns
-
-    * `{:ok, extension}` where `extension` is the detected MIME type.
-    * `{:error, reason}` with a human-readable message if the type is not allowed.
-  """
   @spec validate_mime_type(
           bytes :: binary(),
           allowed_extensions :: [String.t()]
         ) :: {:ok, String.t()} | {:error, String.t()}
-  def validate_mime_type(bytes, allowed_extensions \\ @allowed_extensions) do
+  defp validate_mime_type(bytes, allowed_extensions) do
     extension = detect_mime_type(bytes)
 
     if extension in allowed_extensions do
       {:ok, extension}
     else
       {:error, "Unsupported file type. Allowed types: #{Enum.join(allowed_extensions, ", ")}"}
-    end
-  end
-
-  @doc """
-  Validates that the file at `path` has an allowed MIME type (or ZIP header for `.xlsx`) and returns the path.
-
-  ## Parameters
-
-    * `path` — the file system path (`String.t()`) to validate.
-    * `allowed_extensions` — a list of allowed extensions (e.g. `[".xlsx", ".xls"]`).
-      - If `".xlsx"` is included, ZIP detection is enabled by also allowing `".zip"`.
-
-  ## Behavior
-
-    1. If `".xlsx"` is in `allowed_extensions`, adds `".zip"` to the list so ZIP headers are recognized.
-    2. Reads the first 2048 bytes of the file and calls `validate_mime_type/2` on them.
-    3. If the detected extension is:
-       - `".zip"` and `".xlsx"` is allowed, returns `{:ok, path}`.
-       - In `allowed_extensions`, returns `{:ok, path}`.
-       - Otherwise, returns `{:error, reason}` noting supported types.
-    4. If MIME validation fails, returns `{:error, reason}`.
-
-  ## Returns
-
-    * `{:ok, path}` on success.
-    * `{:error, message}` if the file’s type is unsupported.
-  """
-  @spec validate_file(
-          path :: String.t(),
-          allowed_extensions :: [String.t()]
-        ) :: {:ok, String.t()} | {:error, String.t()}
-  def validate_file(path, allowed_extensions \\ [".xlsx", ".xls"]) do
-    # we need to do this or the validate_mime_type will not return with the .zip for us to check further
-    allowed_extensions =
-      if ".xlsx" in allowed_extensions do
-        [".zip" | allowed_extensions] |> Enum.uniq()
-      else
-        allowed_extensions
-      end
-
-    head =
-      File.stream!(path, 2048)
-      |> Enum.to_list()
-      |> IO.iodata_to_binary()
-
-    case validate_mime_type(head, allowed_extensions) do
-      {:ok, ext} ->
-        cond do
-          # 1) ZIP header ⇒ only valid if we allow .xlsx
-          ext == ".zip" and ".xlsx" in allowed_extensions ->
-            IO.inspect(label: "check for xlsx")
-            {:ok, path}
-
-          # 2) any other string ext ⇒ must be in allowed_extensions
-          ext in allowed_extensions ->
-            {:ok, path}
-
-          # 3) got an ext but it isn’t one we allow
-          true ->
-            {:error,
-             "Unsupported file type. Allowed types: #{Enum.join(allowed_extensions, ", ")}"}
-        end
-
-      {:error, reason} ->
-        {:error, reason}
     end
   end
 
@@ -305,53 +198,22 @@ defmodule Phoexnip.UploadUtils do
         # DO NOT USE THE ORIGINAL FILENAME ALWAYS A RANDOM ONE KNOW WHAT YOU ARE DOING
         file_name \\ ""
       ) do
-    # First check its size, if too big, return early
-    case File.stat(source_path) do
-      {:ok, %File.Stat{size: size}} when size <= max_file_size ->
-        # Read only the first chunk for MIME validation
-        mime_blob =
-          File.stream!(source_path, 2048)
-          |> Enum.to_list()
-          |> IO.iodata_to_binary()
-
-        case Phoexnip.UploadUtils.validate_mime_type(mime_blob, allowed_extensions) do
-          {:ok, extention} ->
-            if old_upload_url && old_upload_url != "" do
-              target =
-                @static_root
-                |> Path.join(old_upload_url)
-                |> Path.expand()
-
-              if String.starts_with?(target, @static_root) and File.exists?(target) do
-                File.rm!(target)
-              end
-            end
-
-            # Generate a UUID-based filename + extension
-            filename =
-              "/uploads/" <>
-                path_suffix <>
-                if file_name in [nil, ""] do
-                  Ecto.UUID.generate()
-                else
-                  file_name
-                end <> extention
-
-            dest_path = Path.join(@static_root, filename)
-            File.mkdir_p!(Path.dirname(dest_path))
-
-            case File.cp(source_path, dest_path) do
-              :ok -> {:ok, filename}
-              {:error, reason} -> {:error, reason}
-            end
-
-          {:error, reason} ->
-            {:error, reason}
+    with {:ok, safe_source_path} <- validate_regular_file_path(source_path),
+         {:ok, %File.Stat{size: size}} <- File.stat(safe_source_path) do
+      if size <= max_file_size do
+        with {:ok, _, mime_blob} <- read_file_head(safe_source_path),
+             {:ok, extension} <- validate_mime_type(mime_blob, allowed_extensions),
+             :ok <- maybe_delete_existing_upload(old_upload_url),
+             {:ok, relative_upload_path, dest_path} <-
+               build_upload_destination(path_suffix, file_name, extension),
+             :ok <- ensure_parent_directory(dest_path),
+             :ok <- copy_file(safe_source_path, dest_path) do
+          {:ok, relative_upload_path}
         end
-
-      {:ok, %File.Stat{size: size}} ->
+      else
         {:error, "File exceeds #{max_file_size} byte limit (#{size} bytes)"}
-
+      end
+    else
       {:error, reason} ->
         {:error, reason}
     end
@@ -383,31 +245,233 @@ defmodule Phoexnip.UploadUtils do
   """
   @spec delete_upload(image_path :: any()) :: {:ok, String.t()} | {:error, String.t()}
   def delete_upload(image_path) when is_binary(image_path) and image_path != "" do
-    target =
-      @static_root
-      |> Path.join(image_path)
-      |> Path.expand()
+    with {:ok, target} <- validate_managed_upload_path(image_path) do
+      cond do
+        not File.exists?(target) ->
+          {:error, "no image to be deleted"}
 
-    cond do
-      not String.starts_with?(target, @static_root) ->
-        # trying to delete outside of priv/static
-        {:error, "invalid path"}
+        true ->
+          case delete_file(target) do
+            :ok ->
+              {:ok, "File deleted"}
 
-      not File.exists?(target) ->
-        {:error, "no image to be deleted"}
-
-      true ->
-        # attempt the deletion and wrap any error
-        case File.rm(target) do
-          :ok ->
-            {:ok, "File deleted"}
-
-          {:error, reason} ->
-            {:error, "could not delete image: #{inspect(reason)}"}
-        end
+            {:error, reason} ->
+              {:error, "could not delete image: #{inspect(reason)}"}
+          end
+      end
     end
   end
 
   # all other cases (nil, "", not a binary)
   def delete_upload(_), do: {:error, "no file to be deleted"}
+
+  defp read_file_head(path, bytes \\ @max_probe_bytes) do
+    with {:ok, safe_path} <- validate_regular_file_path(path),
+         {:ok, device} <- :file.open(String.to_charlist(safe_path), [:read, :binary]) do
+      try do
+        case :file.read(device, bytes) do
+          {:ok, data} -> {:ok, safe_path, data}
+          :eof -> {:ok, safe_path, <<>>}
+          {:error, reason} -> {:error, reason}
+        end
+      after
+        :ok = :file.close(device)
+      end
+    end
+  end
+
+  defp validate_regular_file_path(path) when is_binary(path) and path != "" do
+    expanded_path = Path.expand(path)
+
+    case File.lstat(expanded_path) do
+      {:ok, %File.Stat{type: :regular}} ->
+        {:ok, expanded_path}
+
+      {:ok, %File.Stat{type: type}} ->
+        {:error, "invalid file path: expected a regular file, got #{type}"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp validate_regular_file_path(_), do: {:error, "invalid file path"}
+
+  defp maybe_delete_existing_upload(old_upload_url) do
+    case maybe_managed_upload_path(old_upload_url) do
+      {:ok, target} ->
+        if File.exists?(target) do
+          delete_file(target)
+        else
+          :ok
+        end
+
+      :skip ->
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp maybe_managed_upload_path(path) when is_binary(path) do
+    trimmed_path = String.trim(path)
+
+    cond do
+      trimmed_path == "" ->
+        :skip
+
+      remote_url?(trimmed_path) ->
+        :skip
+
+      not upload_relative_path?(trimmed_path) ->
+        :skip
+
+      true ->
+        validate_managed_upload_path(trimmed_path)
+    end
+  end
+
+  defp maybe_managed_upload_path(_), do: :skip
+
+  defp validate_managed_upload_path(path) when is_binary(path) and path != "" do
+    cond do
+      remote_url?(path) ->
+        {:error, "invalid path"}
+
+      not upload_relative_path?(path) ->
+        {:error, "invalid path"}
+
+      true ->
+        expanded_path = expand_static_relative_path(path)
+
+        if path_within_root?(expanded_path, @upload_root) do
+          {:ok, expanded_path}
+        else
+          {:error, "invalid path"}
+        end
+    end
+  end
+
+  defp validate_managed_upload_path(_), do: {:error, "invalid path"}
+
+  defp build_upload_destination(path_suffix, file_name, extension) do
+    with {:ok, normalized_suffix} <- normalize_path_suffix(path_suffix),
+         {:ok, sanitized_file_name} <- sanitize_file_name(file_name) do
+      upload_segments =
+        ["uploads"]
+        |> Kernel.++(normalized_suffix)
+        |> Kernel.++([sanitized_file_name <> extension])
+
+      relative_upload_path = "/" <> Path.join(upload_segments)
+      dest_path = Path.join([@static_root | upload_segments]) |> Path.expand()
+
+      if path_within_root?(dest_path, @upload_root) do
+        {:ok, relative_upload_path, dest_path}
+      else
+        {:error, "invalid upload path"}
+      end
+    end
+  end
+
+  defp normalize_path_suffix(path_suffix) when path_suffix in [nil, ""], do: {:ok, []}
+
+  defp normalize_path_suffix(path_suffix) when is_binary(path_suffix) do
+    segments =
+      path_suffix
+      |> String.split("/", trim: true)
+      |> Enum.map(&String.trim/1)
+
+    if Enum.all?(segments, &Regex.match?(@safe_path_segment, &1)) do
+      {:ok, segments}
+    else
+      {:error, "invalid upload path"}
+    end
+  end
+
+  defp normalize_path_suffix(_), do: {:error, "invalid upload path"}
+
+  defp sanitize_file_name(file_name) when file_name in [nil, ""], do: {:ok, Ecto.UUID.generate()}
+
+  defp sanitize_file_name(file_name) when is_binary(file_name) do
+    trimmed_file_name = String.trim(file_name)
+
+    if Regex.match?(@safe_path_segment, trimmed_file_name) do
+      {:ok, trimmed_file_name}
+    else
+      {:error, "invalid file name"}
+    end
+  end
+
+  defp sanitize_file_name(_), do: {:error, "invalid file name"}
+
+  defp ensure_parent_directory(path) do
+    case :filelib.ensure_dir(String.to_charlist(path)) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp copy_file(source_path, dest_path) do
+    case :file.copy(String.to_charlist(source_path), String.to_charlist(dest_path)) do
+      {:ok, _bytes_copied} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp delete_file(path) do
+    :file.delete(String.to_charlist(path))
+  end
+
+  defp expand_static_relative_path(path) do
+    path
+    |> String.trim()
+    |> String.trim_leading("/")
+    |> Path.expand(@static_root)
+  end
+
+  defp upload_relative_path?(path) do
+    trimmed_path =
+      path
+      |> String.trim()
+      |> String.trim_leading("/")
+
+    trimmed_path == "uploads" or String.starts_with?(trimmed_path, "uploads/")
+  end
+
+  defp remote_url?(path) do
+    case URI.parse(path) do
+      %URI{scheme: scheme} when is_binary(scheme) and scheme != "" -> true
+      _ -> false
+    end
+  end
+
+  defp safe_display_image(path, fallback)
+       when is_binary(path) and is_binary(fallback) do
+    trimmed_path = String.trim(path)
+
+    cond do
+      trimmed_path == "" ->
+        fallback
+
+      remote_url?(trimmed_path) ->
+        fallback
+
+      String.starts_with?(trimmed_path, "/uploads/") ->
+        trimmed_path
+
+      String.starts_with?(trimmed_path, "/images/") ->
+        trimmed_path
+
+      true ->
+        fallback
+    end
+  end
+
+  defp path_within_root?(path, root) do
+    expanded_root = Path.expand(root)
+    expanded_path = Path.expand(path)
+
+    expanded_path == expanded_root or String.starts_with?(expanded_path, expanded_root <> "/")
+  end
 end

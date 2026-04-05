@@ -177,8 +177,6 @@ defmodule PhoexnipWeb.MasterDataCurrenciesController do
       |> halt()
     end
 
-    IO.inspect(conn.body_params)
-
     case ServiceUtils.get(Currencies, id) do
       %Currencies{} = masterdata ->
         case ServiceUtils.update(masterdata, conn.body_params) do

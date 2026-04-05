@@ -127,8 +127,7 @@ defmodule PhoexnipWeb.UsersLive.Index do
            |> stream(:users_collection, entries)}
         end
 
-      {:error, error} ->
-        IO.inspect(error)
+      {:error, _error} ->
         {:noreply, socket}
     end
   end

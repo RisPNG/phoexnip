@@ -11,6 +11,8 @@ config :phoexnip,
   ecto_repos: [Phoexnip.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :phoexnip, :secure_cookies, false
+
 # Configures the endpoint
 config :phoexnip, PhoexnipWeb.Endpoint,
   url: [host: "localhost"],
@@ -20,14 +22,12 @@ config :phoexnip, PhoexnipWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Phoexnip.PubSub,
-  live_view: [
-    signing_salt:
-      if config_env() == :prod do
-        System.get_env("LIVE_VIEW_SALT")
-      else
-        "0XBNM1drs9v0qUcivEb+b5Uy+CVe6PG5"
-      end
-  ]
+  live_view:
+    (if config_env() == :prod do
+       []
+     else
+       [signing_salt: "0XBNM1drs9v0qUcivEb+b5Uy+CVe6PG5"]
+     end)
 
 # Configures the mailer
 #

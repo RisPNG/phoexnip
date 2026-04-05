@@ -109,8 +109,7 @@ defmodule PhoexnipWeb.RolesLive.Index do
            |> stream(:roles_collection, entries)}
         end
 
-      {:error, error} ->
-        IO.inspect(error)
+      {:error, _error} ->
         {:noreply, socket}
     end
   end

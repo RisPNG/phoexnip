@@ -188,6 +188,7 @@ defmodule Phoexnip.Users.User do
     |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/,
       message: "at least one digit or punctuation character"
     )
+    |> validate_managed_image_url()
     |> maybe_hash_password(opts: true)
     |> maybe_encrypt_credentials()
     |> cast_assoc(:user_roles, with: &Phoexnip.UserRoles.changeset/2, required: true)
@@ -216,6 +217,7 @@ defmodule Phoexnip.Users.User do
     |> validate_format(:password, ~r/[!?@#$%^&*_0-9]/,
       message: "at least one digit or punctuation character"
     )
+    |> validate_managed_image_url()
     |> maybe_hash_password(opts: true)
     |> maybe_encrypt_credentials()
     |> cast_assoc(:user_roles, with: &Phoexnip.UserRoles.changeset/2)
@@ -303,6 +305,25 @@ defmodule Phoexnip.Users.User do
     else
       changeset
     end
+  end
+
+  @spec validate_managed_image_url(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_managed_image_url(changeset) do
+    validate_change(changeset, :image_url, fn :image_url, value ->
+      cond do
+        is_nil(value) ->
+          []
+
+        String.trim(value) == "" ->
+          []
+
+        String.starts_with?(String.trim(value), "/uploads/") ->
+          []
+
+        true ->
+          [image_url: "must reference a locally managed upload"]
+      end
+    end)
   end
 
   @spec maybe_encrypt_credentials(Ecto.Changeset.t()) :: Ecto.Changeset.t()

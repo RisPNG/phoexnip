@@ -173,8 +173,6 @@ defmodule PhoexnipWeb.MasterDataGroupsController do
       %Groups{} = group ->
         case ServiceUtils.update(group, conn.body_params) do
           {:ok, %Groups{} = updated_group} ->
-            IO.inspect(updated_group, label: "updated_masterdata")
-
             Phoexnip.AuditLogService.create_audit_log(
               "Groups - API",
               updated_group.id,

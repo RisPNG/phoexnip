@@ -1,13 +1,16 @@
 defmodule PhoexnipWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :phoexnip
 
+  @secure_cookies Application.compile_env(:phoexnip, :secure_cookies, false)
   # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
+  # encrypted, and protected with HttpOnly and SameSite attributes.
   @session_options [
     store: :cookie,
     key: "_phoexnip_key",
     signing_salt: "Ld429k3N",
+    encryption_salt: "9Kc3zN8m",
+    http_only: true,
+    secure: @secure_cookies,
     same_site: "Lax",
     max_age: 43_190
   ]
@@ -38,11 +41,11 @@ defmodule PhoexnipWeb.Endpoint do
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :phoexnip
-  end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
+    plug Phoenix.LiveDashboard.RequestLogger,
+      param_key: "request_logger",
+      cookie_key: "request_logger"
+  end
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]

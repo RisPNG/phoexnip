@@ -298,9 +298,9 @@ defmodule PhoexnipWeb.UsersLoginReport.Index do
 
   @impl true
   def handle_info({event, user_id} = _msg, socket) when event in [:user_added, :user_removed] do
+    _event = event
+    _user_id = user_id
     presences = PhoexnipWeb.Presence.list("users:online")
-    IO.inspect(presences, label: "presences")
-    IO.puts("Received #{event} for user: #{user_id}")
 
     user_id_filter =
       if socket.assigns.user in ["", nil] do

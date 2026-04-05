@@ -38,35 +38,6 @@ defmodule Phoexnip.ServiceUtils do
   end
 
   @doc """
-  Returns paginated records for the given module/schema.
-
-  ## Examples
-      iex> ServiceUtils.list_paginated(MyApp.User, page: 1, per_page: 10)
-      [%MyApp.User{}, ...]
-  """
-  @spec list_paginated(module(), keyword()) :: [struct()]
-  def list_paginated(module, opts \\ []) do
-    page = Keyword.get(opts, :page)
-    per_page = Keyword.get(opts, :per_page)
-    order_by = Keyword.get(opts, :order_by, asc: :id)
-
-    base_query = from(m in module, order_by: ^order_by)
-
-    case {page, per_page} do
-      {p, pp} when is_integer(p) and p > 0 and is_integer(pp) and pp > 0 ->
-        offset = (p - 1) * pp
-
-        base_query
-        |> limit(^pp)
-        |> offset(^offset)
-        |> Repo.all()
-
-      _ ->
-        Repo.all(base_query)
-    end
-  end
-
-  @doc """
   Retrieves a record by its primary key.
 
   Returns `nil` if no record is found.
@@ -142,23 +113,6 @@ defmodule Phoexnip.ServiceUtils do
   @spec get_by(module(), keyword() | map()) :: struct() | nil
   def get_by(module, args) do
     Repo.get_by(module, args)
-  end
-
-  @doc """
-  Retrieves a record matching the given attributes.
-
-  Raises `Ecto.NoResultsError` if no record is found.
-
-  ## Examples
-      iex> ServiceUtils.get_by!(MyApp.User, %{email: "user@example.com"})
-      %MyApp.User{email: "user@example.com"}
-
-      iex> ServiceUtils.get_by!(MyApp.User, %{email: "nonexistent@example.com"})
-      ** (Ecto.NoResultsError)
-  """
-  @spec get_by!(module(), keyword() | map()) :: struct()
-  def get_by!(module, args) do
-    Repo.get_by!(module, args)
   end
 
   @doc """
@@ -238,35 +192,6 @@ defmodule Phoexnip.ServiceUtils do
   end
 
   @doc """
-  Counts the total number of records for the given module.
-
-  ## Examples
-      iex> ServiceUtils.count(MyApp.User)
-      42
-  """
-  @spec count(module()) :: non_neg_integer()
-  def count(module) do
-    Repo.aggregate(module, :count)
-  end
-
-  @doc """
-  Checks if a record exists with the given attributes.
-
-  ## Examples
-      iex> ServiceUtils.exists?(MyApp.User, %{email: "user@example.com"})
-      true
-
-      iex> ServiceUtils.exists?(MyApp.User, %{email: "nonexistent@example.com"})
-      false
-  """
-  @spec exists?(module(), keyword() | map()) :: boolean()
-  def exists?(module, args) do
-    module
-    |> where(^Enum.to_list(args))
-    |> Repo.exists?()
-  end
-
-  @doc """
   Lists records with a specific condition using a where clause.
 
   ## Examples
@@ -283,23 +208,6 @@ defmodule Phoexnip.ServiceUtils do
     module
     |> where(^Enum.to_list(conditions))
     |> order_by(^order_by)
-    |> Repo.all()
-  end
-
-  @doc """
-  Executes a custom query function on the module.
-
-  Useful for complex queries that don't fit the standard patterns.
-
-  ## Examples
-      iex> query_fn = fn query -> where(query, [u], u.age > 18) end
-      iex> ServiceUtils.list_with_query(MyApp.User, query_fn)
-      [%MyApp.User{age: 25}, ...]
-  """
-  @spec list_with_query(module(), function()) :: [struct()]
-  def list_with_query(module, query_fn) when is_function(query_fn, 1) do
-    module
-    |> query_fn.()
     |> Repo.all()
   end
 end

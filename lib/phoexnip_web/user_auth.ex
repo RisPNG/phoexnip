@@ -7,12 +7,12 @@ defmodule PhoexnipWeb.UserAuth do
   alias Phoexnip.Users.UserService
   alias Phoexnip.UserRolesService
 
+  @secure_cookies Application.compile_env(:phoexnip, :secure_cookies, false)
   # Make the remember me cookie valid for 60 days.
   # If you want bump or reduce this value, also change
   # the token expiry itself in UserToken.
   @max_age 60 * 60 * 24 * 60
   @remember_me_cookie "_phoexnip_web_user_remember_me"
-  @remember_me_options [sign: true, max_age: @max_age, same_site: "Lax"]
 
   @doc """
   Logs the user in.
@@ -67,7 +67,7 @@ defmodule PhoexnipWeb.UserAuth do
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
-    put_resp_cookie(conn, @remember_me_cookie, token, @remember_me_options)
+    put_resp_cookie(conn, @remember_me_cookie, token, remember_me_cookie_options())
   end
 
   defp maybe_write_remember_me_cookie(conn, _token, _params) do
@@ -112,7 +112,7 @@ defmodule PhoexnipWeb.UserAuth do
 
     conn
     |> renew_session()
-    |> delete_resp_cookie(@remember_me_cookie)
+    |> delete_resp_cookie(@remember_me_cookie, remember_me_cookie_delete_options())
     |> redirect(to: ~p"/")
   end
 
@@ -127,8 +127,6 @@ defmodule PhoexnipWeb.UserAuth do
     conn =
       if user do
         permissions = UserRolesService.fetch_user_permissions(user)
-        conn |> put_session(:permission, permissions)
-
         assign(conn, :permissions, permissions)
       else
         conn
@@ -141,7 +139,7 @@ defmodule PhoexnipWeb.UserAuth do
     if token = get_session(conn, :user_token) do
       {token, conn}
     else
-      conn = fetch_cookies(conn, signed: [@remember_me_cookie])
+      conn = fetch_cookies(conn, encrypted: [@remember_me_cookie])
 
       if token = conn.cookies[@remember_me_cookie] do
         {token, put_token_in_session(conn, token)}
@@ -292,6 +290,24 @@ defmodule PhoexnipWeb.UserAuth do
   end
 
   defp maybe_store_return_to(conn), do: conn
+
+  defp remember_me_cookie_options do
+    [
+      encrypt: true,
+      http_only: true,
+      max_age: @max_age,
+      same_site: "Lax",
+      secure: @secure_cookies
+    ]
+  end
+
+  defp remember_me_cookie_delete_options do
+    [
+      http_only: true,
+      same_site: "Lax",
+      secure: @secure_cookies
+    ]
+  end
 
   def find_permission(permissions, code) do
     Enum.find_value(permissions, fn permission ->

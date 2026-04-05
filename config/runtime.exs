@@ -54,15 +54,23 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  live_view_signing_salt =
+    System.get_env("LIVE_VIEW_SALT") ||
+      raise """
+      environment variable LIVE_VIEW_SALT is missing.
+      You can generate one by calling: mix phx.gen.secret
+      """
+
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
+  scheme = System.get_env("PHX_SCHEME") || "https"
 
   # config :phoexnip, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   check_origin_env =
     case System.get_env("CHECK_ORIGIN") do
       nil ->
-        ["//#{host}", "//localhost"]
+        ["//#{host}"]
 
       csv ->
         csv
@@ -71,13 +79,13 @@ if config_env() == :prod do
     end
 
   config :phoexnip, PhoexnipWeb.Endpoint,
-    url: [host: host, port: port, scheme: "http"],
+    url: [host: host, port: port, scheme: scheme],
     http: [
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
     check_origin: check_origin_env,
-    live_view: [signing_salt: System.get_env("LIVE_VIEW_SALT")],
+    live_view: [signing_salt: live_view_signing_salt],
     secret_key_base: secret_key_base,
     static_url: [path: "/"],
     cache_static_manifest: "priv/static/cache_manifest.json",
@@ -137,7 +145,7 @@ if config_env() == :prod do
     auth: :always,
     tls_options: [
       {:versions, [:"tlsv1.2"]},
-      {:verify, :verify_none},
+      {:verify, :verify_peer},
       {:cacertfile, "/etc/ssl/certs/ca-certificates.crt"},
       {:server_name_indication, ~c"outlook.office365.com"},
       {:reuse_sessions, false}

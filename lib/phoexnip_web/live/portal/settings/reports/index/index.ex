@@ -10,8 +10,6 @@ defmodule PhoexnipWeb.SettingsReports.Index do
     highest_permission_master_data =
       UserRolesService.fetch_level_two_user_permissions(user, "SET6")
 
-    IO.inspect(highest_permission_master_data)
-
     socket =
       if length(highest_permission_master_data) > 0 do
         get_url_for_first_master_data = highest_permission_master_data |> Enum.at(0)

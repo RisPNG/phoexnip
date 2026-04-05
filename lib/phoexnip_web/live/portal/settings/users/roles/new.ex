@@ -86,8 +86,6 @@ defmodule PhoexnipWeb.RolesLive.New do
           case Map.get(existing_by_code, entry.code) do
             # If there is already a matching permission, pull in its fields (including id)
             %_{id: existing_id} = existing ->
-              IO.inspect(existing, label: "existing")
-
               %{
                 id: existing_id,
                 permission: existing.permission,

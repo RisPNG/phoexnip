@@ -61,7 +61,6 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.FormComponent do
   end
 
   def handle_event("save", %{"groups" => groups_params}, socket) do
-    IO.inspect(groups_params, label: "groups_params")
     save(socket, socket.assigns.action, groups_params)
   end
 
