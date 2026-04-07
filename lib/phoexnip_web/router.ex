@@ -10,7 +10,7 @@ defmodule PhoexnipWeb.Router do
                                      "font-src 'self' data:",
                                      "form-action 'self'",
                                      "frame-ancestors 'self'",
-                                     "img-src 'self' data: blob: https:",
+                                     "img-src 'self' data: blob:",
                                      "media-src 'self' data: blob:",
                                      "object-src 'none'",
                                      "script-src 'self'",

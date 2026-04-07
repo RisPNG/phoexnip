@@ -62,7 +62,7 @@
           <.live_file_input upload={@uploads.avatar} class="upload hidden" />
         </label>
       </div>
-      <div class="w-[70%] flex-wrap grid grid-cols-3 gap-1">
+      <div class="w-[70%] flex-wrap grid grid-cols-[1fr_1fr_1fr] gap-1">
         <.input field={f[:name]} type="text" label="Name" />
         <.input field={f[:username]} type="text" label="Username" />
         <.input
@@ -109,7 +109,7 @@
     <%= for msg <- PhoexnipWeb.CoreComponents.translate_errors(f.errors, :user_roles) do %>
       <.error>{msg}</.error>
     <% end %>
-    <div class="w-full flex-wrap grid grid-cols-6 gap-2 items-center">
+    <div class="w-full flex-wrap grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-2 items-center">
       <.inputs_for :let={item_f} field={f[:user_roles]}>
         <div class="mb-8">
           <.input class="hidden" field={item_f[:role_name]} type="text" />

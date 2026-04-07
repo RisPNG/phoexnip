@@ -62,7 +62,7 @@
       <div class="w-[30%] flex justify-center flex-wrap">
         <img src={@upload_url} class="h-[300px] w-[300px] user-image mt-6 mb-14" id="" />
       </div>
-      <div class="w-[70%] flex-wrap grid grid-cols-3 gap-1 items-center">
+      <div class="w-[70%] flex-wrap grid grid-cols-[1fr_1fr_1fr] gap-1 items-center">
         <.input field={f[:name]} type="text" label="Name" class="readonly" readonly />
         <.input field={f[:username]} type="text" label="Username" class="readonly" readonly />
         <.input field={f[:email]} type="text" label="Email" class="readonly" readonly />
@@ -86,7 +86,7 @@
     </div>
 
     <div class="w-full title">User Roles</div>
-    <div class="w-full flex-wrap grid grid-cols-6 gap-2 items-center">
+    <div class="w-full flex-wrap grid grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr] gap-2 items-center">
       <.inputs_for :let={item_f} field={f[:user_roles]}>
         <div class="mb-8">
           <.input class="hidden" field={item_f[:role_name]} type="text" />
