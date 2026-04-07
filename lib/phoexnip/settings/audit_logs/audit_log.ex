@@ -32,7 +32,7 @@ defmodule Phoexnip.AuditLogs do
     # ID of the entity being modified
     field :entity_id, :integer
 
-    # A unique identifier that is not the ID for when people delete shit and we still want to find back the old info.
+    # A unique identifier that is not the ID for when records are deleted and we still need to trace back the original info.
     field :entity_unique_identifier, :string
     # Action: 'create', 'update', 'delete'
     field :action, :string

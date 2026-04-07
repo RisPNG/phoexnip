@@ -47,20 +47,6 @@ defmodule Phoexnip.DateUtils do
           user_timezone :: String.t() | nil
         ) :: String.t()
   def formatDate(date, format \\ "{0D}/{0M}/{YYYY} {h24}:{m}", user_timezone \\ nil) do
-    get_timezone_name = fn ->
-      if is_binary(user_timezone) do
-        user_timezone
-      else
-        case Timex.Timezone.local() do
-          %Timex.TimezoneInfo{full_name: tz_name} ->
-            tz_name
-
-          {:error, _reason} ->
-            "Etc/UTC"
-        end
-      end
-    end
-
     parsed_date =
       cond do
         match?(%Date{}, date) or match?(%NaiveDateTime{}, date) or match?(%DateTime{}, date) ->
@@ -74,7 +60,16 @@ defmodule Phoexnip.DateUtils do
             {:error, _} ->
               case Date.from_iso8601(date) do
                 {:ok, parsed_date} ->
-                  timezone_name = get_timezone_name.()
+                  timezone_name =
+                    if is_binary(user_timezone) do
+                      user_timezone
+                    else
+                      case Timex.Timezone.local() do
+                        %Timex.TimezoneInfo{full_name: tz_name} -> tz_name
+                        {:error, _reason} -> "Etc/UTC"
+                      end
+                    end
+
                   DateTime.new!(parsed_date, ~T[00:00:00], timezone_name)
 
                 {:error, _} ->

@@ -285,14 +285,14 @@ defmodule PhoexnipWeb.UsersLive.Index do
           )
           |> Map.get(:entries)
           |> Enum.map(&{"#{&1.name}", &1.name})
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         String.starts_with?(id, "live-single-select-user-email") ->
           Phoexnip.SearchUtils.search(
@@ -306,14 +306,14 @@ defmodule PhoexnipWeb.UsersLive.Index do
           )
           |> Map.get(:entries)
           |> Enum.map(&{"#{&1.email}", &1.email})
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         String.starts_with?(id, "live-single-select-user-phone") ->
           Phoexnip.SearchUtils.search(
@@ -331,14 +331,14 @@ defmodule PhoexnipWeb.UsersLive.Index do
           |> Enum.uniq_by(fn {phone, _} -> phone end)
           # Filter out empty strings
           |> Enum.reject(fn {phone, _} -> phone == "" end)
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         String.starts_with?(id, "live-single-select-user-group") ->
           Phoexnip.SearchUtils.search(
@@ -356,14 +356,14 @@ defmodule PhoexnipWeb.UsersLive.Index do
           |> Enum.uniq_by(fn {group, _} -> group end)
           # Filter out empty strings
           |> Enum.reject(fn {group, _} -> group == "" end)
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         true ->
           []

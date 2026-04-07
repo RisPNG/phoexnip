@@ -255,14 +255,14 @@ defmodule PhoexnipWeb.RolesLive.Index do
           |> Enum.uniq_by(fn {name, _} -> name end)
           # Filter out empty strings
           |> Enum.reject(fn {name, _} -> name == "" end)
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         String.starts_with?(id, "live-single-select-description") ->
           Phoexnip.SearchUtils.search(
@@ -279,14 +279,14 @@ defmodule PhoexnipWeb.RolesLive.Index do
           |> Enum.uniq_by(fn {description, _} -> description end)
           # Filter out empty strings
           |> Enum.reject(fn {description, _} -> description == "" end)
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         true ->
           []

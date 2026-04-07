@@ -278,14 +278,14 @@ defmodule PhoexnipWeb.UsersLoginReport.Index do
             use_or: true
           )[:entries]
           |> Enum.map(&{"#{&1.name}", "#{&1.id}"})
-          |> (fn opts ->
-                if text != "" and
-                     not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
-                  [{text, text} | opts]
-                else
-                  opts
-                end
-              end).()
+          |> then(fn opts ->
+            if text != "" and
+                 not Enum.any?(opts, fn {opt, _} -> String.downcase(opt) == text end) do
+              [{text, text} | opts]
+            else
+              opts
+            end
+          end)
 
         true ->
           []

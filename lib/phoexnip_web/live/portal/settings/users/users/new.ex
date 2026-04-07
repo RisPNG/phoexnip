@@ -242,13 +242,13 @@ defmodule PhoexnipWeb.UsersLive.New do
           )
           |> Map.get(:entries)
           |> Enum.map(&{&1.name, &1.name})
-          |> (fn result ->
-                if text == "*" do
-                  result
-                else
-                  Enum.take(result, 5)
-                end
-              end).()
+          |> then(fn result ->
+            if text == "*" do
+              result
+            else
+              Enum.take(result, 5)
+            end
+          end)
 
         String.starts_with?(id, "live-single-select-customer") ->
           Phoexnip.SearchUtils.search(

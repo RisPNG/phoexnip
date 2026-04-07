@@ -144,7 +144,7 @@ if config_env() == :prod do
     tls: :always,
     auth: :always,
     tls_options: [
-      {:versions, [:"tlsv1.2"]},
+      {:versions, [:"tlsv1.3", :"tlsv1.2"]},
       {:verify, :verify_peer},
       {:cacertfile, "/etc/ssl/certs/ca-certificates.crt"},
       {:server_name_indication, ~c"outlook.office365.com"},

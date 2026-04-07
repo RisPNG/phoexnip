@@ -275,12 +275,31 @@ defmodule PhoexnipWeb.CoreComponents do
     assigns =
       assigns
       |> assign(:flash_content, flash_content)
-      |> (fn a ->
-            if is_map(flash_content) do
-              kind = a.kind
+      |> then(fn a ->
+        if is_map(flash_content) do
+          kind = a.kind
 
-              # Default icon based on kind
-              default_icon =
+          default_icon =
+            case kind do
+              :info -> "hero-information-circle-mini"
+              :error -> "hero-exclamation-circle-mini"
+              :warning -> "hero-exclamation-triangle-mini"
+              _ -> nil
+            end
+
+          assign(a, %{
+            title: Map.get(flash_content, :title, a.title),
+            msg: Map.get(flash_content, :msg),
+            icon: Map.get(flash_content, :icon, a.icon || default_icon),
+            duration: Map.get(flash_content, :duration, a.duration),
+            show_spinner: Map.get(flash_content, :show_spinner, a.show_spinner)
+          })
+        else
+          kind = a.kind
+
+          icon =
+            case a.icon do
+              nil ->
                 case kind do
                   :info -> "hero-information-circle-mini"
                   :error -> "hero-exclamation-circle-mini"
@@ -288,35 +307,13 @@ defmodule PhoexnipWeb.CoreComponents do
                   _ -> nil
                 end
 
-              assign(a, %{
-                title: Map.get(flash_content, :title, a.title),
-                # Msg is usually required from the map
-                msg: Map.get(flash_content, :msg),
-                icon: Map.get(flash_content, :icon, a.icon || default_icon),
-                duration: Map.get(flash_content, :duration, a.duration),
-                show_spinner: Map.get(flash_content, :show_spinner, a.show_spinner)
-              })
-            else
-              # Legacy flash, e.g., put_flash(:info, "Ok")
-              kind = a.kind
-
-              icon =
-                case a.icon do
-                  nil ->
-                    case kind do
-                      :info -> "hero-information-circle-mini"
-                      :error -> "hero-exclamation-circle-mini"
-                      :warning -> "hero-exclamation-triangle-mini"
-                      _ -> nil
-                    end
-
-                  value ->
-                    value
-                end
-
-              assign(a, icon: icon)
+              value ->
+                value
             end
-          end).()
+
+          assign(a, icon: icon)
+        end
+      end)
       |> assign_new(:id, fn -> "flash-#{assigns.kind}" end)
 
     ~H"""
