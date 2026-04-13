@@ -73,35 +73,6 @@
   background-color: var(--color-primary);
 }
 
-/* Scrollbar 2 */
-/* Size + Hidden */
-.sb2::-webkit-scrollbar {
-  width: 0.5rem;
-  height: 0.15rem;
-}
-
-/* Show (Hover) */
-.sb2:hover::-webkit-scrollbar {
-  height: 0.75rem;
-}
-
-/* Track */
-.sb2::-webkit-scrollbar-track {
-  background: var(--color-surface);
-  border-radius: 6px;
-}
-
-/* Thumb */
-.sb2::-webkit-scrollbar-thumb {
-  background-color: var(--color-primary);
-  border-radius: 6px;
-}
-
-/* Thumb (Hover) */
-.sb2::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-primary-dark);
-}
-
 /* This file is for your main application CSS */
 
 input[type="date"] {
@@ -200,24 +171,6 @@ body {
   margin-top: 0.25rem;
 }
 
-.span-like-input-scrollable {
-  @apply whitespace-nowrap inline-block max-h-[2.75rem];
-  @apply rounded-lg block;
-  color: var(--color-foreground);
-  background-color: var(--color-disabled-surface);
-  @apply border-2 border-muted;
-  padding-top: 0.5rem;
-  padding-right: 0.75rem;
-  padding-bottom: 0.5rem;
-  padding-left: 0.75rem;
-  cursor: not-allowed;
-  user-select: none;
-  line-height: 24px;
-  opacity: 1;
-  overflow-x: scroll;
-}
-
-.span-like-input,
 .readonly input,
 select[disabled],
 textarea[readonly] {
@@ -271,132 +224,20 @@ input.input-checkbox:focus {
   box-shadow: none;
 }
 
-.oneline-textarea textarea {
-  max-height: 1.5rem !important;
-}
-
-.span-like-input.no-margin {
-  margin: 0 !important;
-}
-
-.no-margin {
-  margin: 0 !important;
-}
-
-.span-like-input.mt-1 {
-  margin-top: 1rem !important;
-}
-
-.span-like-input.no-padding {
-  padding-top: 0 !important;
-  padding-right: 0 !important;
-  padding-bottom: 0 !important;
-  padding-left: 0 !important;
-}
-.span-like-input.placeholder-text {
-  color: var(--color-muted);
-}
-
-.force-in-one-line {
-  @apply max-h-[2.75rem];
-  white-space: nowrap;
-  overflow-x: auto;
-}
-
-#products thead th:nth-child(6) {
-  width: 20%;
-}
-
-#products thead th:nth-child(2) {
-  width: 30%;
-}
-
-.invisible-button {
-  border: none !important;
-  padding: 0 !important;
-  background-color: rgba(0, 0, 0, 0) !important;
-}
-
-.invisible-button:hover {
-  background-color: rgba(0, 0, 0, 0) !important;
-}
-
-.select-like-text select {
-  background-image: none !important;
-}
-
-.select-like-text.disabled select {
-  background-image: none !important;
-  background-color: var(--color-disabled-surface);
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
 [id^="live-"] input {
-  @apply bg-surface border-2 border-muted rounded-lg;
-  color: var(--color-foreground);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
-  padding-right: 2.5rem;
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-  position: inherit;
-}
-
-.no-label-margin div input,
-.no-label-margin div textarea,
-.no-label-margin div select {
-  margin-top: 0 !important;
-}
-
-.input-center.text-center input {
-  text-align: center !important;
-}
-
-.input-like-span input {
-  border: none;
-  background: none;
-  cursor: default;
-}
-
-.input-like-span.text-center input {
-  text-align: center !important;
-}
-
-.input-like-span.text-right input {
-  text-align: right !important;
-}
-
-.input-with-currency input {
-  padding-right: 3.5rem !important;
-}
-
-td:has(.Draft) div {
-  @apply bg-muted text-center flex justify-center items-center p-1 rounded-xl;
-}
-
-td:has(.Prepared) div,
-td:has(.Running) div,
-td:has(.Submitted) div {
-  @apply bg-themePrimary text-center flex justify-center items-center p-1 rounded-xl;
+  padding-right: 3rem;
 }
 
 td:has(.Completed) div {
   @apply bg-success text-center flex justify-center items-center p-1 rounded-xl;
 }
 
-td:has(.Shipped) div {
-  @apply bg-success text-center flex justify-center items-center p-1 rounded-xl;
-}
-
 td:has(.Cancelled) div {
   @apply bg-dangerDark text-center flex justify-center items-center p-1 rounded-xl;
-}
-
-button[phx-click="clear"] {
-  right: 30px !important;
 }
 
 .scribe-step {
@@ -436,47 +277,6 @@ button[phx-click="clear"] {
 
 .scribe-author {
   display: none !important;
-}
-
-.radio-group {
-  display: flex;
-  justify-content: space-evenly;
-  align-items: center;
-  width: 100%;
-}
-.radio-button {
-  width: 33%;
-}
-
-.radio-button-container {
-  display: flex;
-  align-items: center;
-}
-.radio-button-input:disabled {
-  cursor: not-allowed;
-  @apply bg-muted;
-}
-.radio-button-input:disabled:checked {
-  cursor: not-allowed;
-  @apply bg-muted;
-}
-
-.radio-button-input:checked:not(:disabled) {
-  @apply bg-themePrimary;
-}
-.radio-button-input:checked:not(:disabled):hover,
-.radio-button-input:checked:not(:disabled):focus {
-  @apply bg-themePrimaryDark;
-}
-
-.radio-button-input:not(:disabled):hover,
-.radio-button-input:not(:disabled):focus {
-  @apply bg-themePrimary;
-}
-
-/* to make the empty search headers not bold. */
-.py-2.px-4.border-b {
-  font-weight: normal;
 }
 
 @media (max-width: 993px) {
