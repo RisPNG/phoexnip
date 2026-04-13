@@ -233,5 +233,6 @@ vite.config.ts.timestamp-*
 AGENTS.md
 CLAUDE.md
 priv/static/assets/
+priv/static/swagger.json
 
 ## user-defined ##
