@@ -67,6 +67,7 @@ defmodule Phoexnip.MixProject do
       {:bandit, ">= 1.5.0"},
       {:bcrypt_elixir, ">= 3.0.0"},
       {:burrito, ">= 1.0.0"},
+      {:chromic_pdf, ">= 1.17.0"},
       {:dialyxir, ">= 1.4.0", only: [:dev, :test], runtime: false},
       {:dns_cluster, ">= 0.1.1"},
       {:ecto_sql, ">= 3.10.0"},

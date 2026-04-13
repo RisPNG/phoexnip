@@ -23,7 +23,6 @@ defmodule Phoexnip.JobExecutor do
   @allowed_jobs %{
     "quality_images_clean_up" => :quality_images_clean_up,
     "demo_job" => :demo_job,
-    "demo_api_job" => :demo_api_job,
     "nike_acs" => :nike_acs,
     "nike_acs_attachment" => :nike_acs_attachment
   }

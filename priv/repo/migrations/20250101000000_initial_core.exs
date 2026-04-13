@@ -187,28 +187,6 @@ defmodule Phoexnip.Repo.Migrations.InitialCore do
       """
     )
 
-    create table(:api_key) do
-      add :given_to, :string
-      add :key, :string, null: false
-      add :valid_until, :utc_datetime
-      add :refresh_key, :string
-      add :refresh_until, :utc_datetime
-
-      timestamps(type: :utc_datetime)
-    end
-
-    create unique_index(:api_key, [:key])
-    create index(:api_key, [:given_to])
-
-    create table(:api_credential) do
-      add :job, :string
-      add :credential, :text
-
-      timestamps(type: :utc_datetime)
-    end
-
-    create unique_index(:api_credential, [:job])
-
     create table(:audit_logs) do
       add :entity_type, :string, null: false
       add :entity_id, :integer, null: false

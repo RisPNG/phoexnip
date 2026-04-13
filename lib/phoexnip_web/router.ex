@@ -53,26 +53,6 @@ defmodule PhoexnipWeb.Router do
     pipe_through :api
 
     scope "/v1" do
-      scope "/organisation_information" do
-        get "/", OrganisationInformationController, :index
-        post "/", OrganisationInformationController, :create
-        put "/", OrganisationInformationController, :update
-      end
-
-      scope "/users" do
-        resources "/", UserController, except: [:new, :edit]
-        get "/:id/permissions", UserController, :user_access
-        post "/:id/image", UserController, :image
-        delete "/:id/image", UserController, :delete_image
-        put "/:id/updatepassword", UserController, :update_password
-      end
-
-      resources "/roles", RolesController, except: [:new, :edit]
-      get "/sitemap", SitemapController, :index
-
-      scope "/master_data" do
-        resources "/currencies", MasterDataCurrenciesController, except: [:new, :edit]
-      end
     end
   end
 
@@ -81,10 +61,6 @@ defmodule PhoexnipWeb.Router do
     pipe_through :login
 
     scope "/v1" do
-      scope "/users" do
-        post "/login", UserController, :login
-        post "/refreshtoken/", UserController, :refreshtoken
-      end
     end
   end
 
