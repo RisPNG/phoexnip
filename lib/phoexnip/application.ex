@@ -14,8 +14,6 @@ defmodule Phoexnip.Application do
         PhoexnipWeb.Presence,
         # Start the Finch HTTP client for sending emails
         {Finch, name: Phoexnip.Finch},
-        # Add ApiKeyCache to the supervision tree
-        {ApiKeyCache, []},
         # Start to serve requests, typically the last entry
         PhoexnipWeb.Endpoint,
         Phoexnip.JobSchedulers
