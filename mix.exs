@@ -99,15 +99,14 @@ defmodule Phoexnip.MixProject do
       {:quantum, ">= 3.5.0"},
       {:req, ">= 0.5.0"},
       {:sobelow, ">= 0.13.0", only: [:dev, :test], runtime: false},
+      {:spreadsheet, ">= 0.4.6"},
       {:stb_image, ">= 0.6.9"},
       {:styler, ">= 1.4.0", only: [:dev, :test], runtime: false},
       {:swoosh, ">= 1.18.0"},
       {:tailwind, ">= 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, ">= 1.0.0"},
       {:telemetry_poller, ">= 1.0.0"},
-      {:timex, ">= 3.0.0"},
-      {:xlsx_reader, ">= 0.8.0",
-       git: "https://github.com/xavier/xlsx_reader.git", branch: "master"}
+      {:timex, ">= 3.0.0"}
     ]
   end
 
