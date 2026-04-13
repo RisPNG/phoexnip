@@ -73,7 +73,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <.flash_group flash={@flash} />
 
         <div class="flex h-full w-full items-center justify-center">
-          <div class="w-full h-full flex items-center justify-center p-4 sm:p-6 lg:py-8">
+          <div class="w-full h-full flex items-center justify-center p-4">
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
@@ -142,7 +142,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <.flash_group flash={@flash} />
 
         <div class="flex justify-center w-full mt-14">
-          <div class={"max-w-[83%] p-4 sm:p-6 lg:py-8 " <> @class}>
+          <div class={"max-w-[83%] p-4 " <> @class}>
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
@@ -212,7 +212,7 @@ defmodule PhoexnipWeb.CoreComponents do
         <.flash_group flash={@flash} />
 
         <div class="flex min-h-full items-center justify-center">
-          <div class={"max-w-8xl p-4 sm:p-6 lg:py-8 " <> @class}>
+          <div class={"max-w-8xl p-4 " <> @class}>
             <.focus_wrap
               id={"#{@id}-container"}
               class="relative rounded-2xl p-14 shadow-lg ring-1 ring-themePrimary transition bg-page"
@@ -330,7 +330,7 @@ defmodule PhoexnipWeb.CoreComponents do
       data-duration={@duration}
       role="alert"
       class={[
-        "flash fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1 shadow-lg",
+        "flash fixed top-2 right-2 mr-2 w-80 z-50 rounded-lg p-3 ring-1 shadow-lg",
         @kind == :info && "bg-infoBg text-infoFg ring-infoBorder",
         @kind == :error && "bg-errorBg text-errorFg ring-errorBorder",
         @kind == :warning && "bg-warnBg text-warnFg ring-warnBorder",
@@ -824,7 +824,7 @@ defmodule PhoexnipWeb.CoreComponents do
       [
         render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
         render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-        "mt-2 min-h-[2.75rem] block w-full rounded-lg border-2 text-foreground focus:ring-0 sm: sm:leading-6",
+        "mt-2 min-h-[2.75rem] block w-full rounded-lg border-2 text-foreground focus:ring-0",
         "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
         errors == [] && has_error && "border-muted focus:border-themePrimary",
         errors != [] && has_error && "border-danger focus:border-danger"
@@ -900,7 +900,7 @@ defmodule PhoexnipWeb.CoreComponents do
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-      "text-right mt-2 max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+      "text-right mt-2 max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
       "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary ",
       errors == [] && has_error && "border-muted focus:border-themePrimary",
       errors != [] && has_error && "border-danger focus:border-danger"
@@ -1101,7 +1101,7 @@ defmodule PhoexnipWeb.CoreComponents do
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 border-2",
       "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
       errors == [] && has_error && "border-muted focus:border-themePrimary",
       errors != [] && has_error && "border-danger focus:border-danger"
@@ -1268,7 +1268,7 @@ defmodule PhoexnipWeb.CoreComponents do
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 border-2",
       "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
       errors == [] && has_error && "border-muted focus:border-themePrimary",
       errors != [] && has_error && "border-danger focus:border-danger"
@@ -1354,7 +1354,7 @@ defmodule PhoexnipWeb.CoreComponents do
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 border-2",
       "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
       errors == [] && has_error && "border-muted focus:border-themePrimary",
       errors != [] && has_error && "border-danger focus:border-danger"
@@ -1437,7 +1437,7 @@ defmodule PhoexnipWeb.CoreComponents do
     class = [
       render_as in ["enabled", "like-enabled"] && "bg-surface cursor-pointer",
       render_as in ["disabled", "like-disabled"] && "bg-disabledSurface cursor-not-allowed",
-      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 sm: sm:leading-6 border-2",
+      "mt-2 min-w-[2.75rem] max-h-[2.75rem] block w-full rounded-lg text-foreground focus:ring-0 border-2",
       "phx-no-feedback:border-muted phx-no-feedback:focus:border-themePrimary",
       errors == [] && has_error && "border-muted focus:border-themePrimary",
       errors != [] && has_error && "border-danger focus:border-danger"
@@ -1627,7 +1627,7 @@ defmodule PhoexnipWeb.CoreComponents do
                 class={["relative p-0", @row_click && "hover:cursor-pointer"]}
               >
                 <div class="block py-1">
-                  <span class="absolute -inset-y-px right-0 -left-4 sm:rounded-l-xl" />
+                  <span class="absolute -inset-y-px right-0 -left-4" />
                   <span class={["relative", i == 0]}>
                     {render_slot(col, @row_item.(row))}
                   </span>
@@ -1635,7 +1635,7 @@ defmodule PhoexnipWeb.CoreComponents do
               </td>
               <td :if={@action != []} class="relative w-14 p-0">
                 <div class="relative whitespace-nowrap py-4 text-right font-medium">
-                  <span class="absolute -inset-y-px -right-4 left-0 sm:rounded-r-xl" />
+                  <span class="absolute -inset-y-px -right-4 left-0" />
                   <span :for={action <- @action} class="relative ml-1 leading-6">
                     {render_slot(action, @row_item.(row))}
                   </span>
@@ -1667,7 +1667,7 @@ defmodule PhoexnipWeb.CoreComponents do
     ~H"""
     <div class="mt-14">
       <dl class="-my-4 divide-y divide-border">
-        <div :for={item <- @item} class="flex gap-4 py-4 leading-6 sm:gap-8">
+        <div :for={item <- @item} class="flex gap-4 py-4 leading-6">
           <dt class="w-1/4 flex-none">{item.title}</dt>
           <dd class="">{render_slot(item)}</dd>
         </div>
@@ -1734,8 +1734,8 @@ defmodule PhoexnipWeb.CoreComponents do
       to: selector,
       transition:
         {"transition-all transform ease-out duration-300",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95",
-         "opacity-100 translate-y-0 sm:scale-100"}
+         "opacity-0 translate-y-4",
+         "opacity-100 translate-y-0"}
     )
   end
 
@@ -1745,8 +1745,8 @@ defmodule PhoexnipWeb.CoreComponents do
       time: 200,
       transition:
         {"transition-all transform ease-in duration-200",
-         "opacity-100 translate-y-0 sm:scale-100",
-         "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}
+         "opacity-100 translate-y-0",
+         "opacity-0 translate-y-4"}
     )
   end
 
