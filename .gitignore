@@ -232,5 +232,6 @@ vite.config.ts.timestamp-*
 
 AGENTS.md
 CLAUDE.md
+priv/static/assets/
 
 ## user-defined ##
