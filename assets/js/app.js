@@ -443,116 +443,134 @@ Hooks.AutoResize = {
 
 Hooks.LiveSelectAbsolute = {
   mounted() {
-    // find the nearest sticky ancestor (e.g. your 18% column)
-    let found = this.el.closest('.sticky')
-    this.wrapper = found || this.el.closest('.relative')
-
-    // figure out CLOSE_Z:
-    if (found) {
-      this.CLOSE_Z = '10'
-    } else {
-      // fallback relative or self → use z-index = 1
-      this.CLOSE_Z = '1'
+    if (!this.el.id) {
+      this.el.id = `lswrapper-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
     }
 
-    if (found) {
-      this.OPEN_Z = '9999'
-    } else {
-      // fallback relative or self → use z-index = 1
-      this.OPEN_Z = '9'
-    }
-
+    this.wrapper = this.el
+    this.wrapper.style.position = 'relative'
 
     this.handleScroll = this.handleScroll.bind(this)
     this.handleResize = this.handleResize.bind(this)
+    this.onDocClick = this.onDocClick.bind(this)
+    this.maintainZIndex = this.maintainZIndex.bind(this)
 
-    this.liveSelectEl = this.el.querySelector('[phx-hook="LiveSelect"]')
+    this.liveSelectEl = this.wrapper.querySelector('[phx-hook="LiveSelect"]')
+
     this.setupObserver()
 
     window.addEventListener("scroll", this.handleScroll, true)
     window.addEventListener("resize", this.handleResize, true)
+    document.addEventListener("mousedown", this.onDocClick)
+
+    this.zIndexInterval = setInterval(this.maintainZIndex, 100)
 
     if (this.liveSelectEl) {
       const raise = () => {
-        this.wrapper.style.zIndex = this.OPEN_Z
+        this.ensureHighZIndex()
         setTimeout(() => this.repositionDropdown(), 256)
-      }
-      const lower = () => {
-        console.log(this.CLOSE_Z)
-        this.wrapper.style.zIndex = this.CLOSE_Z
       }
 
       this.liveSelectEl.addEventListener("focusin", raise)
-      this.liveSelectEl.addEventListener("click",   raise)
-      this.liveSelectEl.addEventListener("input",   raise)
-      this.liveSelectEl.addEventListener("blur",    lower)
+      this.liveSelectEl.addEventListener("click", raise)
+      this.liveSelectEl.addEventListener("input", raise)
     }
-        // Listen for clicks anywhere, to detect “outside” clicks
-        this.onDocClick = this.onDocClick.bind(this)
-        document.addEventListener("mousedown", this.onDocClick)
+  },
+
+  maintainZIndex() {
+    const dropdownEl = this.getDropdownEl()
+    if (dropdownEl && getComputedStyle(dropdownEl).display !== 'none') {
+      this.ensureHighZIndex()
+    } else {
+      this.ensureLowZIndex()
+    }
+  },
+
+  ensureHighZIndex() {
+    const targetZ = '9999'
+    if (this.wrapper.style.zIndex !== targetZ) {
+      this.wrapper.style.zIndex = targetZ
+      this.wrapper.style.position = 'relative'
+    }
+  },
+
+  ensureLowZIndex() {
+    const targetZ = '1'
+    if (this.wrapper.style.zIndex !== targetZ) {
+      this.wrapper.style.zIndex = targetZ
+    }
   },
 
   updated() {
     this.repositionDropdown()
+    this.maintainZIndex()
   },
 
   destroyed() {
+    if (this.zIndexInterval) {
+      clearInterval(this.zIndexInterval)
+    }
     document.removeEventListener("mousedown", this.onDocClick)
     window.removeEventListener("scroll", this.handleScroll, true)
     window.removeEventListener("resize", this.handleResize, true)
     if (this.observer) this.observer.disconnect()
   },
+
   onDocClick(ev) {
-    // if the click target isn’t inside our LiveSelect wrapper…
-    if (!this.el.contains(ev.target)) {
-
-      let found = this.el.closest('.sticky')
-      const wrapper = found || this.el.closest('.relative')
-
-      // figure out CLOSE_Z:
-      CLOSE_Z = '1'
-      if (found) {
-        CLOSE_Z = '10'
-      } else {
-        // fallback relative or self → use z-index = 1
-        CLOSE_Z = '1'
+    if (!this.wrapper.contains(ev.target)) {
+      const dropdownEl = this.getDropdownEl()
+      if (dropdownEl && getComputedStyle(dropdownEl).display !== 'none') {
+        setTimeout(() => {
+          const stillThere = this.getDropdownEl()
+          if (!stillThere || getComputedStyle(stillThere).display === 'none') {
+            this.ensureLowZIndex()
+          }
+        }, 150)
       }
-
-      // manually lower the z-index
-      wrapper.style.zIndex = CLOSE_Z
     }
   },
+
   setupObserver() {
     this.observer = new MutationObserver(ms => {
       for (let m of ms) {
         for (let node of m.addedNodes) {
           if (node.tagName === 'UL' && node.classList.contains('absolute')) {
+            this.ensureHighZIndex()
             this.repositionDropdown()
+            return
+          }
+        }
+        for (let node of m.removedNodes) {
+          if (node.tagName === 'UL' && node.classList.contains('absolute')) {
+            this.ensureLowZIndex()
             return
           }
         }
       }
     })
+
     if (this.liveSelectEl) {
       this.observer.observe(this.liveSelectEl, { childList: true, subtree: true })
     }
   },
 
-  handleScroll()   { this.repositionDropdown() },
-  handleResize()   { this.repositionDropdown() },
+  handleScroll() { this.repositionDropdown() },
+  handleResize() { this.repositionDropdown() },
 
   repositionDropdown() {
-    const inputEl    = this.el.querySelector("input")
+    const inputEl = this.wrapper.querySelector("input")
     const dropdownEl = this.getDropdownEl()
+
     if (!inputEl || !dropdownEl) return
     if (getComputedStyle(dropdownEl).display === 'none') return
 
     const r = inputEl.getBoundingClientRect()
     Object.assign(dropdownEl.style, {
       position: 'fixed',
-      top:      `${r.bottom}px`,
-      left:     `${r.left}px`,
-      width:    `${r.width}px`
+      top: `${r.bottom}px`,
+      left: `${r.left}px`,
+      width: `${r.width}px`,
+      zIndex: '10000'
     })
     dropdownEl.classList.add("positioned-dropdown")
   },
@@ -562,10 +580,12 @@ Hooks.LiveSelectAbsolute = {
       const d = this.liveSelectEl.querySelector("ul.absolute")
       if (d) return d
     }
-    return document.querySelector(`ul[data-parent="${this.el.id}"]`)
+    if (this.wrapper.id) {
+      return document.querySelector(`ul[data-parent="${this.wrapper.id}"]`)
+    }
+    return null
   }
 }
-
 
 const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 let csrfToken = document
