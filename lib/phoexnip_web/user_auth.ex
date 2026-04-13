@@ -186,7 +186,6 @@ defmodule PhoexnipWeb.UserAuth do
     socket = Phoenix.Component.assign(socket, :breadcrumb_third_segment, nil)
     socket = Phoenix.Component.assign(socket, :breadcrumb_third_link, nil)
     socket = Phoenix.Component.assign(socket, :breadcrumb_fourth_segment, nil)
-    socket = Phoenix.Component.assign(socket, :breadcrumb_help_link, nil)
 
     if socket.assigns.current_user do
       {:cont, socket}
@@ -209,7 +208,6 @@ defmodule PhoexnipWeb.UserAuth do
     socket = Phoenix.Component.assign(socket, :breadcrumb_third_segment, nil)
     socket = Phoenix.Component.assign(socket, :breadcrumb_fourth_segment, nil)
     socket = Phoenix.Component.assign(socket, :breadcrumb_third_link, nil)
-    socket = Phoenix.Component.assign(socket, :breadcrumb_help_link, nil)
 
     if socket.assigns.current_user do
       {:halt, Phoenix.LiveView.redirect(socket, to: signed_in_path(socket))}

@@ -33,8 +33,7 @@ defmodule PhoexnipWeb.MasterDataCurrenciesLive.Index do
      )
      |> assign(:breadcrumb_third_link, "master_data/currencies")
      |> assign(:breadcrumb_fourth_segment, nil)
-     |> assign(:show_audit_log_modal, false)
-     |> assign(:breadcrumb_help_link, "master_data/currencies/usermanual")}
+     |> assign(:show_audit_log_modal, false)}
   end
 
   @impl true

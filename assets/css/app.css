@@ -240,45 +240,6 @@ td:has(.Cancelled) div {
   @apply bg-dangerDark text-center flex justify-center items-center p-1 rounded-xl;
 }
 
-.scribe-step {
-  @apply w-full flex justify-center flex-wrap mt-4;
-}
-
-.scribe-step-text {
-  @apply w-full text-center pb-2 text-xl;
-  font-weight: bold;
-}
-
-.scribe-screenshot {
-  border-radius: 0.5rem;
-  @apply border-[2px] border-themePrimary;
-}
-
-.scribe-title {
-  @apply w-full border-b text-center uppercase text-4xl pb-6;
-  @apply border-borderStrong;
-  font-weight: bold;
-}
-
-.scribe-step-tip {
-  @apply p-2 rounded-lg border border-successBorder bg-successBg text-successFg;
-  font-weight: normal;
-}
-
-.scribe-step-info {
-  @apply p-2 rounded-lg border border-infoBorder bg-infoBg text-infoFg;
-  font-weight: normal;
-}
-
-.scribe-step-warning {
-  @apply p-2 rounded-lg border border-warningBorder bg-warningBg text-warningFg;
-  font-weight: normal;
-}
-
-.scribe-author {
-  display: none !important;
-}
-
 @media (max-width: 993px) {
   .pagination:first-of-type {
     margin-top: 1em;

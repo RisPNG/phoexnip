@@ -35,8 +35,7 @@ defmodule PhoexnipWeb.RolesLive.Index do
          nil
        )
        |> assign(:breadcrumb_fourth_segment, nil)
-       |> assign(:show_audit_log_modal, false)
-       |> assign(:breadcrumb_help_link, "roles/user_manual"),
+       |> assign(:show_audit_log_modal, false),
        :roles_collection,
        entries
      )}

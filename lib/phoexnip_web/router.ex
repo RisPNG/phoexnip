@@ -138,13 +138,11 @@ defmodule PhoexnipWeb.Router do
 
       scope "/organisation_information" do
         live "/", OrganisationInfoLive.New, :new
-        live "/user_manual", OrganisationInfoLive.UserManual, :index
       end
 
       scope "/users" do
         live "/", UsersLive.Index, :index
         live "/new", UsersLive.New, :new
-        live "/user_manual", UsersLive.UserManual, :index
         live "/:id/edit", UsersLive.New, :edit
         live "/:id", UsersLive.Show, :show
       end
@@ -152,7 +150,6 @@ defmodule PhoexnipWeb.Router do
       scope "/roles" do
         live "/", RolesLive.Index, :index
         live "/new", RolesLive.New, :new
-        live "/user_manual", RolesLive.UserManual, :index
         live "/:id/edit", RolesLive.New, :edit
       end
 
@@ -172,14 +169,12 @@ defmodule PhoexnipWeb.Router do
         scope "/currencies" do
           live "/", MasterDataCurrenciesLive.Index, :index
           live "/new", MasterDataCurrenciesLive.Index, :new
-          live "/usermanual", MasterDataCurrenciesLive.UserManual, :index
           live "/:id/edit", MasterDataCurrenciesLive.Index, :edit
         end
 
         scope "/groups" do
           live "/", MasterDataGroupsLive.Index, :index
           live "/new", MasterDataGroupsLive.Index, :new
-          live "/usermanual", MasterDataGroupsLive.UserManual, :index
           live "/:id/edit", MasterDataGroupsLive.Index, :edit
         end
       end

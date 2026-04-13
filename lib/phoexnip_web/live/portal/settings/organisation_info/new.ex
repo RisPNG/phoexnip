@@ -36,8 +36,7 @@ defmodule PhoexnipWeb.OrganisationInfoLive.New do
        :breadcrumb_third_segment,
        nil
      )
-     |> assign(:breadcrumb_fourth_segment, nil)
-     |> assign(:breadcrumb_help_link, "organisation_information/user_manual")}
+     |> assign(:breadcrumb_fourth_segment, nil)}
   end
 
   @impl true

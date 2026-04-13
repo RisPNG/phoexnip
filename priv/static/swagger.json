@@ -5,6 +5,7 @@
   },
   "host": null,
   "definitions": {},
+  "paths": {},
   "securityDefinitions": {
     "api_key": {
       "in": "header",
@@ -12,6 +13,5 @@
       "type": "apiKey"
     }
   },
-  "paths": {},
   "swagger": "2.0"
 }

@@ -49,7 +49,6 @@ defmodule PhoexnipWeb.UsersLive.New do
          "New"
        )
        |> assign(:breadcrumb_fourth_segment, nil)
-       |> assign(:breadcrumb_help_link, "users/user_manual")
        |> allow_upload(:avatar, accept: ~w(.jpg .jpeg .png .gif), max_entries: 1)}
     else
       socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET1", 4)
@@ -105,7 +104,6 @@ defmodule PhoexnipWeb.UsersLive.New do
          "Edit"
        )
        |> assign(:breadcrumb_fourth_segment, "" <> user.name <> " - " <> user.email)
-       |> assign(:breadcrumb_help_link, "users/user_manual")
        |> allow_upload(:avatar,
          accept: ~w(.jpg .jpeg .png .gif),
          max_entries: 1,

@@ -24,8 +24,7 @@ defmodule PhoexnipWeb.Home.Index do
        :breadcrumb_third_segment,
        nil
      )
-     |> assign(:breadcrumb_fourth_segment, nil)
-     |> assign(:breadcrumb_help_link, nil)}
+     |> assign(:breadcrumb_fourth_segment, nil)}
   end
 
   @impl true
@@ -51,6 +50,5 @@ defmodule PhoexnipWeb.Home.Index do
       nil
     )
     |> assign(:breadcrumb_fourth_segment, nil)
-    |> assign(:breadcrumb_help_link, nil)
   end
 end

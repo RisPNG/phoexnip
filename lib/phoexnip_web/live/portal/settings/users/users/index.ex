@@ -46,8 +46,7 @@ defmodule PhoexnipWeb.UsersLive.Index do
          :breadcrumb_third_segment,
          nil
        )
-       |> assign(:breadcrumb_fourth_segment, nil)
-       |> assign(:breadcrumb_help_link, "users/user_manual"),
+       |> assign(:breadcrumb_fourth_segment, nil),
        :users_collection,
        entries
      )}

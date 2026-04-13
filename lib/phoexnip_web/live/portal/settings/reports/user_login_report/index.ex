@@ -47,7 +47,6 @@ defmodule PhoexnipWeb.UsersLoginReport.Index do
      |> assign(:breadcrumb_second_link, nil)
      |> assign(:breadcrumb_third_segment, "User Login Report")
      |> assign(:breadcrumb_third_link, "settings_reports/user_login_report")
-     |> assign(:breadcrumb_help_link, nil)
      |> assign(:error_message, false)
      |> assign(:total_pages, Float.ceil(total_entries / per_page) |> round())
      |> assign(:form, to_form(%{}))

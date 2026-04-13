@@ -71,7 +71,6 @@ defmodule PhoexnipWeb.UsersLive.Show do
        "Show"
      )
      |> assign(:breadcrumb_fourth_segment, "" <> user.name <> " - " <> user.email)
-     |> assign(:breadcrumb_help_link, "users/user_manual")
      |> allow_upload(:avatar,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,

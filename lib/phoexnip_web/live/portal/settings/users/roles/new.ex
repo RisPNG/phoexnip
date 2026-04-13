@@ -52,8 +52,7 @@ defmodule PhoexnipWeb.RolesLive.New do
          :breadcrumb_third_segment,
          "New"
        )
-       |> assign(:breadcrumb_fourth_segment, nil)
-       |> assign(:breadcrumb_help_link, "roles/user_manual")}
+       |> assign(:breadcrumb_fourth_segment, nil)}
     else
       socket = Phoexnip.AuthenticationUtils.check_page_permissions(socket, "SET2", 4)
 
@@ -127,8 +126,7 @@ defmodule PhoexnipWeb.RolesLive.New do
          :breadcrumb_third_segment,
          "Edit"
        )
-       |> assign(:breadcrumb_fourth_segment, "" <> role.name)
-       |> assign(:breadcrumb_help_link, "roles/user_manual")}
+       |> assign(:breadcrumb_fourth_segment, "" <> role.name)}
     end
   end
 

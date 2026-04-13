@@ -33,8 +33,7 @@ defmodule PhoexnipWeb.MasterDataGroupsLive.Index do
      )
      |> assign(:breadcrumb_third_link, "masterdata/groups")
      |> assign(:breadcrumb_fourth_segment, nil)
-     |> assign(:show_audit_log_modal, false)
-     |> assign(:breadcrumb_help_link, "masterdata/groups/usermanual")}
+     |> assign(:show_audit_log_modal, false)}
   end
 
   @impl true
