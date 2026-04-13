@@ -37,7 +37,6 @@ defmodule PhoexnipWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json", "pdf"]
-    plug PhoexnipWeb.Plugs.ApiKeyAuth
   end
 
   pipeline :login do
