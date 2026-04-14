@@ -7,54 +7,46 @@
     class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4 mt-6"
     id="search-form"
   >
-    <div class="">
-      <.input
-        type="live-select"
-        label="User"
-        id="live-single-select-user-name"
-        field={f[:name]}
-        options={[{"", ""}]}
-        placeholder="Type to search..."
-        phx-focus="live_select_change"
-        allow_clear={true}
-      />
-    </div>
-    <div class="">
-      <.input
-        type="live-select"
-        label="Email"
-        id="live-single-select-user-email"
-        field={f[:email]}
-        options={[{"", ""}]}
-        placeholder="Type to search..."
-        phx-focus="live_select_change"
-        allow_clear={true}
-      />
-    </div>
-    <div class="">
-      <.input
-        type="live-select"
-        label="Phone"
-        id="live-single-select-user-phone"
-        field={f[:phone]}
-        options={[{"", ""}]}
-        placeholder="Type to search..."
-        phx-focus="live_select_change"
-        allow_clear={true}
-      />
-    </div>
-    <div class="">
-      <.input
-        type="live-select"
-        label="Group"
-        id="live-single-select-user-group"
-        field={f[:group]}
-        options={[{"", ""}]}
-        placeholder="Type to search..."
-        phx-focus="live_select_change"
-        allow_clear={true}
-      />
-    </div>
+    <.input
+      type="live-select"
+      label="User"
+      id="live-single-select-user-name"
+      field={f[:name]}
+      options={[{"", ""}]}
+      placeholder="Type to search..."
+      phx-focus="live_select_change"
+      allow_clear={true}
+    />
+    <.input
+      type="live-select"
+      label="Email"
+      id="live-single-select-user-email"
+      field={f[:email]}
+      options={[{"", ""}]}
+      placeholder="Type to search..."
+      phx-focus="live_select_change"
+      allow_clear={true}
+    />
+    <.input
+      type="live-select"
+      label="Phone"
+      id="live-single-select-user-phone"
+      field={f[:phone]}
+      options={[{"", ""}]}
+      placeholder="Type to search..."
+      phx-focus="live_select_change"
+      allow_clear={true}
+    />
+    <.input
+      type="live-select"
+      label="Group"
+      id="live-single-select-user-group"
+      field={f[:group]}
+      options={[{"", ""}]}
+      placeholder="Type to search..."
+      phx-focus="live_select_change"
+      allow_clear={true}
+    />
     <!-- This empty div ensures the buttons are placed on a new row -->
     <div class="col-span-full"></div>
     <!-- Buttons on a new row -->
