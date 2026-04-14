@@ -21,14 +21,14 @@
       </ul>
     </nav>
   </div>
-  <div class="max-w-[88%] flex-1 p-8 border-[1px] border-borderStrong rounded-lg shadow-lg shadow-highlight">
+  <div class="w-full flex-1 p-8 border-[1px] border-borderStrong rounded-lg shadow-lg shadow-highlight">
     <.header class="title">Search</.header>
     <.form
       :let={f}
       for={@form}
       phx-submit="search"
       phx-change="validate"
-      class="grid grid-cols-[1fr] gap-4 mt-6"
+      class="grid grid-cols-[1fr_1fr] gap-4 mt-6"
       id="search-form"
     >
       <div class="flex flex-wrap">
@@ -217,7 +217,7 @@
         </nav>
 
         <%= if @error_message == true do %>
-          <table class="w-[40rem] mt-11">
+          <table class="w-full mt-11">
             <thead>
               <tr>
                 <th class="py-2 px-4 border-b">Log In Date</th>
