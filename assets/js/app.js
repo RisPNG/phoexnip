@@ -556,3 +556,45 @@ function ChangeChildren(e, parent) {
     ChangeChildren(e, el.getAttribute("id"));
   });
 }
+
+// Topbar permission dropdowns (CSP-safe: no inline handlers).
+function hideAllDropdownMenus() {
+  document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+    menu.classList.remove("opacity-100", "visible");
+    menu.classList.add("opacity-0", "invisible");
+    const btn = document.querySelector(
+      `[data-dropdown-target="${menu.id}"]`
+    );
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const toggle = e.target.closest(".dropdown-toggle");
+  if (toggle) {
+    const menuId = toggle.getAttribute("data-dropdown-target");
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+    const isOpen = menu.classList.contains("opacity-100");
+    hideAllDropdownMenus();
+    if (!isOpen) {
+      menu.classList.remove("opacity-0", "invisible");
+      menu.classList.add("opacity-100", "visible");
+      toggle.setAttribute("aria-expanded", "true");
+    }
+    return;
+  }
+
+  if (e.target.closest(".dropdown-menu")) {
+    hideAllDropdownMenus();
+    return;
+  }
+
+  if (!e.target.closest(".dropdown")) {
+    hideAllDropdownMenus();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideAllDropdownMenus();
+});

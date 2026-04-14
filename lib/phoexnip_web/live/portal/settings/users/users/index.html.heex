@@ -1,10 +1,10 @@
-<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600 mb-8">
+<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-highlight mb-8">
   <.header class="mb-2 title">Search</.header>
   <.form
     :let={f}
     for={@form}
     phx-submit="search"
-    class="grid grid-cols-[1fr] gap-4 mt-6"
+    class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4 mt-6"
     id="search-form"
   >
     <div class="">
@@ -74,7 +74,7 @@
   </.form>
 </div>
 
-<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-neutral-600">
+<div class="border-[1px] border-borderStrong p-8 rounded-lg shadow-lg shadow-highlight">
   <.header class="title pb-2">
     Users
     <:actions>

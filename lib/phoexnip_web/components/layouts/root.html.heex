@@ -32,7 +32,6 @@
                       type="button"
                       class="dropdown-toggle inline-flex justify-center items-center w-full py-2 text-sm font-medium hover:text-themePrimary hover:underline"
                       data-dropdown-target={"menu-" <> to_string(permission.sitemap_code)}
-                      onclick="toggleDropdown(event)"
                       aria-haspopup="true"
                       aria-expanded="false"
                     >
@@ -54,7 +53,6 @@
                       class="dropdown-menu dropdown-menu-child absolute z-50 w-[14rem] origin-top-right p-2 flex flex-wrap justify-start bg-surface pl-2 border-borderStrong border-2 rounded-md shadow-lg opacity-0 invisible transition duration-300"
                       role="menu"
                       aria-hidden="true"
-                      onclick="hideAllMenu()"
                     >
                       <%= for child <- permission.children do %>
                         <%= if child.permission > 0 do %>
@@ -184,51 +182,5 @@
     </header>
 
     {@inner_content}
-
-    <script>
-      function toggleDropdown(event) {
-        const button = event.currentTarget;
-        const menuId = button.getAttribute('data-dropdown-target');
-        const menu = document.getElementById(menuId);
-
-        const isOpen = menu.classList.contains('opacity-100');
-
-        // Close all menus
-        document.querySelectorAll('.dropdown-menu').forEach(m => {
-          m.classList.remove('opacity-100', 'visible');
-          m.classList.add('opacity-0', 'invisible');
-          const btn = document.querySelector(`[data-dropdown-target="${m.id}"]`);
-          if (btn) btn.setAttribute('aria-expanded', 'false');
-        });
-
-        // Open if it wasn't already open
-        if (!isOpen) {
-          menu.classList.remove('opacity-0', 'invisible');
-          menu.classList.add('opacity-100', 'visible');
-          button.setAttribute('aria-expanded', 'true');
-        }
-      }
-
-      function hideAllMenu() {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-          menu.classList.remove('opacity-100', 'visible');
-          menu.classList.add('opacity-0', 'invisible');
-          const btn = document.querySelector(`[data-dropdown-target="${menu.id}"]`);
-          if (btn) btn.setAttribute('aria-expanded', 'false');
-        });
-      }
-
-      // Close when clicking outside any dropdown
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.dropdown') && !e.target.closest('.dropdown-menu')) {
-          hideAllMenu();
-        }
-      });
-
-      // Close on Escape
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') hideAllMenu();
-      });
-    </script>
   </body>
 </html>
